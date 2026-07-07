@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 // =====================================================================
 // LEGENDS MANAGER — Marco 1, single-player.
@@ -320,6 +321,7 @@ export default function App() {
           />
         )}
       </div>
+      <Analytics />
     </div>
   );
 }
