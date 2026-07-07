@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { Analytics } from "@vercel/analytics/react";
 
 // =====================================================================
 // LEGENDS MANAGER — Marco 1, single-player.
@@ -255,11 +256,12 @@ export default function App() {
   }, [minuto, tela]); // eslint-disable-line
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: "#0B1712", color: "#ECF4EB", fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
-    >
-      <div className="max-w-md mx-auto px-4">
+    <>
+      <div
+        className="min-h-screen"
+        style={{ background: "#0B1712", color: "#ECF4EB", fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
+      >
+        <div className="max-w-md mx-auto px-4">
         {tela === "inicio" && (
           <TelaInicial
             nomeTec={nomeTec}
@@ -319,7 +321,9 @@ export default function App() {
             iniciarTemporada={iniciarTemporada}
           />
         )}
+        </div>
       </div>
-    </div>
+      <Analytics />
+    </>
   );
 }
