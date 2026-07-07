@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fundo base do app (o gradiente da barra de escalação assume #0B1712). */
+html,
+body,
+#root {
+  min-height: 100%;
+  background: #0b1712;
+}

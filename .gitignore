@@ -1,0 +1,13 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# Instaladores baixados durante o setup (não fazem parte do projeto)
+Git-*.exe
+node-v*.msi
+node-v*.zip
+node-v*-win-x64/
+
+# Config local do Claude Code (permissões específicas desta máquina/sessão)
+.claude/settings.local.json
