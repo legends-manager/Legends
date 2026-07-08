@@ -4,6 +4,7 @@
 import { gerarElencos } from "./atributos";
 import { gerarCalendario } from "./calendario";
 import { ELENCOS_REAIS, TIMES_SERIE_C } from "../data/elencos-reais";
+import { ORCAMENTO_INICIAL, mercadoInicial } from "./mercado";
 
 // ---------------- utilidades ----------------
 export const ri = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
@@ -34,17 +35,27 @@ export function pesoEscolha(lista, pesos) {
 
 // ---------------- temporada ----------------
 // Força dos times = bolo fixo sorteado (build-spec §5), 100% interno.
-export function novaTemporada() {
+// orcamentoAnterior (Marco 2, spec-mercado.md §0): em "Nova temporada" os
+// elencos voltam ao real e os valores ao piso (gerarElencos), mas o orçamento
+// por time é MANTIDO — passe o `S.orcamento` da temporada anterior aqui.
+export function novaTemporada(orcamentoAnterior = null) {
   const elencos = gerarElencos(TIMES_SERIE_C, ELENCOS_REAIS);
   const pool = [1.22, 1.22, 1.08, 1.08, 1.08, 0.95, 0.95, 0.95, 0.95, 0.82, 0.82, 0.82]
     .sort(() => Math.random() - 0.5);
-  const mult = {}, fase = {}, tabela = {};
+  const mult = {}, fase = {}, tabela = {}, orcamento = {};
   TIMES_SERIE_C.forEach((t, i) => {
     mult[t] = pool[i];
     fase[t] = 1;
     tabela[t] = { P: 0, J: 0, V: 0, E: 0, D: 0, GP: 0, GC: 0 };
+    orcamento[t] = orcamentoAnterior && orcamentoAnterior[t] != null ? orcamentoAnterior[t] : ORCAMENTO_INICIAL;
   });
-  return { elencos, mult, fase, tabela, art: {}, calendario: gerarCalendario(TIMES_SERIE_C), rodada: 0 };
+  // Marco 2 (spec-mercado.md §4): a janela de mercado abre na pré-temporada,
+  // antes da 1ª escalação — por isso a temporada já nasce com janela "pre".
+  const mercado = { ...mercadoInicial(), janela: "pre" };
+  return {
+    elencos, mult, fase, tabela, art: {},
+    calendario: gerarCalendario(TIMES_SERIE_C), rodada: 0, orcamento, mercado,
+  };
 }
 
 // ---------------- escalações ----------------

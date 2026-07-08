@@ -32,8 +32,11 @@ Jogo de gestão de futebol estilo Brasfoot, mobile-first, ambientado na **Série
 - Nome oficial do time: **Dragon Bola FC** (o v3 dizia "Dragon Bol" — corrigido pela página oficial).
 - Nunca inventar ou "completar" dados de jogadores reais. Em dúvida, perguntar ao Felyp.
 
+## Marco 2 — Mercado de Transferências (ativo)
+Promovido do backlog para escopo ativo por decisão explícita do Felyp (jul/2026). Contrato completo em `spec-mercado.md`.
+
 ## Cerca do backlog (NÃO construir agora)
-Multiplayer/link-convite, ranking online de técnicos, mercado/transferências, edição de elenco in-game, escudos reais, Séries A/B, finanças, carreira multi-temporada, cartões/lesões, mata-mata, olheiro/crônicas por IA, cards com rosto, monetização. Se parecer boa ideia no meio do caminho: **parar e perguntar, não construir.**
+Multiplayer/link-convite, ranking online de técnicos, edição de elenco in-game, escudos reais, Séries A/B, finanças, carreira multi-temporada, cartões/lesões, mata-mata, olheiro/crônicas por IA, cards com rosto, monetização. Se parecer boa ideia no meio do caminho: **parar e perguntar, não construir.**
 
 ## Stack
 React + Vite. Sem backend. Deploy Vercel. PWA básica (manifest + ícones; sem service worker offline no Marco 1).

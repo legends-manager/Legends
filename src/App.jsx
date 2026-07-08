@@ -9,11 +9,15 @@ import { useState, useEffect, useRef } from "react";
 import {
   novaTemporada, melhores, escalacaoIA, simMetade, golsDe,
 } from "./engine/simulador";
-import { calcularCraque } from "./engine/craque";
+import {
+  creditarOrcamentos, valorizarJogadores, unionPorId,
+  listarJogador, retirarListagem, comprarJogador, aceitarOferta, recusarOferta, fecharJanela, iaNegocia,
+} from "./engine/mercado";
 import { SIGLA } from "./data/times";
 import { carregarSave, reconstruirS, salvarJogo, localStorageDisponivel } from "./storage/saveGame";
 
 import TelaInicial from "./components/TelaInicial";
+import Mercado from "./components/Mercado";
 import Escalacao from "./components/Escalacao";
 import PartidaAoVivo from "./components/PartidaAoVivo";
 import Intervalo from "./components/Intervalo";
@@ -78,14 +82,18 @@ export default function App() {
 
   // ---------- fluxo de temporada ----------
   const iniciarTemporada = (time) => {
-    const nova = novaTemporada();
+    // Marco 2 (spec-mercado.md §0): orçamento é mantido entre temporadas.
+    const nova = novaTemporada(Sref.current ? Sref.current.orcamento : null);
     Sref.current = nova;
     setMeuTime(time);
     prepararEscalacao(time, nova);
+    // Marco 2 (spec-mercado.md §4): a janela "pre" abre antes da 1ª escalação.
+    // As 11 IAs já agem (§5) antes do jogador ver a tela, numa única leva.
+    iaNegocia(nova, time);
     // Persiste já no início: forças/atributos sorteados não podem se perder nem
     // ser re-sorteados no meio da temporada.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: time, S: nova });
-    setTela("escalacao");
+    setTela("mercado");
   };
 
   const continuarJogo = () => {
@@ -94,7 +102,9 @@ export default function App() {
     Sref.current = s;
     setNomeTec(saveData.nomeTecnico || "");
     setMeuTime(saveData.timeEscolhido);
-    if (s.rodada >= 22) {
+    if (s.mercado.janela !== "fechada") {
+      setTela("mercado"); // fechou o app com a janela aberta: retoma nela
+    } else if (s.rodada >= 22) {
       setTela("tabela"); // temporada encerrada: cai na classificação final
     } else {
       prepararEscalacao(saveData.timeEscolhido, s);
@@ -102,8 +112,53 @@ export default function App() {
     }
   };
 
+  // Fecha a janela de mercado (listagens/ofertas expiram) e segue o fluxo
+  // normal: prepara a escalação e vai pra rodada.
+  const fecharJanelaEIrEscalacao = () => {
+    fecharJanela(S);
+    prepararEscalacao(meuTime, S);
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, S });
+    setTela("escalacao");
+  };
+
+  // ---------- ações de mercado (Marco 2) ----------
+  const listarNoMercado = (idJogador, preco) => {
+    const r = listarJogador(S, meuTime, idJogador, preco);
+    if (r.ok) rerender();
+    return r;
+  };
+  const cancelarListagem = (idJogador) => {
+    retirarListagem(S, idJogador);
+    rerender();
+  };
+  const comprarNoMercado = (idJogador) => {
+    const r = comprarJogador(S, meuTime, idJogador);
+    if (r.ok) rerender();
+    return r;
+  };
+  const aceitarOfertaHumano = (oferta) => {
+    const r = aceitarOferta(S, oferta);
+    if (r.ok) rerender();
+    return r;
+  };
+  const recusarOfertaHumano = (oferta) => {
+    recusarOferta(S, oferta);
+    rerender();
+  };
+
   const prepararEscalacao = (time, S2) => {
     setEscolhidos(melhores(S2.elencos[time]).map((j) => j.id));
+  };
+
+  // Chamado pelo botão "Próxima rodada" da Tabela: se a janela do meio acabou
+  // de abrir (pós-rodada 11), vai pro Mercado antes da escalação da rodada 12.
+  const irProximaRodada = () => {
+    if (S.mercado.janela !== "fechada") {
+      setTela("mercado");
+    } else {
+      prepararEscalacao(meuTime, S);
+      setTela("escalacao");
+    }
   };
 
   const confronto = () => {
@@ -146,7 +201,14 @@ export default function App() {
     const escFora = souCasa ? advEsc : minhaEsc;
     const outros = outrosConfrontos().map((j) => {
       const eC = escalacaoIA(S.elencos[j.casa]), eF = escalacaoIA(S.elencos[j.fora]);
-      return { ...j, ev: [...simMetade(S, j.casa, j.fora, eC, eF, 1), ...simMetade(S, j.casa, j.fora, eC, eF, 2)] };
+      // escCasa/escFora ficam guardados pra valorização de jogadores no fim da rodada
+      // (Marco 2 — precisa saber quem jogou em todo jogo, não só no do humano).
+      return {
+        ...j,
+        escCasa: eC,
+        escFora: eF,
+        ev: [...simMetade(S, j.casa, j.fora, eC, eF, 1), ...simMetade(S, j.casa, j.fora, eC, eF, 2)],
+      };
     });
     return {
       casa: c.casa, fora: c.fora, souCasa, adv,
@@ -182,9 +244,16 @@ export default function App() {
 
   const finalizarRodada = (j) => {
     const evMeu = [...j.ev1, ...(j.ev2 || [])];
+    // minhaEscRodada = quem entrou em campo pelo humano na rodada (titulares +
+    // eventuais substitutos do intervalo), pra valorização do Marco 2.
+    const minhaEscRodada = unionPorId(j.minhaEsc1, j.minhaEsc2);
     const jogos = [
-      { casa: j.casa, fora: j.fora, ev: evMeu },
-      ...j.outros.map((o) => ({ casa: o.casa, fora: o.fora, ev: o.ev })),
+      {
+        casa: j.casa, fora: j.fora, ev: evMeu,
+        escCasa: j.souCasa ? minhaEscRodada : j.advEsc,
+        escFora: j.souCasa ? j.advEsc : minhaEscRodada,
+      },
+      ...j.outros.map((o) => ({ casa: o.casa, fora: o.fora, ev: o.ev, escCasa: o.escCasa, escFora: o.escFora })),
     ].map((x) => ({ ...x, gc: golsDe(x.ev, x.casa), gf: golsDe(x.ev, x.fora) }));
 
     jogos.forEach((x) => {
@@ -205,18 +274,23 @@ export default function App() {
       });
     });
 
-    // Craque da Partida (só do jogo do jogador)
-    const meu = jogos[0];
-    const craque = calcularCraque({
-      evMeu,
-      minhaEsc1: j.minhaEsc1,
-      minhaEsc2: j.minhaEsc2,
-      advEsc: j.advEsc,
-      gcMeu: meu.gc,
-      gfMeu: meu.gf,
-    });
+    // Marco 2 (spec-mercado.md §3): crédito de orçamento por resultado e
+    // valorização de jogadores, para os 12 times da rodada — não só o jogo do
+    // humano. valorizarJogadores também calcula o Craque da Partida de cada
+    // jogo; craques[0] é o do jogo do jogador (reaproveitado no resumo).
+    creditarOrcamentos(S.orcamento, jogos);
+    const craques = valorizarJogadores(S.elencos, jogos);
+    const craque = craques[0];
 
     S.rodada++;
+    // Marco 2 (spec-mercado.md §4): janela do meio abre exatamente uma vez,
+    // após a rodada 11 — inclusive quando ela é jogada via rodada rápida
+    // (ambos os fluxos passam por finalizarRodada, não tem caminho alternativo).
+    if (S.rodada === 11 && !S.mercado.janelaUsadaMeio) {
+      S.mercado.janela = "meio";
+      S.mercado.janelaUsadaMeio = true;
+      iaNegocia(S, meuTime); // §5: as 11 IAs agem antes do jogador ver a janela
+    }
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, S });
     setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora });
@@ -305,8 +379,20 @@ export default function App() {
           />
         )}
         {tela === "resultado" && S && resumo && <Resultado resumo={resumo} setTela={setTela} />}
+        {tela === "mercado" && S && (
+          <Mercado
+            S={S}
+            meuTime={meuTime}
+            comprarNoMercado={comprarNoMercado}
+            listarNoMercado={listarNoMercado}
+            cancelarListagem={cancelarListagem}
+            aceitarOfertaHumano={aceitarOfertaHumano}
+            recusarOfertaHumano={recusarOfertaHumano}
+            fecharJanelaEIrEscalacao={fecharJanelaEIrEscalacao}
+          />
+        )}
         {tela === "tabela" && S && (
-          <Tabela S={S} meuTime={meuTime} setTela={setTela} prepararEscalacao={prepararEscalacao} />
+          <Tabela S={S} meuTime={meuTime} setTela={setTela} irProximaRodada={irProximaRodada} />
         )}
         {tela === "artilharia" && S && <Artilharia S={S} setTela={setTela} />}
         {tela === "campeao" && S && (

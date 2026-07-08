@@ -3,7 +3,7 @@
 import { TIMES, SIGLA } from "../data/times";
 import { Eyebrow, Rodape, card, amber } from "./ui";
 
-export default function Tabela({ S, meuTime, setTela, prepararEscalacao }) {
+export default function Tabela({ S, meuTime, setTela, irProximaRodada }) {
   const linhas = TIMES.map((t) => {
     const d = S.tabela[t];
     return { t, ...d, SG: d.GP - d.GC, pct: d.J ? Math.round((d.P / (d.J * 3)) * 100) : 0 };
@@ -54,11 +54,7 @@ export default function Tabela({ S, meuTime, setTela, prepararEscalacao }) {
           🏆 Ver campeão
         </button>
       ) : (
-        <button
-          onClick={() => { prepararEscalacao(meuTime, S); setTela("escalacao"); }}
-          className="w-full rounded-xl py-3.5 font-bold mt-4"
-          style={amber}
-        >
+        <button onClick={irProximaRodada} className="w-full rounded-xl py-3.5 font-bold mt-4" style={amber}>
           Próxima rodada →
         </button>
       )}

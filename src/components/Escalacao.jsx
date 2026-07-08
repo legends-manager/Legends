@@ -61,6 +61,11 @@ export default function Escalacao({
       </div>
 
       <div className="rounded-xl px-3 py-2 mt-3 text-xs flex justify-between" style={card}>
+        <span>Orçamento</span>
+        <span className="font-bold tabular-nums" style={{ color: "#FFC53D" }}>L$ {S.orcamento[meuTime]}</span>
+      </div>
+
+      <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={card}>
         <span>Escalados: <b className="tabular-nums">{nGol}</b> GOL + <b className="tabular-nums">{nLinha}</b>/6 linha</span>
         <span style={{ color: escValida() ? "#8FD9A0" : "#FFC53D" }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
       </div>
@@ -80,6 +85,7 @@ export default function Escalacao({
                 >
                   <span className="text-xs w-4 text-center">{sel ? "●" : "○"}</span>
                   <span className="flex-1 text-sm leading-tight">{j.nome}</span>
+                  <span className="text-xs tabular-nums shrink-0" style={{ color: "#93AF9B" }}>L$ {j.valor}</span>
                   <Barra v={j.attr} />
                 </button>
               );
