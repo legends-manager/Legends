@@ -15,17 +15,17 @@ export default function TelaCampeao({ S, meuTime, nomeTec, confirmaNova, setConf
 
   return (
     <div className="pt-8">
-      <div className="rounded-2xl p-6 text-center" style={{ background: "#13251A", border: "2px solid #FFC53D" }}>
+      <div className="rounded-2xl p-6 text-center" style={{ background: "#1E1233", border: "2px solid #FFC53D" }}>
         <Eyebrow>Legends Liga Fut7 · Série C · 2026</Eyebrow>
         <div className="text-6xl mt-3">🏆</div>
         <div className="uppercase tracking-widest text-xs mt-2 font-bold" style={{ color: "#FFC53D" }}>Campeão</div>
         <div className="text-3xl font-black italic mt-1">{camp.t}</div>
         {souCampeao && <div className="text-sm font-semibold mt-1">Técnico: {nomeTec || "Técnico"}</div>}
-        <div className="text-sm mt-3 tabular-nums" style={{ color: "#C8D8CC" }}>
+        <div className="text-sm mt-3 tabular-nums" style={{ color: "#D9CCEE" }}>
           {camp.P} pts · {camp.V}V {camp.E}E {camp.D}D · saldo {camp.SG > 0 ? "+" : ""}{camp.SG}
         </div>
-        <div className="text-xs mt-4" style={{ color: "#5E7767" }}>{ARENA.label}</div>
-        <div className="text-xs font-black italic mt-1" style={{ color: "#93AF9B" }}>
+        <div className="text-xs mt-4" style={{ color: "#6E5A92" }}>{ARENA.label}</div>
+        <div className="text-xs font-black italic mt-1" style={{ color: "#A78FC7" }}>
           LEGENDS<span style={{ color: "#FFC53D" }}>MANAGER</span>
         </div>
       </div>
@@ -34,7 +34,7 @@ export default function TelaCampeao({ S, meuTime, nomeTec, confirmaNova, setConf
           Seu {meuTime} terminou em <b>{minhaPos}º</b> com {linhas[minhaPos - 1].P} pontos, técnico {nomeTec || "Técnico"}.
         </div>
       )}
-      <div className="text-center text-xs mt-3" style={{ color: "#93AF9B" }}>
+      <div className="text-center text-xs mt-3" style={{ color: "#A78FC7" }}>
         Tira um print e manda no grupo. 📸
       </div>
       {!confirmaNova ? (

@@ -58,7 +58,7 @@ export default function Mercado({
       {movimentacoesIA.length > 0 && (
         <div className="rounded-xl px-3 py-2 mt-3 text-xs" style={card}>
           <Eyebrow>Movimentações da janela</Eyebrow>
-          <div className="mt-1 space-y-0.5" style={{ color: "#93AF9B" }}>
+          <div className="mt-1 space-y-0.5" style={{ color: "#A78FC7" }}>
             {movimentacoesIA.map((h, i) => (
               <div key={i}>
                 {h.jogador}: {SIGLA[h.de]} → {SIGLA[h.para]} <span style={{ color: "#FFC53D" }}>L$ {h.valor}</span>
@@ -90,7 +90,7 @@ export default function Mercado({
       {aba === "comprar" && (
         <div className="mt-3 space-y-1.5">
           {listados.length === 0 && (
-            <div className="text-sm text-center py-4" style={{ color: "#5E7767" }}>Nenhum jogador à venda no momento.</div>
+            <div className="text-sm text-center py-4" style={{ color: "#6E5A92" }}>Nenhum jogador à venda no momento.</div>
           )}
           {listados.map((l) => {
             const j = buscarJogador(S.elencos, l.idJogador);
@@ -102,7 +102,7 @@ export default function Mercado({
                   <div className="text-sm leading-tight truncate">{j.nome}</div>
                   {/* §8: sem atributo bruto de jogador de outro time — só o
                       preço (com mispricing) e as estatísticas reais do Copa10. */}
-                  <div className="text-xs" style={{ color: "#93AF9B" }}>{j.pos} · {j.g}g {j.a}a · {SIGLA[j.time]}</div>
+                  <div className="text-xs" style={{ color: "#A78FC7" }}>{j.pos} · {j.g}g {j.a}a · {SIGLA[j.time]}</div>
                 </div>
                 <button
                   onClick={() => rodar(() => comprarNoMercado(l.idJogador))}
@@ -126,7 +126,7 @@ export default function Mercado({
               <div key={j.id} className="rounded-xl px-3 py-2.5 flex items-center gap-2" style={card}>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm leading-tight truncate">{j.nome}</div>
-                  <div className="text-xs" style={{ color: "#93AF9B" }}>{j.pos} · attr {j.attr} · valor L$ {j.valor}</div>
+                  <div className="text-xs" style={{ color: "#A78FC7" }}>{j.pos} · attr {j.attr} · valor L$ {j.valor}</div>
                 </div>
                 {listado ? (
                   <button
@@ -144,7 +144,7 @@ export default function Mercado({
                       value={precoAtual}
                       onChange={(e) => setPrecos({ ...precos, [j.id]: e.target.value })}
                       className="w-16 rounded-lg px-2 py-2 text-xs text-right outline-none"
-                      style={{ background: "#0B1712", color: "#ECF4EB", border: "1px solid rgba(88,124,99,0.35)" }}
+                      style={{ background: "#150A26", color: "#F2EDFA", border: "1px solid rgba(139,105,190,0.35)" }}
                     />
                     <button
                       onClick={() => rodar(() => listarNoMercado(j.id, Number(precoAtual) || j.valor))}
@@ -164,15 +164,15 @@ export default function Mercado({
       {aba === "ofertas" && (
         <div className="mt-3 space-y-1.5">
           {ofertas.length === 0 && (
-            <div className="text-sm text-center py-4" style={{ color: "#5E7767" }}>Nenhuma oferta no momento.</div>
+            <div className="text-sm text-center py-4" style={{ color: "#6E5A92" }}>Nenhuma oferta no momento.</div>
           )}
           {ofertas.map((o) => {
             const j = buscarJogador(S.elencos, o.idJogador);
             if (!j) return null;
             return (
               <div key={`${o.idJogador}-${o.timeOfertante}`} className="rounded-xl px-3 py-2.5" style={card}>
-                <div className="text-sm leading-tight">{j.nome} <span className="text-xs" style={{ color: "#93AF9B" }}>({j.pos})</span></div>
-                <div className="text-xs mt-0.5" style={{ color: "#93AF9B" }}>
+                <div className="text-sm leading-tight">{j.nome} <span className="text-xs" style={{ color: "#A78FC7" }}>({j.pos})</span></div>
+                <div className="text-xs mt-0.5" style={{ color: "#A78FC7" }}>
                   Proposta de {SIGLA[o.timeOfertante]}: <b style={{ color: "#FFC53D" }}>L$ {o.preco}</b>
                 </div>
                 <div className="flex gap-2 mt-2">
@@ -189,7 +189,7 @@ export default function Mercado({
         </div>
       )}
 
-      <div className="fixed bottom-0 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #0B1712 30%)" }}>
+      <div className="fixed bottom-0 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #150A26 30%)" }}>
         <div className="max-w-md mx-auto px-4 pb-5 pt-6">
           <button onClick={fecharJanelaEIrEscalacao} className="w-full rounded-xl py-3.5 font-bold" style={amber}>
             Fechar janela e ir pra escalação →

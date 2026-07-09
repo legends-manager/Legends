@@ -331,7 +331,7 @@ export default function App() {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#0B1712", color: "#ECF4EB", fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
+      style={{ background: "#150A26", color: "#F2EDFA", fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
     >
       <div className="max-w-md mx-auto px-4">
         {tela === "inicio" && (

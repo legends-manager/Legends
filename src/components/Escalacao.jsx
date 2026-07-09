@@ -6,9 +6,9 @@ import { Eyebrow, Rodape, Avatar, Barra, card, amber } from "./ui";
 function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)" }}>
-      <div className="w-full max-w-md rounded-t-2xl p-4" style={{ background: "#13251A" }}>
+      <div className="w-full max-w-md rounded-t-2xl p-4" style={{ background: "#1E1233" }}>
         <Eyebrow>Corrigir nomes — {meuTime}</Eyebrow>
-        <p className="text-xs mt-1" style={{ color: "#93AF9B" }}>
+        <p className="text-xs mt-1" style={{ color: "#A78FC7" }}>
           Um nome por linha, na mesma ordem. Posições e atributos são mantidos.
         </p>
         <textarea
@@ -16,7 +16,7 @@ function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
           onChange={(e) => setTextoNomes(e.target.value)}
           rows={10}
           className="w-full mt-2 rounded-xl p-3 text-sm outline-none"
-          style={{ background: "#0B1712", color: "#ECF4EB", border: "1px solid rgba(88,124,99,0.35)" }}
+          style={{ background: "#150A26", color: "#F2EDFA", border: "1px solid rgba(139,105,190,0.35)" }}
         />
         <div className="flex gap-2 mt-3">
           <button onClick={onCancel} className="flex-1 rounded-xl py-3 font-bold" style={card}>Cancelar</button>
@@ -47,7 +47,7 @@ export default function Escalacao({
         <Avatar t={meuTime} />
         <div className="flex-1">
           <div className="font-black italic">{meuTime}</div>
-          <div className="text-xs" style={{ color: "#93AF9B" }}>
+          <div className="text-xs" style={{ color: "#A78FC7" }}>
             vs {adv} · {souCasa ? "mandante" : "visitante"}
           </div>
         </div>
@@ -67,7 +67,7 @@ export default function Escalacao({
 
       <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={card}>
         <span>Escalados: <b className="tabular-nums">{nGol}</b> GOL + <b className="tabular-nums">{nLinha}</b>/6 linha</span>
-        <span style={{ color: escValida() ? "#8FD9A0" : "#FFC53D" }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
+        <span style={{ color: escValida() ? "#7FE0A8" : "#FFC53D" }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
       </div>
 
       {grupos.map((gp) => (
@@ -81,11 +81,11 @@ export default function Escalacao({
                   key={j.id}
                   onClick={() => toggleJogador(j)}
                   className="w-full rounded-xl px-3 py-2.5 flex items-center gap-2 text-left active:opacity-70"
-                  style={{ ...card, ...(sel ? { border: "1px solid #FFC53D", background: "#1B2F20" } : {}) }}
+                  style={{ ...card, ...(sel ? { border: "1px solid #FFC53D", background: "#2B1A4A" } : {}) }}
                 >
                   <span className="text-xs w-4 text-center">{sel ? "●" : "○"}</span>
                   <span className="flex-1 text-sm leading-tight">{j.nome}</span>
-                  <span className="text-xs tabular-nums shrink-0" style={{ color: "#93AF9B" }}>L$ {j.valor}</span>
+                  <span className="text-xs tabular-nums shrink-0" style={{ color: "#A78FC7" }}>L$ {j.valor}</span>
                   <Barra v={j.attr} />
                 </button>
               );
@@ -94,7 +94,7 @@ export default function Escalacao({
         </div>
       ))}
 
-      <div className="fixed bottom-0 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #0B1712 30%)" }}>
+      <div className="fixed bottom-0 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #150A26 30%)" }}>
         <div className="max-w-md mx-auto px-4 pb-5 pt-6 flex gap-2">
           <button
             disabled={!escValida()}

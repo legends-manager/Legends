@@ -20,7 +20,7 @@ export default function Resultado({ resumo, setTela }) {
           <Avatar t={meu.fora} />
         </div>
         <div className="text-sm font-semibold mt-2">{meu.casa} x {meu.fora}</div>
-        <div className="text-xs mt-1" style={{ color: "#5E7767" }}>{ARENA.label}</div>
+        <div className="text-xs mt-1" style={{ color: "#6E5A92" }}>{ARENA.label}</div>
       </div>
 
       {r.craque && (
@@ -29,7 +29,7 @@ export default function Resultado({ resumo, setTela }) {
           <div>
             <Eyebrow>Craque da partida</Eyebrow>
             <div className="font-bold">
-              {r.craque.nome} <span className="text-xs font-normal" style={{ color: "#93AF9B" }}>({r.craque.time})</span>
+              {r.craque.nome} <span className="text-xs font-normal" style={{ color: "#A78FC7" }}>({r.craque.time})</span>
             </div>
           </div>
         </div>
@@ -41,9 +41,9 @@ export default function Resultado({ resumo, setTela }) {
           <div className="mt-1 space-y-1">
             {gols.map((e, i) => (
               <div key={i} className="rounded-xl px-3 py-2 text-sm" style={card}>
-                <span className="tabular-nums text-xs mr-2" style={{ color: "#93AF9B" }}>{e.min}&#39;</span>
+                <span className="tabular-nums text-xs mr-2" style={{ color: "#A78FC7" }}>{e.min}&#39;</span>
                 <b>{e.autor.nome}</b> ({SIGLA[e.time]})
-                {e.assist ? <span style={{ color: "#93AF9B" }}> · assist. {e.assist.nome}</span> : ""}
+                {e.assist ? <span style={{ color: "#A78FC7" }}> · assist. {e.assist.nome}</span> : ""}
               </div>
             ))}
           </div>

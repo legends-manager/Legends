@@ -11,3 +11,6 @@ node-v*-win-x64/
 
 # Config local do Claude Code (permissões específicas desta máquina/sessão)
 .claude/settings.local.json
+
+# Arte original recebida via WhatsApp (a copia usada pelo app e public/capa.jpg)
+WhatsApp Image*.jpeg

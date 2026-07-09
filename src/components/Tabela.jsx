@@ -24,7 +24,7 @@ export default function Tabela({ S, meuTime, setTela, irProximaRodada }) {
       <div className="rounded-2xl overflow-hidden mt-3" style={card}>
         <div
           className="grid text-xs font-semibold px-2 py-2"
-          style={{ gridTemplateColumns: "1.5rem 1fr repeat(9, 1.55rem)", color: "#93AF9B" }}
+          style={{ gridTemplateColumns: "1.5rem 1fr repeat(9, 1.55rem)", color: "#A78FC7" }}
         >
           <span /><span /><span>P</span><span>J</span><span>V</span><span>E</span><span>D</span><span>GP</span><span>GC</span><span>SG</span><span>%</span>
         </div>
@@ -37,10 +37,10 @@ export default function Tabela({ S, meuTime, setTela, irProximaRodada }) {
               background: l.t === meuTime ? "rgba(255,197,61,0.10)" : i % 2 ? "rgba(255,255,255,0.02)" : "transparent",
             }}
           >
-            <span style={{ color: "#93AF9B" }}>{i + 1}</span>
+            <span style={{ color: "#A78FC7" }}>{i + 1}</span>
             <span className="flex items-center gap-1 font-semibold truncate pr-1">
               {SIGLA[l.t]}
-              <span style={{ color: S.fase[l.t] > 1.01 ? "#8FD9A0" : S.fase[l.t] < 0.99 ? "#FF5A5A" : "#5E7767" }}>
+              <span style={{ color: S.fase[l.t] > 1.01 ? "#7FE0A8" : S.fase[l.t] < 0.99 ? "#FF5A5A" : "#6E5A92" }}>
                 {S.fase[l.t] > 1.01 ? "▲" : S.fase[l.t] < 0.99 ? "▼" : "–"}
               </span>
             </span>

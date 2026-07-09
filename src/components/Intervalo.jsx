@@ -26,7 +26,7 @@ export default function Intervalo({
       <Eyebrow>Intervalo · Rodada {S.rodada + 1}</Eyebrow>
       <div className="rounded-2xl p-4 mt-2 text-center" style={card}>
         <div className="text-3xl font-black italic tabular-nums">{SIGLA[j.casa]} {gc} : {gf} {SIGLA[j.fora]}</div>
-        <div className="text-xs mt-1" style={{ color: "#93AF9B" }}>Substituições: {j.subs}/3 · goleiro só por goleiro</div>
+        <div className="text-xs mt-1" style={{ color: "#A78FC7" }}>Substituições: {j.subs}/3 · goleiro só por goleiro</div>
         {umGoleiro && (
           <div className="text-xs mt-1" style={{ color: "#FFC53D" }}>Seu time tem 1 goleiro — troca de goleiro indisponível.</div>
         )}
@@ -43,7 +43,7 @@ export default function Intervalo({
                 className="w-full rounded-lg px-2 py-2 text-left text-xs leading-tight active:opacity-70"
                 style={{ ...card, ...(selOut?.id === p.id ? { border: "1px solid #FF5A5A" } : {}) }}
               >
-                <span style={{ color: "#93AF9B" }}>{p.pos}</span> {p.nome}
+                <span style={{ color: "#A78FC7" }}>{p.pos}</span> {p.nome}
               </button>
             ))}
           </div>
@@ -56,12 +56,12 @@ export default function Intervalo({
                 key={p.id}
                 onClick={() => setSelIn(selIn?.id === p.id ? null : p)}
                 className="w-full rounded-lg px-2 py-2 text-left text-xs leading-tight active:opacity-70"
-                style={{ ...card, ...(selIn?.id === p.id ? { border: "1px solid #8FD9A0" } : {}) }}
+                style={{ ...card, ...(selIn?.id === p.id ? { border: "1px solid #7FE0A8" } : {}) }}
               >
-                <span style={{ color: "#93AF9B" }}>{p.pos} {p.attr}</span> {p.nome}
+                <span style={{ color: "#A78FC7" }}>{p.pos} {p.attr}</span> {p.nome}
               </button>
             ))}
-            {banco.length === 0 && <div className="text-xs" style={{ color: "#5E7767" }}>Sem banco disponível.</div>}
+            {banco.length === 0 && <div className="text-xs" style={{ color: "#6E5A92" }}>Sem banco disponível.</div>}
           </div>
         </div>
       </div>

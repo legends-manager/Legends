@@ -35,7 +35,7 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
           </div>
           <div className="text-center">
             <div className="text-5xl font-black italic tabular-nums tracking-tight">
-              {gc}<span style={{ color: "#93AF9B" }}> : </span>{gf}
+              {gc}<span style={{ color: "#A78FC7" }}> : </span>{gf}
             </div>
             <div className="text-sm font-bold tabular-nums mt-1" style={{ color: "#FFC53D" }}>{Math.min(minuto, 50)}&#39;</div>
           </div>
@@ -43,7 +43,7 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
             <Avatar t={j.fora} /><span className="text-xs font-bold">{SIGLA[j.fora]}</span>
           </div>
         </div>
-        <div className="text-center text-xs mt-3" style={{ color: "#5E7767" }}>{ARENA.label}</div>
+        <div className="text-center text-xs mt-3" style={{ color: "#6E5A92" }}>{ARENA.label}</div>
       </div>
 
       <div className="flex justify-end mt-2">
@@ -55,19 +55,19 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
       <div className="mt-2 space-y-1.5">
         {visiveis.map((e, i) => (
           <div key={i} className="rounded-xl px-3 py-2 text-sm flex gap-2" style={card}>
-            <span className="tabular-nums text-xs w-8 shrink-0 pt-0.5" style={{ color: "#93AF9B" }}>{e.min}&#39;</span>
+            <span className="tabular-nums text-xs w-8 shrink-0 pt-0.5" style={{ color: "#A78FC7" }}>{e.min}&#39;</span>
             {e.tipo === "gol" ? (
               <span>
                 <b style={{ color: "#FFC53D" }}>GOL do {SIGLA[e.time]}!</b> {e.autor.nome}, {e.desc}
-                {e.assist ? <span style={{ color: "#93AF9B" }}> (assist. {e.assist.nome})</span> : ""}
+                {e.assist ? <span style={{ color: "#A78FC7" }}> (assist. {e.assist.nome})</span> : ""}
               </span>
             ) : (
-              <span style={{ color: "#C8D8CC" }}>{e.autor.nome} {e.desc}</span>
+              <span style={{ color: "#D9CCEE" }}>{e.autor.nome} {e.desc}</span>
             )}
           </div>
         ))}
         {visiveis.length === 0 && (
-          <div className="text-center text-sm py-4" style={{ color: "#5E7767" }}>Bola rolando na Arena…</div>
+          <div className="text-center text-sm py-4" style={{ color: "#6E5A92" }}>Bola rolando na Arena…</div>
         )}
       </div>
 

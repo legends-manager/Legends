@@ -20,12 +20,18 @@ export default function TelaInicial({
   const encerrada = saveData && saveData.temporada.rodadaAtual >= 22;
 
   return (
-    <div className="pt-10">
-      <Eyebrow>Legends Liga Fut7 · Série C · 2026</Eyebrow>
-      <h1 className="text-4xl font-black italic tracking-tight mt-1">
-        LEGENDS<span style={{ color: "#FFC53D" }}>MANAGER</span>
-      </h1>
-      <p className="mt-2 text-sm" style={{ color: "#93AF9B" }}>
+    <div className="pt-6">
+      {/* Capa oficial (só nesta tela; o pôster já carrega a marca) */}
+      <img
+        src="/capa.jpg"
+        alt="Legends Manager"
+        className="w-full rounded-2xl"
+        style={{ border: "1px solid rgba(139,105,190,0.35)" }}
+      />
+      <div className="mt-3">
+        <Eyebrow>Legends Liga Fut7 · Série C · 2026</Eyebrow>
+      </div>
+      <p className="mt-2 text-sm" style={{ color: "#A78FC7" }}>
         Escolha seu time, monte a escalação e dispute as 22 rodadas com os elencos reais da Série C.
       </p>
 
@@ -47,7 +53,7 @@ export default function TelaInicial({
             <Avatar t={saveData.timeEscolhido} />
             <div className="flex-1">
               <div className="font-bold">▶ Continuar — {saveData.timeEscolhido}</div>
-              <div className="text-xs" style={{ color: "#93AF9B" }}>
+              <div className="text-xs" style={{ color: "#A78FC7" }}>
                 Técnico {saveData.nomeTecnico || "Técnico"} ·{" "}
                 {encerrada ? "temporada encerrada" : `rodada ${rodadaSalva}/22`}
               </div>
@@ -63,14 +69,14 @@ export default function TelaInicial({
           onChange={(e) => setNomeTec(e.target.value)}
           placeholder="Seu nome (sai no pôster de campeão)"
           className="w-full mt-1 rounded-xl px-4 py-3 outline-none"
-          style={{ ...card, color: "#ECF4EB" }}
+          style={{ ...card, color: "#F2EDFA" }}
         />
       </div>
 
       <div className="mt-5">
         <Eyebrow>{saveData ? "Nova temporada — escolha seu time" : "Escolha seu time"}</Eyebrow>
         {saveData && (
-          <p className="text-xs mt-1" style={{ color: "#93AF9B" }}>
+          <p className="text-xs mt-1" style={{ color: "#A78FC7" }}>
             Começar uma nova temporada apaga a salva acima.
           </p>
         )}
@@ -89,7 +95,7 @@ export default function TelaInicial({
         </div>
       </div>
 
-      <div className="rounded-xl p-3 mt-4 text-xs" style={{ ...card, color: "#C8D8CC" }}>
+      <div className="rounded-xl p-3 mt-4 text-xs" style={{ ...card, color: "#D9CCEE" }}>
         Elencos reais (Copa10 · pós-rodada 1). Achou nome errado? Corrige em ✏️ na tela de escalação.
       </div>
 
@@ -97,9 +103,9 @@ export default function TelaInicial({
 
       {pendente && (
         <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)" }}>
-          <div className="w-full max-w-md rounded-t-2xl p-4" style={{ background: "#13251A" }}>
+          <div className="w-full max-w-md rounded-t-2xl p-4" style={{ background: "#1E1233" }}>
             <Eyebrow>Nova temporada</Eyebrow>
-            <p className="text-sm mt-2" style={{ color: "#C8D8CC" }}>
+            <p className="text-sm mt-2" style={{ color: "#D9CCEE" }}>
               Isso apaga a temporada salva de <b>{saveData.timeEscolhido}</b> (
               {encerrada ? "encerrada" : `rodada ${rodadaSalva}/22`}) e começa uma nova com{" "}
               <b>{pendente}</b>. Continuar?
