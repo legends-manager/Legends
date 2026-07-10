@@ -3,12 +3,25 @@
 // ARENA.label na linha de contexto com a rodada.
 import { SIGLA } from "../data/times";
 import { ARENA } from "../data/arena";
+import { SERIES } from "../data/series";
+import { gerarCardResultado, compartilharCard } from "../share/cards";
 import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
 
-export default function Resultado({ resumo, setTela }) {
+export default function Resultado({ resumo, serie, setTela }) {
   const r = resumo;
   const meu = r.jogos[0];
   const gols = r.evMeu.filter((e) => e.tipo === "gol").sort((a, b) => a.min - b.min);
+
+  const compartilhar = () => {
+    const canvas = gerarCardResultado({
+      casa: meu.casa, fora: meu.fora, gc: meu.gc, gf: meu.gf,
+      siglaCasa: SIGLA[meu.casa], siglaFora: SIGLA[meu.fora],
+      craque: r.craque ? { nome: r.craque.nome, time: r.craque.time } : null,
+      rodada: r.rodada,
+      serieLabel: SERIES[serie].label,
+    });
+    compartilharCard(canvas, `legends-rodada-${r.rodada}`, "Resultado — Legends Manager");
+  };
 
   return (
     <div className="pt-6">
@@ -72,6 +85,9 @@ export default function Resultado({ resumo, setTela }) {
 
       <button onClick={() => setTela("tabela")} className="w-full rounded-xl py-3.5 font-bold mt-4" style={amber}>
         Ver tabela
+      </button>
+      <button onClick={compartilhar} className="w-full rounded-xl py-3 font-bold mt-2 text-sm" style={card}>
+        📤 Compartilhar resultado
       </button>
       <Rodape />
     </div>

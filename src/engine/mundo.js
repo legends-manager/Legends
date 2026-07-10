@@ -20,7 +20,39 @@ export function mundoInicial(meuTime) {
     carreira: [],
     historicoAcesso: [],
     hallCampeoes: [],
+    // Recordes históricos do mundo (dica 2): só das séries que o jogador
+    // disputa (as simuladas em segundo plano não geram eventos por jogador).
+    recordes: {},
   };
+}
+
+// Recorde de maior goleada: olha os jogos de uma rodada da série do jogador
+// (diferença de gols; empate de diferença → mais gols no total vence). Muta
+// mundo.recordes in-place; mundo antigo sem `recordes` ganha o campo aqui.
+export function atualizarRecordeGoleada(mundo, jogos, temporada, serie) {
+  mundo.recordes = mundo.recordes || {};
+  jogos.forEach((x) => {
+    const dif = Math.abs(x.gc - x.gf);
+    if (dif === 0) return;
+    const atual = mundo.recordes.maiorGoleada;
+    const atualDif = atual ? Math.abs(atual.gc - atual.gf) : -1;
+    const atualTotal = atual ? atual.gc + atual.gf : -1;
+    if (dif > atualDif || (dif === atualDif && x.gc + x.gf > atualTotal)) {
+      mundo.recordes.maiorGoleada = { casa: x.casa, fora: x.fora, gc: x.gc, gf: x.gf, temporada, serie };
+    }
+  });
+}
+
+// Recorde de artilheiro numa temporada: no fechamento, compara o artilheiro
+// da série do jogador com o recorde histórico.
+export function atualizarRecordeArtilheiro(mundo, art, temporada, serie) {
+  mundo.recordes = mundo.recordes || {};
+  const melhor = Object.values(art).sort((a, b) => b.g - a.g)[0];
+  if (!melhor) return;
+  const atual = mundo.recordes.artilheiroTemporada;
+  if (!atual || melhor.g > atual.gols) {
+    mundo.recordes.artilheiroTemporada = { nome: melhor.nome, time: melhor.time, gols: melhor.g, temporada, serie };
+  }
 }
 
 // Times que estão HOJE numa série, segundo o mundo — não a composição

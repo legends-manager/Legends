@@ -24,6 +24,36 @@ function Capa() {
   );
 }
 
+// Hint de instalação PWA (discreto). Android/Chrome: botão que dispara o
+// prompt nativo (via beforeinstallprompt capturado no App). iOS Safari não
+// tem prompt — mostra a instrução do menu Compartilhar. Se o app já roda
+// instalado (display-mode standalone), não mostra nada.
+function HintInstalar({ promptInstalar, instalarApp }) {
+  const instalado =
+    (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) ||
+    window.navigator.standalone === true;
+  if (instalado) return null;
+  if (promptInstalar) {
+    return (
+      <button onClick={instalarApp} className="w-full rounded-xl px-4 py-3 mt-4 text-left active:opacity-70" style={card}>
+        <div className="text-sm font-bold">📲 Instalar o Legends Manager</div>
+        <div className="text-xs mt-0.5" style={{ color: "#A78FC7" }}>
+          Ícone na tela inicial — abre direto, sem navegador.
+        </div>
+      </button>
+    );
+  }
+  const ios = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  if (ios) {
+    return (
+      <div className="rounded-xl px-4 py-3 mt-4 text-xs" style={{ ...card, color: "#A78FC7" }}>
+        📲 Pra instalar no iPhone: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.
+      </div>
+    );
+  }
+  return null;
+}
+
 function CampoTecnico({ nomeTec, setNomeTec, avatarId, setAvatarId }) {
   return (
     <div className="mt-5">
@@ -57,6 +87,7 @@ function CampoTecnico({ nomeTec, setNomeTec, avatarId, setAvatarId }) {
 // ---------------- Modo carreira (com mundo) ----------------
 function TelaCarreira({
   mundo, nomeTec, setNomeTec, avatarId, setAvatarId, saveData, continuarJogo, retomarCarreiraSemSave, novoJogo, setTela,
+  promptInstalar, instalarApp,
 }) {
   const [confirmaNovoJogo, setConfirmaNovoJogo] = useState(false);
   const minhaSerie = mundo.divisao[mundo.meuTime];
@@ -132,6 +163,8 @@ function TelaCarreira({
         Apaga a carreira inteira (todas as séries) e volta a escolher time.
       </p>
 
+      <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />
+
       <Rodape />
 
       {confirmaNovoJogo && (
@@ -163,7 +196,10 @@ function TelaCarreira({
 }
 
 // ---------------- Sem mundo: seletor de série + time (1ª vez / pós "Novo jogo") ----------------
-function TelaEscolha({ serie, setSerie, nomeTec, setNomeTec, avatarId, setAvatarId, iniciarTemporada, avisoSemSave }) {
+function TelaEscolha({
+  serie, setSerie, nomeTec, setNomeTec, avatarId, setAvatarId, iniciarTemporada, avisoSemSave,
+  promptInstalar, instalarApp,
+}) {
   const serieAtiva = SERIES[serie];
 
   return (
@@ -227,6 +263,8 @@ function TelaEscolha({ serie, setSerie, nomeTec, setNomeTec, avatarId, setAvatar
         Elencos reais (Copa10). Achou nome errado? Corrige em ✏️ na tela de escalação.
       </div>
 
+      <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />
+
       <Rodape />
     </div>
   );
@@ -234,7 +272,7 @@ function TelaEscolha({ serie, setSerie, nomeTec, setNomeTec, avatarId, setAvatar
 
 export default function TelaInicial({
   serie, setSerie, nomeTec, setNomeTec, avatarId, setAvatarId, iniciarTemporada, saveData, continuarJogo, avisoSemSave,
-  mundo, novoJogo, retomarCarreiraSemSave, setTela,
+  mundo, novoJogo, retomarCarreiraSemSave, setTela, promptInstalar, instalarApp,
 }) {
   if (mundo) {
     return (
@@ -249,6 +287,8 @@ export default function TelaInicial({
         retomarCarreiraSemSave={retomarCarreiraSemSave}
         novoJogo={novoJogo}
         setTela={setTela}
+        promptInstalar={promptInstalar}
+        instalarApp={instalarApp}
       />
     );
   }
@@ -262,6 +302,8 @@ export default function TelaInicial({
       setAvatarId={setAvatarId}
       iniciarTemporada={iniciarTemporada}
       avisoSemSave={avisoSemSave}
+      promptInstalar={promptInstalar}
+      instalarApp={instalarApp}
     />
   );
 }

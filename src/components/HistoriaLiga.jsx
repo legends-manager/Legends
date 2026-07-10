@@ -3,10 +3,12 @@
 // temporada, os campeões das três séries. É a memória que faz a liga viva
 // importar (igual a lista de campeões brasileiros por ano).
 import { SIGLA } from "../data/times";
+import { carregarMetricas } from "../storage/metricas";
 import { Eyebrow, Rodape, card } from "./ui";
 
 export default function HistoriaLiga({ mundo, setTela }) {
   const hall = [...mundo.hallCampeoes].reverse();
+  const metricas = carregarMetricas();
 
   return (
     <div className="pt-6">
@@ -37,6 +39,47 @@ export default function HistoriaLiga({ mundo, setTela }) {
             <span className="truncate pr-1">{SIGLA[h.C] || h.C}</span>
           </div>
         ))}
+      </div>
+
+      {/* Recordes históricos do mundo (dica 2) — das séries que o técnico
+          disputou (as simuladas em segundo plano não têm eventos por jogador). */}
+      {(mundo.recordes?.maiorGoleada || mundo.recordes?.artilheiroTemporada) && (
+        <div className="mt-4">
+          <Eyebrow>Recordes</Eyebrow>
+          <div className="mt-2 space-y-1.5">
+            {mundo.recordes.maiorGoleada && (
+              <div className="rounded-xl px-3 py-2.5" style={card}>
+                <div className="text-sm font-bold">
+                  💥 Maior goleada: {SIGLA[mundo.recordes.maiorGoleada.casa] || mundo.recordes.maiorGoleada.casa}{" "}
+                  {mundo.recordes.maiorGoleada.gc} x {mundo.recordes.maiorGoleada.gf}{" "}
+                  {SIGLA[mundo.recordes.maiorGoleada.fora] || mundo.recordes.maiorGoleada.fora}
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: "#A78FC7" }}>
+                  Temporada {mundo.recordes.maiorGoleada.temporada} · Série {mundo.recordes.maiorGoleada.serie}
+                </div>
+              </div>
+            )}
+            {mundo.recordes.artilheiroTemporada && (
+              <div className="rounded-xl px-3 py-2.5" style={card}>
+                <div className="text-sm font-bold">
+                  🥇 Artilheiro recorde: {mundo.recordes.artilheiroTemporada.nome} — {mundo.recordes.artilheiroTemporada.gols} gols
+                </div>
+                <div className="text-xs mt-0.5" style={{ color: "#A78FC7" }}>
+                  {mundo.recordes.artilheiroTemporada.time} · Temporada {mundo.recordes.artilheiroTemporada.temporada} · Série{" "}
+                  {mundo.recordes.artilheiroTemporada.serie}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Métricas locais deste aparelho (dica 7 — mídia kit pra patrocinador).
+          Nada sai do celular; o Felyp agrega manualmente. */}
+      <div className="rounded-xl px-3 py-2 mt-3 text-xs" style={{ ...card, color: "#6E5A92" }}>
+        📊 Neste aparelho: {metricas.partidasJogadas} partidas · {metricas.temporadasConcluidas} temporada
+        {metricas.temporadasConcluidas === 1 ? "" : "s"} · {metricas.printsCompartilhados} print
+        {metricas.printsCompartilhados === 1 ? "" : "s"} compartilhado{metricas.printsCompartilhados === 1 ? "" : "s"}
       </div>
 
       <button onClick={() => setTela("inicio")} className="w-full rounded-xl py-3 font-bold mt-4" style={card}>

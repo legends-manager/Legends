@@ -16,13 +16,18 @@ import {
 } from "./engine/mercado";
 import { atualizarTorcida, humorTorcida, gerarComentario } from "./engine/torcida";
 import { simularTemporadaRapida } from "./engine/simulacaoRapida";
-import { mundoInicial, timesDaSerie, calcularAcessoRebaixamento, fecharTemporada } from "./engine/mundo";
+import {
+  mundoInicial, timesDaSerie, calcularAcessoRebaixamento, fecharTemporada,
+  atualizarRecordeGoleada, atualizarRecordeArtilheiro,
+} from "./engine/mundo";
+import { desbloquear } from "./storage/conquistas";
 import { SIGLA } from "./data/times";
 import { SERIE_PADRAO, SERIES, ORDEM_SERIES } from "./data/series";
 import {
   carregarSave, reconstruirS, salvarJogo, localStorageDisponivel, limparSave,
   carregarMundo, salvarMundo, migrarParaMundoSeNecessario, limparMundo,
 } from "./storage/saveGame";
+import { incrementarMetrica } from "./storage/metricas";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -60,6 +65,7 @@ export default function App() {
   const [saveData, setSaveData] = useState(null); // save encontrado na abertura
   const [avisoSemSave, setAvisoSemSave] = useState(false); // localStorage indisponível
   const [mundo, setMundo] = useState(null); // Liga Viva (Marco 3.5) — null = sem carreira ainda
+  const [promptInstalar, setPromptInstalar] = useState(null); // evento beforeinstallprompt (PWA)
   const [fimDeTemporadaResumo, setFimDeTemporadaResumo] = useState(null);
   const anunciados = useRef(0);
   const audioCtx = useRef(null);
@@ -74,6 +80,9 @@ export default function App() {
   // curto no ataque (a bola estufando a rede). Sem arquivo de áudio, tudo
   // Web Audio — continua funcionando offline e respeitando o botão de mudo.
   const beep = () => {
+    // Vibração tátil no gol (independente do mudo — mudo silencia som, não
+    // tato). Padrão curto "gol-gol": ignorado por navegadores sem suporte.
+    try { if (navigator.vibrate) navigator.vibrate([70, 40, 110]); } catch (e) { /* sem vibração */ }
     if (mudo) return;
     try {
       if (!audioCtx.current) audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
@@ -129,6 +138,23 @@ export default function App() {
     }
   }, []);
 
+  // ---------- instalação PWA (hint na capa) ----------
+  // Chrome/Android dispara beforeinstallprompt quando o app é instalável e
+  // ainda não foi instalado; guardamos o evento pra disparar o prompt no
+  // clique do botão da capa. Quem abre o link do WhatsApp fica no navegador —
+  // o ícone na tela inicial é o principal canal de retorno.
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setPromptInstalar(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+  const instalarApp = async () => {
+    if (!promptInstalar) return;
+    promptInstalar.prompt();
+    await promptInstalar.userChoice;
+    setPromptInstalar(null); // aceito ou não, o evento só serve uma vez
+  };
+
   // ---------- carregar save da série ativa ----------
   useEffect(() => {
     if (!localStorageDisponivel()) return;
@@ -171,8 +197,15 @@ export default function App() {
       tabelasPorSerie[s] = simularTemporadaRapida(times, SERIES[s].serieBonus);
     });
     const resultado = calcularAcessoRebaixamento(tabelasPorSerie);
+    // Recorde de artilheiro usa a temporada ainda corrente (fecharTemporada
+    // incrementa o contador logo abaixo).
+    atualizarRecordeArtilheiro(mundo, S.art, mundo.temporada, minhaSerie);
     const { serieDestino, resultado: meuResultado, minhaPosicao } =
       fecharTemporada(mundo, resultado, meuTime, minhaSerie);
+    // Conquistas de fim de temporada (a carreira já inclui a temporada fechada).
+    if (minhaPosicao === 1) desbloquear("campeao");
+    if (meuResultado === "subiu") desbloquear("acesso");
+    if (mundo.carreira.filter((c) => c.posicao === 1).length >= 3) desbloquear("tri");
     salvarMundo(mundo);
     // A temporada foi processada: o save dela vira lixo perigoso — se ficasse,
     // reabrir o app oferecia "Continuar" nela e o Fim de Temporada podia rodar
@@ -180,6 +213,7 @@ export default function App() {
     // cai em "Começar temporada" (retomarCarreiraSemSave), que é o correto.
     limparSave(minhaSerie);
     setSaveData(null);
+    incrementarMetrica("temporadasConcluidas"); // mídia kit (métrica local)
     setMundo({ ...mundo });
     setFimDeTemporadaResumo({ resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie });
     setTela("fimDeTemporada");
@@ -446,6 +480,23 @@ export default function App() {
       S.mercado.janelaUsadaMeio = true;
       iaNegocia(S, meuTime); // §5: as 11 IAs agem antes do jogador ver a janela
     }
+    incrementarMetrica("partidasJogadas"); // mídia kit (métrica local)
+
+    // Recordes do mundo + conquistas (dica 2) — apresentação pura, nada volta
+    // pro motor. Goleada recorde olha TODOS os jogos da rodada da série.
+    if (mundo) {
+      atualizarRecordeGoleada(mundo, jogos, mundo.temporada, S.serie);
+      salvarMundo(mundo);
+    }
+    const meuJogo = jogos[0];
+    const souCasaMeu = meuJogo.casa === meuTime;
+    const meusGols = souCasaMeu ? meuJogo.gc : meuJogo.gf;
+    const golsAdv = souCasaMeu ? meuJogo.gf : meuJogo.gc;
+    if (meusGols > golsAdv) {
+      desbloquear("primeira-vitoria");
+      if (meusGols - golsAdv >= 5) desbloquear("goleada");
+    }
+    if (S.serie === "A") desbloquear("serie-a");
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
     setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario });
@@ -499,6 +550,8 @@ export default function App() {
             setNomeTec={setNomeTec}
             avatarId={avatarId}
             setAvatarId={setAvatarId}
+            promptInstalar={promptInstalar}
+            instalarApp={instalarApp}
             iniciarTemporada={iniciarTemporada}
             saveData={saveData}
             continuarJogo={continuarJogo}
@@ -547,7 +600,7 @@ export default function App() {
             iniciarSegundoTempo={iniciarSegundoTempo}
           />
         )}
-        {tela === "resultado" && S && resumo && <Resultado resumo={resumo} setTela={setTela} />}
+        {tela === "resultado" && S && resumo && <Resultado resumo={resumo} serie={S.serie} setTela={setTela} />}
         {tela === "mercado" && S && (
           <Mercado
             S={S}
@@ -576,6 +629,7 @@ export default function App() {
             meuTime={meuTime}
             nomeTec={nomeTec}
             avatarId={avatarId}
+            temporada={mundo ? mundo.temporada - 1 : 1}
             proximaTemporadaCarreira={proximaTemporadaCarreira}
           />
         )}

@@ -4,6 +4,7 @@
 // mostrava só a própria série e voltava pro mesmo time — a Liga Viva reverte
 // isso: agora o técnico acompanha o time pra onde ele for).
 import { SERIES } from "../data/series";
+import { gerarCardTemporada, compartilharCard } from "../share/cards";
 import { Eyebrow, Rodape, AvatarTecnico, PlacaPatrocinio, card, amber } from "./ui";
 
 const RESULTADO_LABEL = { subiu: "🔼 Subiu", desceu: "🔽 Desceu", manteve: "➡️ Permaneceu" };
@@ -35,8 +36,19 @@ function BlocoSerie({ serieId, dados, meuTime }) {
   );
 }
 
-export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, proximaTemporadaCarreira }) {
+export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, temporada, proximaTemporadaCarreira }) {
   const { resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie } = resumo;
+
+  const compartilhar = () => {
+    const canvas = gerarCardTemporada({
+      meuTime, nomeTec, temporada,
+      serieLabel: SERIES[minhaSerie].label,
+      posicao: minhaPosicao,
+      resultadoLabel: RESULTADO_LABEL[meuResultado],
+      serieDestinoLabel: SERIES[serieDestino].label,
+    });
+    compartilharCard(canvas, `legends-temporada-${temporada}`, "Fim de temporada — Legends Manager");
+  };
 
   return (
     <div className="pt-8">
@@ -77,6 +89,9 @@ export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, pro
 
       <button onClick={proximaTemporadaCarreira} className="w-full rounded-xl py-3.5 font-bold mt-4" style={amber}>
         Próxima temporada →
+      </button>
+      <button onClick={compartilhar} className="w-full rounded-xl py-3 font-bold mt-2 text-sm" style={card}>
+        📤 Compartilhar pôster no grupo
       </button>
       <Rodape />
     </div>
