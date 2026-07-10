@@ -68,18 +68,47 @@ export default function App() {
 
   const S = Sref.current;
 
+  // Som de gol: "explosão de torcida" sintetizada (pedido do Felyp — algo
+  // como um grito rápido de gol, não um bip). Rajada de ruído branco com
+  // filtro passa-banda subindo (o "UUURRA" da arquibancada) + um sopro grave
+  // curto no ataque (a bola estufando a rede). Sem arquivo de áudio, tudo
+  // Web Audio — continua funcionando offline e respeitando o botão de mudo.
   const beep = () => {
     if (mudo) return;
     try {
       if (!audioCtx.current) audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-      const ctx = audioCtx.current, o = ctx.createOscillator(), g = ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.type = "square";
-      o.frequency.setValueAtTime(880, ctx.currentTime);
-      o.frequency.setValueAtTime(660, ctx.currentTime + 0.09);
-      g.gain.setValueAtTime(0.06, ctx.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
-      o.start(); o.stop(ctx.currentTime + 0.26);
+      const ctx = audioCtx.current, t = ctx.currentTime;
+
+      // Torcida: ruído branco ~0,9s, filtro subindo 350→1400Hz, ataque rápido
+      // e cauda longa (grito que explode e vai morrendo).
+      const dur = 0.9;
+      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.Q.value = 0.8;
+      bp.frequency.setValueAtTime(350, t);
+      bp.frequency.exponentialRampToValueAtTime(1400, t + 0.15);
+      bp.frequency.exponentialRampToValueAtTime(500, t + dur);
+      const gN = ctx.createGain();
+      gN.gain.setValueAtTime(0.0001, t);
+      gN.gain.exponentialRampToValueAtTime(0.22, t + 0.06); // explosão
+      gN.gain.exponentialRampToValueAtTime(0.001, t + dur); // morrendo
+      noise.connect(bp); bp.connect(gN); gN.connect(ctx.destination);
+      noise.start(t); noise.stop(t + dur);
+
+      // Rede: sopro grave curtíssimo no primeiro instante (bola batendo na rede).
+      const o = ctx.createOscillator(), gO = ctx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(160, t);
+      o.frequency.exponentialRampToValueAtTime(60, t + 0.12);
+      gO.gain.setValueAtTime(0.15, t);
+      gO.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      o.connect(gO); gO.connect(ctx.destination);
+      o.start(t); o.stop(t + 0.15);
     } catch (e) { /* sem áudio, sem drama */ }
   };
 
@@ -428,7 +457,9 @@ export default function App() {
   // ---------- relógio da partida ----------
   useEffect(() => {
     if (tela !== "aoVivo" || !rodando) return;
-    const id = setInterval(() => setMinuto((m) => m + 1), 170);
+    // ~250ms por minuto de jogo (pedido do Felyp: "um pouco mais lento" que
+    // os 170ms anteriores) → cada tempo de 25min dura ~6s.
+    const id = setInterval(() => setMinuto((m) => m + 1), 250);
     return () => clearInterval(id);
   }, [tela, rodando]);
 

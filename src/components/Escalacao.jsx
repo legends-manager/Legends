@@ -7,6 +7,59 @@ import { Eyebrow, Rodape, Avatar, AvatarTecnico, Barra, card, amber } from "./ui
 
 const corSetinha = (s) => (s === "▲" ? "#7FE0A8" : s === "▼" ? "#FF5A5A" : "#A78FC7");
 
+const primeiroNome = (nome) => nome.trim().split(/\s+/)[0];
+
+// Campinho: mostra a escalação selecionada em campo (GOL embaixo, DEF/MEI/ATA
+// subindo) pra facilitar a visualização enquanto monta o time. Só leitura —
+// a seleção continua sendo feita na lista abaixo.
+function Campinho({ escalados }) {
+  const linhas = [
+    { pos: "ATA", top: "14%" },
+    { pos: "MEI", top: "40%" },
+    { pos: "DEF", top: "66%" },
+    { pos: "GOL", top: "87%" },
+  ];
+  return (
+    <div
+      className="relative rounded-2xl overflow-hidden mt-3"
+      style={{
+        height: 300,
+        background: "linear-gradient(#1E7A3C, #16612E)",
+        border: "1px solid rgba(139,105,190,0.35)",
+      }}
+    >
+      {/* faixas de grama + linhas do campo */}
+      <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 37px, rgba(255,255,255,0.05) 37px, rgba(255,255,255,0.05) 75px)" }} />
+      <div className="absolute inset-x-0" style={{ top: "50%", height: 2, background: "rgba(255,255,255,0.35)" }} />
+      <div className="absolute rounded-full" style={{ top: "50%", left: "50%", width: 76, height: 76, transform: "translate(-50%,-50%)", border: "2px solid rgba(255,255,255,0.35)" }} />
+      <div className="absolute" style={{ bottom: 0, left: "50%", transform: "translateX(-50%)", width: 150, height: 44, border: "2px solid rgba(255,255,255,0.35)", borderBottom: "none" }} />
+      <div className="absolute" style={{ top: 0, left: "50%", transform: "translateX(-50%)", width: 150, height: 44, border: "2px solid rgba(255,255,255,0.35)", borderTop: "none" }} />
+
+      {linhas.map(({ pos, top }) => {
+        const fila = escalados.filter((j) => j.pos === pos);
+        if (fila.length === 0) return null;
+        return (
+          <div key={pos} className="absolute inset-x-0 flex justify-evenly px-2" style={{ top, transform: "translateY(-50%)" }}>
+            {fila.map((j) => (
+              <div key={j.id} className="flex flex-col items-center" style={{ maxWidth: 76 }}>
+                <span
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shadow"
+                  style={{ background: pos === "GOL" ? "#FFC53D" : "#F2EDFA", color: "#1A1607" }}
+                >
+                  {j.attr}
+                </span>
+                <span className="text-[10px] font-semibold mt-0.5 text-center leading-tight truncate w-full" style={{ color: "#FFFFFF", textShadow: "0 1px 2px rgba(0,0,0,0.7)" }}>
+                  {primeiroNome(j.nome)}
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)" }}>
@@ -95,6 +148,8 @@ export default function Escalacao({
         <span>Escalados: <b className="tabular-nums">{nGol}</b> GOL + <b className="tabular-nums">{nLinha}</b>/6 linha</span>
         <span style={{ color: escValida() ? "#7FE0A8" : "#FFC53D" }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
       </div>
+
+      <Campinho escalados={escSelecionada()} />
 
       {grupos.map((gp) => (
         <div key={gp} className="mt-4">
