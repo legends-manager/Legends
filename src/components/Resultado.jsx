@@ -50,6 +50,13 @@ export default function Resultado({ resumo, setTela }) {
         </div>
       )}
 
+      {r.comentarioTorcida && (
+        <div className="rounded-xl px-4 py-3 mt-2 text-sm" style={card}>
+          <Eyebrow>Torcida comenta</Eyebrow>
+          <div className="mt-1" style={{ color: "#D9CCEE" }}>💬 {r.comentarioTorcida.texto}</div>
+        </div>
+      )}
+
       <div className="mt-3">
         <Eyebrow>Resultados da rodada</Eyebrow>
         <div className="mt-1 space-y-1">

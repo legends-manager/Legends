@@ -1,6 +1,9 @@
 // src/engine/calendario.js
-// 22 rodadas: turno pelo método do círculo (round-robin) + returno espelhado.
-// Idêntico à demo.
+// Turno pelo método do círculo (round-robin) + returno espelhado.
+// GENÉRICO (Marco 3, spec-multi-serie.md §2): N times → 2·(N−1) rodadas.
+// Série C (12 times) → 22 rodadas · Série B (10 times) → 18 rodadas.
+// O total de rodadas de uma temporada é SEMPRE calendario.length — nada de
+// fixar 22 fora daqui.
 export function gerarCalendario(ts) {
   let l = [...ts];
   const ida = [];
@@ -16,3 +19,6 @@ export function gerarCalendario(ts) {
   }
   return [...ida, ...ida.map((rod) => rod.map((x) => ({ casa: x.fora, fora: x.casa })))];
 }
+
+// Nº de rodadas para N times (ida e volta). Útil pra UI/save sem gerar o calendário.
+export const totalRodadas = (nTimes) => 2 * (nTimes - 1);

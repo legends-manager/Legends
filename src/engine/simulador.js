@@ -3,8 +3,9 @@
 // Toda a lógica é idêntica à da demo — apenas separada em módulos.
 import { gerarElencos } from "./atributos";
 import { gerarCalendario } from "./calendario";
-import { ELENCOS_REAIS, TIMES_SERIE_C } from "../data/elencos-reais";
+import { SERIES, SERIE_PADRAO, ELENCOS_GLOBAIS } from "../data/series";
 import { ORCAMENTO_INICIAL, mercadoInicial } from "./mercado";
+import { torcidaInicial } from "./torcida";
 
 // ---------------- utilidades ----------------
 export const ri = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
@@ -34,16 +35,40 @@ export function pesoEscolha(lista, pesos) {
 }
 
 // ---------------- temporada ----------------
-// Força dos times = bolo fixo sorteado (build-spec §5), 100% interno.
+// Bolo fixo de multiplicadores internos (build-spec §5): perfil 2×forte,
+// 3×médio-forte, 4×médio, 3×fraco em 12 times. Para séries com outro nº de
+// times, distribui proporcionalmente (maior resto) — ex.: 10 times → 2/3/3/2 ⚙️.
+const BOLO_REFERENCIA = [[1.22, 2], [1.08, 3], [0.95, 4], [0.82, 3]]; // p/ 12 times
+export function gerarBolo(n) {
+  const exatos = BOLO_REFERENCIA.map(([m, q]) => ({ m, exato: (q * n) / 12 }));
+  const qtd = exatos.map((e) => Math.floor(e.exato));
+  let falta = n - qtd.reduce((s, q) => s + q, 0);
+  const porResto = exatos
+    .map((e, i) => ({ i, resto: e.exato - qtd[i] }))
+    .sort((a, b) => b.resto - a.resto);
+  for (let k = 0; k < falta; k++) qtd[porResto[k].i]++;
+  return exatos.flatMap((e, i) => Array(qtd[i]).fill(e.m));
+}
+
+// Força dos times = bolo sorteado, 100% interno.
+// serieId (Marco 3): qual série a temporada roda; `times` (Liga Viva, Marco
+// 3.5) é a lista de quem está NESSA série NESTA temporada — pode diferir de
+// SERIES[serieId].times depois de acessos/rebaixamentos (mundo.divisao é a
+// fonte da verdade; ver engine/mundo.js). Sem Liga Viva ativa, passe
+// undefined e cai no padrão (times de origem da série). Os elencos vêm
+// SEMPRE de ELENCOS_GLOBAIS (busca por nome, independente da série atual —
+// spec-liga-viva.md §2), nunca de SERIES[serieId].elencos diretamente.
 // orcamentoAnterior (Marco 2, spec-mercado.md §0): em "Nova temporada" os
 // elencos voltam ao real e os valores ao piso (gerarElencos), mas o orçamento
-// por time é MANTIDO — passe o `S.orcamento` da temporada anterior aqui.
-export function novaTemporada(orcamentoAnterior = null) {
-  const elencos = gerarElencos(TIMES_SERIE_C, ELENCOS_REAIS);
-  const pool = [1.22, 1.22, 1.08, 1.08, 1.08, 0.95, 0.95, 0.95, 0.95, 0.82, 0.82, 0.82]
-    .sort(() => Math.random() - 0.5);
+// por time é MANTIDO — passe o `S.orcamento` da temporada anterior DA MESMA
+// série aqui (orçamento de uma série nunca vaza pra outra).
+export function novaTemporada(serieId = SERIE_PADRAO, times = null, orcamentoAnterior = null) {
+  const { serieBonus } = SERIES[serieId];
+  const timesDaTemporada = times || SERIES[serieId].times;
+  const elencos = gerarElencos(timesDaTemporada, ELENCOS_GLOBAIS, serieBonus);
+  const pool = gerarBolo(timesDaTemporada.length).sort(() => Math.random() - 0.5);
   const mult = {}, fase = {}, tabela = {}, orcamento = {};
-  TIMES_SERIE_C.forEach((t, i) => {
+  timesDaTemporada.forEach((t, i) => {
     mult[t] = pool[i];
     fase[t] = 1;
     tabela[t] = { P: 0, J: 0, V: 0, E: 0, D: 0, GP: 0, GC: 0 };
@@ -52,9 +77,14 @@ export function novaTemporada(orcamentoAnterior = null) {
   // Marco 2 (spec-mercado.md §4): a janela de mercado abre na pré-temporada,
   // antes da 1ª escalação — por isso a temporada já nasce com janela "pre".
   const mercado = { ...mercadoInicial(), janela: "pre" };
+  // Torcida (spec-marco2-polish.md §3): recomeça em 500 a cada temporada,
+  // como fase — não é persistida entre temporadas como o orçamento.
+  const torcida = torcidaInicial(timesDaTemporada);
+  const formaRecente = {};
   return {
-    elencos, mult, fase, tabela, art: {},
-    calendario: gerarCalendario(TIMES_SERIE_C), rodada: 0, orcamento, mercado,
+    serie: serieId, elencos, mult, fase, tabela, art: {},
+    calendario: gerarCalendario(timesDaTemporada), rodada: 0, orcamento, mercado,
+    torcida, formaRecente, comentariosTorcida: [],
   };
 }
 

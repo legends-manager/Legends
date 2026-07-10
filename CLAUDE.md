@@ -35,8 +35,14 @@ Jogo de gestão de futebol estilo Brasfoot, mobile-first, ambientado na **Série
 ## Marco 2 — Mercado de Transferências (ativo)
 Promovido do backlog para escopo ativo por decisão explícita do Felyp (jul/2026). Contrato completo em `spec-mercado.md`.
 
+## Marco 3 — Séries A/B/C (ativo)
+Seletor de série na capa; Série B (10 times reais, súmulas) e Série A (10 times da Kings League Brasil, risco de IP assumido pelo Felyp) somam-se à Série C. Mesmo motor, `serieBonus` desloca o nível médio por série (C=0/B=+6/A=+12, teto 90→92). Save por série (`legends-manager:save-v2:<serie>`). Contrato: `spec-multi-serie.md`.
+
+## Marco 3.5 — Liga Viva (ativo, REVERTE a decisão travada 11 do v3)
+Conecta as três séries num único mundo com promoção/rebaixamento (2 sobem/2 descem por fronteira), estilo Brasileirão/Brasfoot. Modo carreira: o técnico acompanha o time que sobe/desce — não se reescolhe time a cada temporada. **A divisão de cada time agora PERSISTE entre temporadas** (antes, tudo "voltava à série de origem"); elencos continuam reais e imutáveis. A antiga tela de campeão/"nova temporada com o mesmo time" foi substituída pela tela de Fim de Temporada (pódio + sobe/desce/permanece das três séries + hall de campeões). Kings entra na roda de acesso normalmente; Mundial de Clubes fica guardado pra depois. Contrato: `spec-liga-viva.md`.
+
 ## Cerca do backlog (NÃO construir agora)
-Multiplayer/link-convite, ranking online de técnicos, edição de elenco in-game, escudos reais, Séries A/B, finanças, carreira multi-temporada, cartões/lesões, mata-mata, olheiro/crônicas por IA, cards com rosto, monetização. Se parecer boa ideia no meio do caminho: **parar e perguntar, não construir.**
+Multiplayer/link-convite, ranking online de técnicos, edição de elenco in-game, escudos reais, finanças, cartões/lesões, mata-mata, olheiro/crônicas por IA, cards com rosto, monetização. Se parecer boa ideia no meio do caminho: **parar e perguntar, não construir.**
 
 ## Stack
 React + Vite. Sem backend. Deploy Vercel. PWA básica (manifest + ícones; sem service worker offline no Marco 1).

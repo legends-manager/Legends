@@ -12,11 +12,21 @@ import {
 import {
   creditarOrcamentos, valorizarJogadores, unionPorId,
   listarJogador, retirarListagem, comprarJogador, aceitarOferta, recusarOferta, fecharJanela, iaNegocia,
+  posicaoDoTime,
 } from "./engine/mercado";
+import { atualizarTorcida, humorTorcida, gerarComentario } from "./engine/torcida";
+import { simularTemporadaRapida } from "./engine/simulacaoRapida";
+import { mundoInicial, timesDaSerie, calcularAcessoRebaixamento, fecharTemporada } from "./engine/mundo";
 import { SIGLA } from "./data/times";
-import { carregarSave, reconstruirS, salvarJogo, localStorageDisponivel } from "./storage/saveGame";
+import { SERIE_PADRAO, SERIES, ORDEM_SERIES } from "./data/series";
+import {
+  carregarSave, reconstruirS, salvarJogo, localStorageDisponivel,
+  carregarMundo, salvarMundo, migrarParaMundoSeNecessario, limparMundo,
+} from "./storage/saveGame";
 
 import TelaInicial from "./components/TelaInicial";
+import HistoriaCarreira from "./components/HistoriaCarreira";
+import HistoriaLiga from "./components/HistoriaLiga";
 import Mercado from "./components/Mercado";
 import Escalacao from "./components/Escalacao";
 import PartidaAoVivo from "./components/PartidaAoVivo";
@@ -24,7 +34,7 @@ import Intervalo from "./components/Intervalo";
 import Resultado from "./components/Resultado";
 import Tabela from "./components/Tabela";
 import Artilharia from "./components/Artilharia";
-import TelaCampeao from "./components/TelaCampeao";
+import FimDeTemporada from "./components/FimDeTemporada";
 
 export default function App() {
   const Sref = useRef(null);
@@ -32,6 +42,7 @@ export default function App() {
   const rerender = () => force((x) => x + 1);
 
   const [tela, setTela] = useState("inicio");
+  const [serie, setSerie] = useState(SERIE_PADRAO); // série selecionada na capa (Marco 3)
   const [nomeTec, setNomeTec] = useState("");
   const [meuTime, setMeuTime] = useState(null);
   const [escolhidos, setEscolhidos] = useState([]); // escalação do jogador (7)
@@ -45,9 +56,10 @@ export default function App() {
   const [selIn, setSelIn] = useState(null);
   const [modalNomes, setModalNomes] = useState(false);
   const [textoNomes, setTextoNomes] = useState("");
-  const [confirmaNova, setConfirmaNova] = useState(false);
   const [saveData, setSaveData] = useState(null); // save encontrado na abertura
   const [avisoSemSave, setAvisoSemSave] = useState(false); // localStorage indisponível
+  const [mundo, setMundo] = useState(null); // Liga Viva (Marco 3.5) — null = sem carreira ainda
+  const [fimDeTemporadaResumo, setFimDeTemporadaResumo] = useState(null);
   const anunciados = useRef(0);
   const audioCtx = useRef(null);
   const jogoRef = useRef(null);
@@ -70,20 +82,41 @@ export default function App() {
     } catch (e) { /* sem áudio, sem drama */ }
   };
 
-  // ---------- abertura: carregar save / detectar storage ----------
+  // ---------- abertura: mundo (Liga Viva) tem prioridade sobre o seletor ----------
+  // Se existe mundo (ou um save antigo migra pra um), a série deixa de ser
+  // escolha do jogador — vira mundo.divisao[mundo.meuTime] (spec-liga-viva.md
+  // §6: "em modo carreira, mostra o time/série atual... em vez de reescolher").
   useEffect(() => {
     if (!localStorageDisponivel()) {
       setAvisoSemSave(true); // avisa uma vez; app funciona sem save
       return;
     }
-    const s = carregarSave();
-    if (s) setSaveData(s);
+    const m = migrarParaMundoSeNecessario() || carregarMundo();
+    if (m) {
+      setMundo(m);
+      setSerie(m.divisao[m.meuTime]);
+      setMeuTime(m.meuTime);
+    }
   }, []);
 
+  // ---------- carregar save da série ativa ----------
+  useEffect(() => {
+    if (!localStorageDisponivel()) return;
+    // Recarrega sempre que a série muda (cada série tem seu save).
+    setSaveData(carregarSave(serie) || null);
+  }, [serie]);
+
   // ---------- fluxo de temporada ----------
+  // Só é chamada a partir do seletor da capa — ou seja, só quando NÃO existe
+  // mundo ainda (1ª partida de sempre, ou depois de "Novo jogo"). Cria a
+  // carreira (Liga Viva, spec-liga-viva.md §2) nascendo na série escolhida.
   const iniciarTemporada = (time) => {
-    // Marco 2 (spec-mercado.md §0): orçamento é mantido entre temporadas.
-    const nova = novaTemporada(Sref.current ? Sref.current.orcamento : null);
+    const novoMundo = mundoInicial(time);
+    setMundo(novoMundo);
+    salvarMundo(novoMundo);
+
+    const times = timesDaSerie(novoMundo, serie);
+    const nova = novaTemporada(serie, times, null); // carreira nova: orçamento sempre do zero
     Sref.current = nova;
     setMeuTime(time);
     prepararEscalacao(time, nova);
@@ -96,15 +129,83 @@ export default function App() {
     setTela("mercado");
   };
 
+  // ---------- Liga Viva (Marco 3.5, spec-liga-viva.md §3) ----------
+  // Fim da temporada do jogador: simula as OUTRAS duas séries em segundo
+  // plano (§5), calcula quem sobe/desce/permanece nas três, atualiza o mundo
+  // (divisão, hall de campeões, carreira) e mostra a tela de Fim de Temporada.
+  const finalizarTemporadaCarreira = () => {
+    const minhaSerie = S.serie;
+    const tabelasPorSerie = { [minhaSerie]: S.tabela };
+    ORDEM_SERIES.filter((s) => s !== minhaSerie).forEach((s) => {
+      const times = timesDaSerie(mundo, s);
+      tabelasPorSerie[s] = simularTemporadaRapida(times, SERIES[s].serieBonus);
+    });
+    const resultado = calcularAcessoRebaixamento(tabelasPorSerie);
+    const { serieDestino, resultado: meuResultado, minhaPosicao } =
+      fecharTemporada(mundo, resultado, meuTime, minhaSerie);
+    salvarMundo(mundo);
+    setMundo({ ...mundo });
+    setFimDeTemporadaResumo({ resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie });
+    setTela("fimDeTemporada");
+  };
+
+  // Botão "Próxima temporada" da tela de Fim de Temporada: gera a nova
+  // temporada automaticamente na série de destino (sem re-escolher time —
+  // "o técnico acompanha o time", §0), com o elenco ATUAL daquela série.
+  const proximaTemporadaCarreira = () => {
+    const { serieDestino } = fimDeTemporadaResumo;
+    const orcamentoAnterior = { [meuTime]: S.orcamento[meuTime] };
+    const times = timesDaSerie(mundo, serieDestino);
+    const nova = novaTemporada(serieDestino, times, orcamentoAnterior);
+    Sref.current = nova;
+    setSerie(serieDestino);
+    prepararEscalacao(meuTime, nova);
+    iaNegocia(nova, meuTime);
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, S: nova });
+    setFimDeTemporadaResumo(null);
+    setTela("mercado");
+  };
+
+  // Caso de borda: o app foi fechado entre "Fim de Temporada" (mundo já
+  // atualizado e salvo) e o clique em "Próxima temporada" — fimDeTemporadaResumo
+  // é só estado React, não sobrevive a um reload. Retoma a carreira direto do
+  // mundo persistido (sem o resumo daquela transição; orçamento reinicia).
+  const retomarCarreiraSemSave = () => {
+    const minhaSerieAgora = mundo.divisao[mundo.meuTime];
+    const times = timesDaSerie(mundo, minhaSerieAgora);
+    const nova = novaTemporada(minhaSerieAgora, times, null);
+    Sref.current = nova;
+    setSerie(minhaSerieAgora);
+    setMeuTime(mundo.meuTime);
+    prepararEscalacao(mundo.meuTime, nova);
+    iaNegocia(nova, mundo.meuTime);
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: mundo.meuTime, S: nova });
+    setTela("mercado");
+  };
+
+  // "Novo jogo": reinicia o mundo inteiro (spec-liga-viva.md §6) — volta pro
+  // seletor de série/time da capa.
+  const novoJogo = () => {
+    limparMundo();
+    Sref.current = null;
+    setMundo(null);
+    setMeuTime(null);
+    setSerie(SERIE_PADRAO);
+    setSaveData(null);
+    setFimDeTemporadaResumo(null);
+    setTela("inicio");
+  };
+
   const continuarJogo = () => {
     if (!saveData) return;
     const s = reconstruirS(saveData);
     Sref.current = s;
+    setSerie(s.serie); // mantém o seletor alinhado à temporada retomada
     setNomeTec(saveData.nomeTecnico || "");
     setMeuTime(saveData.timeEscolhido);
     if (s.mercado.janela !== "fechada") {
       setTela("mercado"); // fechou o app com a janela aberta: retoma nela
-    } else if (s.rodada >= 22) {
+    } else if (s.rodada >= s.calendario.length) {
       setTela("tabela"); // temporada encerrada: cai na classificação final
     } else {
       prepararEscalacao(saveData.timeEscolhido, s);
@@ -283,17 +384,28 @@ export default function App() {
     const craque = craques[0];
 
     S.rodada++;
+
+    // Torcida (spec-marco2-polish.md §3): atualiza pra todos os times da
+    // rodada (camada de apresentação, nunca entra em fórmula do motor). O
+    // comentário (1 por rodada) é só do time do humano.
+    atualizarTorcida(S.torcida, S.formaRecente, jogos);
+    const humor = humorTorcida(S.formaRecente[meuTime], posicaoDoTime(S, meuTime), Object.keys(S.tabela).length);
+    const comentario = { rodada: S.rodada, humor, texto: gerarComentario(humor) };
+    S.comentariosTorcida.push(comentario);
+
     // Marco 2 (spec-mercado.md §4): janela do meio abre exatamente uma vez,
-    // após a rodada 11 — inclusive quando ela é jogada via rodada rápida
+    // após a rodada do meio — inclusive quando ela é jogada via rodada rápida
     // (ambos os fluxos passam por finalizarRodada, não tem caminho alternativo).
-    if (S.rodada === 11 && !S.mercado.janelaUsadaMeio) {
+    // Genérico (Marco 3): metade = calendario.length/2 → 11 na Série C (22
+    // rodadas), 9 na Série B (18).
+    if (S.rodada === S.calendario.length / 2 && !S.mercado.janelaUsadaMeio) {
       S.mercado.janela = "meio";
       S.mercado.janelaUsadaMeio = true;
       iaNegocia(S, meuTime); // §5: as 11 IAs agem antes do jogador ver a janela
     }
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, S });
-    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora });
+    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario });
     setJogo(null);
     setTela("resultado");
     rerender();
@@ -336,14 +448,22 @@ export default function App() {
       <div className="max-w-md mx-auto px-4">
         {tela === "inicio" && (
           <TelaInicial
+            serie={serie}
+            setSerie={setSerie}
             nomeTec={nomeTec}
             setNomeTec={setNomeTec}
             iniciarTemporada={iniciarTemporada}
             saveData={saveData}
             continuarJogo={continuarJogo}
             avisoSemSave={avisoSemSave}
+            mundo={mundo}
+            novoJogo={novoJogo}
+            retomarCarreiraSemSave={retomarCarreiraSemSave}
+            setTela={setTela}
           />
         )}
+        {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
+        {tela === "historiaLiga" && mundo && <HistoriaLiga mundo={mundo} setTela={setTela} />}
         {tela === "escalacao" && S && (
           <Escalacao
             S={S}
@@ -392,17 +512,21 @@ export default function App() {
           />
         )}
         {tela === "tabela" && S && (
-          <Tabela S={S} meuTime={meuTime} setTela={setTela} irProximaRodada={irProximaRodada} />
-        )}
-        {tela === "artilharia" && S && <Artilharia S={S} setTela={setTela} />}
-        {tela === "campeao" && S && (
-          <TelaCampeao
+          <Tabela
             S={S}
             meuTime={meuTime}
+            setTela={setTela}
+            irProximaRodada={irProximaRodada}
+            finalizarTemporadaCarreira={finalizarTemporadaCarreira}
+          />
+        )}
+        {tela === "artilharia" && S && <Artilharia S={S} setTela={setTela} />}
+        {tela === "fimDeTemporada" && fimDeTemporadaResumo && (
+          <FimDeTemporada
+            resumo={fimDeTemporadaResumo}
+            meuTime={meuTime}
             nomeTec={nomeTec}
-            confirmaNova={confirmaNova}
-            setConfirmaNova={setConfirmaNova}
-            iniciarTemporada={iniciarTemporada}
+            proximaTemporadaCarreira={proximaTemporadaCarreira}
           />
         )}
       </div>

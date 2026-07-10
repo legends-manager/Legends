@@ -1,21 +1,21 @@
 // src/components/Tabela.jsx
 // Classificação (P J V E D GP GC SG %) + setas de fase (▲▼). Força não aparece.
-import { TIMES, SIGLA } from "../data/times";
+import { SIGLA } from "../data/times";
+import { SERIES } from "../data/series";
+import { classificar } from "../engine/classificacao";
 import { Eyebrow, Rodape, card, amber } from "./ui";
 
-export default function Tabela({ S, meuTime, setTela, irProximaRodada }) {
-  const linhas = TIMES.map((t) => {
-    const d = S.tabela[t];
-    return { t, ...d, SG: d.GP - d.GC, pct: d.J ? Math.round((d.P / (d.J * 3)) * 100) : 0 };
-  }).sort((a, b) => b.P - a.P || b.SG - a.SG || b.GP - a.GP || a.t.localeCompare(b.t));
-  const fim = S.rodada >= 22;
+export default function Tabela({ S, meuTime, setTela, irProximaRodada, finalizarTemporadaCarreira }) {
+  const linhas = classificar(S.tabela);
+  const total = S.calendario.length;
+  const fim = S.rodada >= total;
 
   return (
     <div className="pt-6">
       <div className="flex items-end justify-between">
         <div>
           <Eyebrow>Classificação</Eyebrow>
-          <h2 className="text-xl font-black italic">Série C · Rodada {Math.min(S.rodada, 22)}/22</h2>
+          <h2 className="text-xl font-black italic">{SERIES[S.serie].label} · Rodada {Math.min(S.rodada, total)}/{total}</h2>
         </div>
         <button onClick={() => setTela("artilharia")} className="rounded-lg px-3 py-2 text-xs font-semibold" style={card}>
           🥇 Artilharia
@@ -50,8 +50,8 @@ export default function Tabela({ S, meuTime, setTela, irProximaRodada }) {
         ))}
       </div>
       {fim ? (
-        <button onClick={() => setTela("campeao")} className="w-full rounded-xl py-3.5 font-bold mt-4" style={amber}>
-          🏆 Ver campeão
+        <button onClick={finalizarTemporadaCarreira} className="w-full rounded-xl py-3.5 font-bold mt-4" style={amber}>
+          🏆 Fim de temporada
         </button>
       ) : (
         <button onClick={irProximaRodada} className="w-full rounded-xl py-3.5 font-bold mt-4" style={amber}>

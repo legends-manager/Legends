@@ -2,11 +2,12 @@
 // Economia do Marco 2 (spec-mercado.md §2 e §3) — camada por cima da força
 // interna e do atributo. NÃO altera atributo nem multiplicador interno.
 import { calcularCraque } from "./craque";
+import { posicaoNaTabela } from "./classificacao";
 
 export const ORCAMENTO_INICIAL = 1000; // L$ ⚙️
 export const PISO_VALOR = 50; // L$ ⚙️
 export const TETO_VALOR = 2000; // L$ ⚙️
-export const TETO_ELENCO = 18; // ⚙️ o maior elenco real
+export const TETO_ELENCO = 20; // ⚙️ o maior elenco real (Marco 3: Furia FC/Dibrados FC na Série A, 20)
 
 const CREDITO = { vitoria: 150, empate: 50, derrota: -30 }; // L$ ⚙️
 const VALORIZACAO = { gol: 20, assistencia: 10, craque: 30, vitoriaTitular: 5 }; // L$ ⚙️
@@ -134,17 +135,11 @@ export function buscarJogador(elencos, idJogador) {
   return null;
 }
 
-// Posição de `time` na tabela (1 = líder), mesmo critério de desempate da
-// tela Classificação (P, saldo, gols pró, nome) — é informação PÚBLICA, ao
+// Posição de `time` na tabela (1 = líder) — é informação PÚBLICA, ao
 // contrário do multiplicador interno (§1, força não pode vazar por aqui).
-function posicaoDoTime(S, time) {
-  const linhas = Object.keys(S.tabela)
-    .map((t) => {
-      const d = S.tabela[t];
-      return { t, P: d.P, SG: d.GP - d.GC, GP: d.GP };
-    })
-    .sort((a, b) => b.P - a.P || b.SG - a.SG || b.GP - a.GP || a.t.localeCompare(b.t));
-  return linhas.findIndex((l) => l.t === time) + 1;
+// Exportada pra engine/torcida.js reaproveitar (humor por posição, §3).
+export function posicaoDoTime(S, time) {
+  return posicaoNaTabela(S.tabela, time);
 }
 
 // ---------------- Operações de mercado (§4) ----------------

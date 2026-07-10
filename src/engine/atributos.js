@@ -1,16 +1,21 @@
 // src/engine/atributos.js
-// Atributos = base por posição + viés das estatísticas reais + ruído (build-spec §4).
-// Re-sorteados a cada nova temporada. Fórmula idêntica à da demo:
-//   viés = min(15, 3·g + 2·a + 4·mvp)
-//   attr = clamp(45, 90, 52 + U(0,16) + viés + U(-5,+5))
+// Atributos = base por posição + viés das estatísticas reais + ruído (build-spec §4)
+// + serieBonus por série (Marco 3, spec-multi-serie.md §3). Re-sorteados a cada
+// nova temporada. Fórmula:
+//   viés  = min(15, 3·g + 2·a + 4·mvp)
+//   base  = mediaKL (quando presente, ex. Série A/Kings) ou 52
+//   attr  = clamp(45, 92, base + U(0,16) + viés + U(-5,+5) + serieBonus)
+// serieBonus só desloca o nível médio da série (C=0 · B=+6 · A=+12); ruído e
+// zebra continuam intactos. Teto sobe de 90→92 pra acomodar a Série A.
 
 import { valorInicial } from "./mercado";
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-export function gerarAttr(g = 0, a = 0, mvp = 0) {
+export function gerarAttr(g = 0, a = 0, mvp = 0, serieBonus = 0, mediaKL = null) {
   const vies = Math.min(15, 3 * g + 2 * a + 4 * mvp);
-  return Math.round(clamp(52 + Math.random() * 16 + vies + (Math.random() * 10 - 5), 45, 90));
+  const base = mediaKL != null ? mediaKL : 52;
+  return Math.round(clamp(base + Math.random() * 16 + vies + (Math.random() * 10 - 5) + serieBonus, 45, 92));
 }
 
 // Gera os elencos da temporada a partir dos dados reais. Preserva pos10 e origem
@@ -18,11 +23,11 @@ export function gerarAttr(g = 0, a = 0, mvp = 0) {
 // Marco 2 (spec-mercado.md §3.2): valor inicial vem da curva por qualidade +
 // mispricing (valorInicial), não mais um piso fixo. timeOrigem nunca muda
 // (mesmo que o jogador seja negociado no mercado).
-export function gerarElencos(times, elencosReais) {
+export function gerarElencos(times, elencosReais, serieBonus = 0) {
   const elencos = {};
   times.forEach((t) => {
     elencos[t] = elencosReais[t].map((j, i) => {
-      const attr = gerarAttr(j.g, j.a, j.mvp);
+      const attr = gerarAttr(j.g, j.a, j.mvp, serieBonus, j.mediaKL ?? null);
       return {
         id: `${t}|${i}`,
         nome: j.nome,

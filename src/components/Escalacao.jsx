@@ -1,6 +1,7 @@
 // src/components/Escalacao.jsx
 // Escalação: 7 titulares = 1 GOL + 6 de linha. Tamanho de elenco é variável.
 // Inclui o modal de correção de nomes (✏️).
+import { tendenciaTorcida } from "../engine/torcida";
 import { Eyebrow, Rodape, Avatar, Barra, card, amber } from "./ui";
 
 function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
@@ -42,7 +43,7 @@ export default function Escalacao({
 
   return (
     <div className="pt-6">
-      <Eyebrow>Rodada {S.rodada + 1} de 22</Eyebrow>
+      <Eyebrow>Rodada {S.rodada + 1} de {S.calendario.length}</Eyebrow>
       <div className="flex items-center gap-2 mt-2">
         <Avatar t={meuTime} />
         <div className="flex-1">
@@ -64,6 +65,27 @@ export default function Escalacao({
         <span>Orçamento</span>
         <span className="font-bold tabular-nums" style={{ color: "#FFC53D" }}>L$ {S.orcamento[meuTime]}</span>
       </div>
+
+      <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={card}>
+        <span>Torcida</span>
+        <span className="font-bold tabular-nums">
+          {S.torcida[meuTime]}{" "}
+          <span style={{ color: tendenciaTorcida(S.formaRecente[meuTime]) === "▼" ? "#FF5A5A" : "#7FE0A8" }}>
+            {tendenciaTorcida(S.formaRecente[meuTime])}
+          </span>
+        </span>
+      </div>
+
+      {S.comentariosTorcida.length > 0 && (
+        <div className="rounded-xl px-3 py-2 mt-2 text-xs" style={card}>
+          <Eyebrow>Torcida comenta</Eyebrow>
+          <div className="mt-1 space-y-1" style={{ color: "#D9CCEE" }}>
+            {S.comentariosTorcida.slice(-3).reverse().map((c, i) => (
+              <div key={i}>· {c.texto}</div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={card}>
         <span>Escalados: <b className="tabular-nums">{nGol}</b> GOL + <b className="tabular-nums">{nLinha}</b>/6 linha</span>
