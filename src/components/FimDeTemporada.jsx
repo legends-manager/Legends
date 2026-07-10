@@ -4,7 +4,7 @@
 // mostrava só a própria série e voltava pro mesmo time — a Liga Viva reverte
 // isso: agora o técnico acompanha o time pra onde ele for).
 import { SERIES } from "../data/series";
-import { Eyebrow, Rodape, AvatarTecnico, card, amber } from "./ui";
+import { Eyebrow, Rodape, AvatarTecnico, PlacaPatrocinio, card, amber } from "./ui";
 
 const RESULTADO_LABEL = { subiu: "🔼 Subiu", desceu: "🔽 Desceu", manteve: "➡️ Permaneceu" };
 const RESULTADO_COR = { subiu: "#7FE0A8", desceu: "#FF5A5A", manteve: "#A78FC7" };
@@ -58,6 +58,11 @@ export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, pro
         </div>
         <div className="text-sm mt-1" style={{ color: "#A78FC7" }}>
           Próxima temporada: <b>{SERIES[serieDestino].label}</b>
+        </div>
+        {/* Patrocínio DENTRO do card do pôster: este é o print que circula no
+            WhatsApp da liga — a marca sai junto em todo compartilhamento. */}
+        <div className="mt-4">
+          <PlacaPatrocinio />
         </div>
       </div>
 

@@ -4,7 +4,7 @@
 import { golsDe } from "../engine/simulador";
 import { SIGLA } from "../data/times";
 import { ARENA } from "../data/arena";
-import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
+import { Eyebrow, Rodape, Avatar, PlacaPatrocinio, card, amber } from "./ui";
 
 export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }) {
   const j = jogo;
@@ -44,6 +44,11 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
           </div>
         </div>
         <div className="text-center text-xs mt-3" style={{ color: "#6E5A92" }}>{ARENA.label}</div>
+        {/* Placa de estádio: o espaço de patrocínio de maior exposição do app
+            (fica na tela a partida inteira, ~50 ticks de relógio). */}
+        <div className="mt-3">
+          <PlacaPatrocinio compacta />
+        </div>
       </div>
 
       <div className="flex justify-end mt-2">

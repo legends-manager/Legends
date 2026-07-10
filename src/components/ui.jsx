@@ -65,6 +65,46 @@ export const AvatarTecnico = ({ avatarId, nome, fallback, size = 40 }) => {
   );
 };
 
+// Placa de patrocínio (estilo placa de estádio). Dois pontos de exibição,
+// escolhidos pelo alcance: partida ao vivo (tela onde o jogador passa mais
+// tempo) e pôster de Fim de Temporada (o print que circula no WhatsApp da
+// liga — marca ali alcança quem nem joga). Quando houver patrocinador real,
+// Felyp salva o logo em /public/brand/patrocinio.png (horizontal, ~800x200)
+// e a placa passa a exibi-lo automaticamente; sem o arquivo, mostra o
+// convite "seu logo aqui". Nunca quebra sem o asset.
+export const PlacaPatrocinio = ({ compacta }) => {
+  const [temLogo, setTemLogo] = useState(true);
+  if (temLogo) {
+    return (
+      <img
+        src="/brand/patrocinio.png"
+        alt="Patrocinador oficial"
+        onError={() => setTemLogo(false)}
+        className="w-full rounded-lg object-contain"
+        style={{ maxHeight: compacta ? 40 : 56, background: "#150A26", border: "1px solid rgba(139,105,190,0.35)" }}
+      />
+    );
+  }
+  return (
+    <div
+      className={`rounded-lg text-center ${compacta ? "px-3 py-1.5" : "px-3 py-2.5"}`}
+      style={{
+        background: "repeating-linear-gradient(-45deg, #1E1233, #1E1233 12px, #231540 12px, #231540 24px)",
+        border: "1px dashed rgba(139,105,190,0.5)",
+      }}
+    >
+      <div className={`font-black italic tracking-widest uppercase ${compacta ? "text-[10px]" : "text-xs"}`} style={{ color: "#A78FC7" }}>
+        Seu logo aqui
+      </div>
+      {!compacta && (
+        <div className="text-[10px] mt-0.5" style={{ color: "#6E5A92" }}>
+          Patrocine a Legends Liga Fut7 · fale com a organização
+        </div>
+      )}
+    </div>
+  );
+};
+
 export const Barra = ({ v }) => (
   <span className="inline-flex items-center gap-1.5">
     <span className="w-12 h-1.5 rounded-full overflow-hidden inline-block" style={{ background: "#2E1D4C" }}>
