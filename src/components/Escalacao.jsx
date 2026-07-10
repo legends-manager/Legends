@@ -2,7 +2,10 @@
 // Escalação: 7 titulares = 1 GOL + 6 de linha. Tamanho de elenco é variável.
 // Inclui o modal de correção de nomes (✏️).
 import { tendenciaTorcida } from "../engine/torcida";
-import { Eyebrow, Rodape, Avatar, Barra, card, amber } from "./ui";
+import { setinhaValor } from "../engine/mercado";
+import { Eyebrow, Rodape, Avatar, AvatarTecnico, Barra, card, amber } from "./ui";
+
+const corSetinha = (s) => (s === "▲" ? "#7FE0A8" : s === "▼" ? "#FF5A5A" : "#A78FC7");
 
 function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
   return (
@@ -29,7 +32,7 @@ function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
 }
 
 export default function Escalacao({
-  S, meuTime, escolhidos, toggleJogador, escSelecionada, escValida,
+  S, meuTime, nomeTec, avatarId, escolhidos, toggleJogador, escSelecionada, escValida,
   jogarAoVivo, rodadaRapida, confronto,
   modalNomes, setModalNomes, textoNomes, setTextoNomes, salvarNomes,
 }) {
@@ -52,6 +55,7 @@ export default function Escalacao({
             vs {adv} · {souCasa ? "mandante" : "visitante"}
           </div>
         </div>
+        <AvatarTecnico avatarId={avatarId} nome={nomeTec} size={32} />
         <button
           onClick={() => { setTextoNomes(elenco.map((j) => j.nome).join("\n")); setModalNomes(true); }}
           className="rounded-lg px-3 py-2 text-xs font-semibold"
@@ -69,9 +73,9 @@ export default function Escalacao({
       <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={card}>
         <span>Torcida</span>
         <span className="font-bold tabular-nums">
-          {S.torcida[meuTime]}{" "}
-          <span style={{ color: tendenciaTorcida(S.formaRecente[meuTime]) === "▼" ? "#FF5A5A" : "#7FE0A8" }}>
-            {tendenciaTorcida(S.formaRecente[meuTime])}
+          🏟️ {S.torcida[meuTime]} torcedores{" "}
+          <span style={{ color: corSetinha(tendenciaTorcida(S.torcida, S.torcidaRef, meuTime)) }}>
+            {tendenciaTorcida(S.torcida, S.torcidaRef, meuTime)}
           </span>
         </span>
       </div>
@@ -107,7 +111,9 @@ export default function Escalacao({
                 >
                   <span className="text-xs w-4 text-center">{sel ? "●" : "○"}</span>
                   <span className="flex-1 text-sm leading-tight">{j.nome}</span>
-                  <span className="text-xs tabular-nums shrink-0" style={{ color: "#A78FC7" }}>L$ {j.valor}</span>
+                  <span className="text-xs tabular-nums shrink-0" style={{ color: "#A78FC7" }}>
+                    L$ {j.valor} <span style={{ color: corSetinha(setinhaValor(j)) }}>{setinhaValor(j)}</span>
+                  </span>
                   <Barra v={j.attr} />
                 </button>
               );

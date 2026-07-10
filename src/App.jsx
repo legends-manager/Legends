@@ -44,6 +44,7 @@ export default function App() {
   const [tela, setTela] = useState("inicio");
   const [serie, setSerie] = useState(SERIE_PADRAO); // série selecionada na capa (Marco 3)
   const [nomeTec, setNomeTec] = useState("");
+  const [avatarId, setAvatarId] = useState(null); // galeria fixa (spec-marco2-polish.md §5)
   const [meuTime, setMeuTime] = useState(null);
   const [escolhidos, setEscolhidos] = useState([]); // escalação do jogador (7)
   const [jogo, setJogo] = useState(null);
@@ -125,7 +126,7 @@ export default function App() {
     iaNegocia(nova, time);
     // Persiste já no início: forças/atributos sorteados não podem se perder nem
     // ser re-sorteados no meio da temporada.
-    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: time, S: nova });
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: time, avatarId, S: nova });
     setTela("mercado");
   };
 
@@ -161,7 +162,7 @@ export default function App() {
     setSerie(serieDestino);
     prepararEscalacao(meuTime, nova);
     iaNegocia(nova, meuTime);
-    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, S: nova });
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S: nova });
     setFimDeTemporadaResumo(null);
     setTela("mercado");
   };
@@ -179,7 +180,7 @@ export default function App() {
     setMeuTime(mundo.meuTime);
     prepararEscalacao(mundo.meuTime, nova);
     iaNegocia(nova, mundo.meuTime);
-    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: mundo.meuTime, S: nova });
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: mundo.meuTime, avatarId, S: nova });
     setTela("mercado");
   };
 
@@ -191,6 +192,7 @@ export default function App() {
     setMundo(null);
     setMeuTime(null);
     setSerie(SERIE_PADRAO);
+    setAvatarId(null);
     setSaveData(null);
     setFimDeTemporadaResumo(null);
     setTela("inicio");
@@ -202,6 +204,7 @@ export default function App() {
     Sref.current = s;
     setSerie(s.serie); // mantém o seletor alinhado à temporada retomada
     setNomeTec(saveData.nomeTecnico || "");
+    setAvatarId(saveData.avatarId || null);
     setMeuTime(saveData.timeEscolhido);
     if (s.mercado.janela !== "fechada") {
       setTela("mercado"); // fechou o app com a janela aberta: retoma nela
@@ -218,7 +221,7 @@ export default function App() {
   const fecharJanelaEIrEscalacao = () => {
     fecharJanela(S);
     prepararEscalacao(meuTime, S);
-    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, S });
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
     setTela("escalacao");
   };
 
@@ -388,9 +391,10 @@ export default function App() {
     // Torcida (spec-marco2-polish.md §3): atualiza pra todos os times da
     // rodada (camada de apresentação, nunca entra em fórmula do motor). O
     // comentário (1 por rodada) é só do time do humano.
-    atualizarTorcida(S.torcida, S.formaRecente, jogos);
+    atualizarTorcida(S.torcida, S.torcidaRef, S.formaRecente, jogos);
     const humor = humorTorcida(S.formaRecente[meuTime], posicaoDoTime(S, meuTime), Object.keys(S.tabela).length);
-    const comentario = { rodada: S.rodada, humor, texto: gerarComentario(humor) };
+    const ultimoTexto = S.comentariosTorcida[S.comentariosTorcida.length - 1]?.texto ?? null;
+    const comentario = { rodada: S.rodada, humor, texto: gerarComentario(humor, ultimoTexto) };
     S.comentariosTorcida.push(comentario);
 
     // Marco 2 (spec-mercado.md §4): janela do meio abre exatamente uma vez,
@@ -404,7 +408,7 @@ export default function App() {
       iaNegocia(S, meuTime); // §5: as 11 IAs agem antes do jogador ver a janela
     }
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
-    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, S });
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
     setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario });
     setJogo(null);
     setTela("resultado");
@@ -452,6 +456,8 @@ export default function App() {
             setSerie={setSerie}
             nomeTec={nomeTec}
             setNomeTec={setNomeTec}
+            avatarId={avatarId}
+            setAvatarId={setAvatarId}
             iniciarTemporada={iniciarTemporada}
             saveData={saveData}
             continuarJogo={continuarJogo}
@@ -468,6 +474,8 @@ export default function App() {
           <Escalacao
             S={S}
             meuTime={meuTime}
+            nomeTec={nomeTec}
+            avatarId={avatarId}
             escolhidos={escolhidos}
             toggleJogador={toggleJogador}
             escSelecionada={escSelecionada}
@@ -526,6 +534,7 @@ export default function App() {
             resumo={fimDeTemporadaResumo}
             meuTime={meuTime}
             nomeTec={nomeTec}
+            avatarId={avatarId}
             proximaTemporadaCarreira={proximaTemporadaCarreira}
           />
         )}

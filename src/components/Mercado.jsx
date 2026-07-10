@@ -5,8 +5,14 @@
 // {ok, motivo} de volta pro jogador quando uma ação é bloqueada.
 import { useState } from "react";
 import { SIGLA } from "../data/times";
-import { PISO_VALOR, buscarJogador } from "../engine/mercado";
+import { PISO_VALOR, buscarJogador, setinhaValor } from "../engine/mercado";
+import { gerarManchetes } from "../engine/manchetes";
 import { Eyebrow, Avatar, card, amber } from "./ui";
+
+const corSetinha = (s) => (s === "▲" ? "#7FE0A8" : s === "▼" ? "#FF5A5A" : "#A78FC7");
+const Setinha = ({ jogador }) => (
+  <span style={{ color: corSetinha(setinhaValor(jogador)) }}>{setinhaValor(jogador)}</span>
+);
 
 const ABAS = [
   ["comprar", "Comprar"],
@@ -41,9 +47,13 @@ export default function Mercado({
 
   // §5: transferências IA↔IA desta janela (mesma rodada em que ela abriu),
   // sem envolver o humano — resumo pra visibilidade, sem participação dele.
-  const movimentacoesIA = S.mercado.historico.filter(
-    (h) => h.rodada === S.rodada && h.de !== meuTime && h.para !== meuTime
-  );
+  const historicoDaJanela = S.mercado.historico.filter((h) => h.rodada === S.rodada);
+  const movimentacoesIA = historicoDaJanela.filter((h) => h.de !== meuTime && h.para !== meuTime);
+
+  // Manchetes (spec-marco2-polish.md §2): cobrem TODA a janela (inclusive
+  // movimentações do humano), recalculadas ao vivo — refletem o estado atual
+  // e já valem como resumo final quando ele clica em "Fechar janela".
+  const manchetes = gerarManchetes(S, historicoDaJanela);
 
   return (
     <div className="pt-6">
@@ -55,18 +65,21 @@ export default function Mercado({
         </span>
       </div>
 
-      {movimentacoesIA.length > 0 && (
-        <div className="rounded-xl px-3 py-2 mt-3 text-xs" style={card}>
-          <Eyebrow>Movimentações da janela</Eyebrow>
-          <div className="mt-1 space-y-0.5" style={{ color: "#A78FC7" }}>
+      <div className="rounded-xl px-3 py-2 mt-3 text-xs" style={card}>
+        <Eyebrow>Movimentações da janela</Eyebrow>
+        <div className="mt-1 space-y-1 font-semibold" style={{ color: "#F2EDFA" }}>
+          {manchetes.map((m, i) => <div key={i}>{m}</div>)}
+        </div>
+        {movimentacoesIA.length > 0 && (
+          <div className="mt-2 space-y-0.5" style={{ color: "#A78FC7" }}>
             {movimentacoesIA.map((h, i) => (
               <div key={i}>
                 {h.jogador}: {SIGLA[h.de]} → {SIGLA[h.para]} <span style={{ color: "#FFC53D" }}>L$ {h.valor}</span>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       <div className="flex gap-1 mt-3">
         {ABAS.map(([id, label]) => (
@@ -102,7 +115,9 @@ export default function Mercado({
                   <div className="text-sm leading-tight truncate">{j.nome}</div>
                   {/* §8: sem atributo bruto de jogador de outro time — só o
                       preço (com mispricing) e as estatísticas reais do Copa10. */}
-                  <div className="text-xs" style={{ color: "#A78FC7" }}>{j.pos} · {j.g}g {j.a}a · {SIGLA[j.time]}</div>
+                  <div className="text-xs" style={{ color: "#A78FC7" }}>
+                    {j.pos} · {j.g}g {j.a}a · {SIGLA[j.time]} · <Setinha jogador={j} />
+                  </div>
                 </div>
                 <button
                   onClick={() => rodar(() => comprarNoMercado(l.idJogador))}
@@ -126,7 +141,9 @@ export default function Mercado({
               <div key={j.id} className="rounded-xl px-3 py-2.5 flex items-center gap-2" style={card}>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm leading-tight truncate">{j.nome}</div>
-                  <div className="text-xs" style={{ color: "#A78FC7" }}>{j.pos} · attr {j.attr} · valor L$ {j.valor}</div>
+                  <div className="text-xs" style={{ color: "#A78FC7" }}>
+                    {j.pos} · attr {j.attr} · valor L$ {j.valor} <Setinha jogador={j} />
+                  </div>
                 </div>
                 {listado ? (
                   <button
@@ -171,7 +188,9 @@ export default function Mercado({
             if (!j) return null;
             return (
               <div key={`${o.idJogador}-${o.timeOfertante}`} className="rounded-xl px-3 py-2.5" style={card}>
-                <div className="text-sm leading-tight">{j.nome} <span className="text-xs" style={{ color: "#A78FC7" }}>({j.pos})</span></div>
+                <div className="text-sm leading-tight">
+                  {j.nome} <span className="text-xs" style={{ color: "#A78FC7" }}>({j.pos})</span> <Setinha jogador={j} />
+                </div>
                 <div className="text-xs mt-0.5" style={{ color: "#A78FC7" }}>
                   Proposta de {SIGLA[o.timeOfertante]}: <b style={{ color: "#FFC53D" }}>L$ {o.preco}</b>
                 </div>

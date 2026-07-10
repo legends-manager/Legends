@@ -4,7 +4,7 @@
 // mostrava só a própria série e voltava pro mesmo time — a Liga Viva reverte
 // isso: agora o técnico acompanha o time pra onde ele for).
 import { SERIES } from "../data/series";
-import { Eyebrow, Rodape, card, amber } from "./ui";
+import { Eyebrow, Rodape, AvatarTecnico, card, amber } from "./ui";
 
 const RESULTADO_LABEL = { subiu: "🔼 Subiu", desceu: "🔽 Desceu", manteve: "➡️ Permaneceu" };
 const RESULTADO_COR = { subiu: "#7FE0A8", desceu: "#FF5A5A", manteve: "#A78FC7" };
@@ -35,7 +35,7 @@ function BlocoSerie({ serieId, dados, meuTime }) {
   );
 }
 
-export default function FimDeTemporada({ resumo, meuTime, nomeTec, proximaTemporadaCarreira }) {
+export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, proximaTemporadaCarreira }) {
   const { resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie } = resumo;
 
   return (
@@ -44,8 +44,11 @@ export default function FimDeTemporada({ resumo, meuTime, nomeTec, proximaTempor
         <Eyebrow>Fim de temporada · Liga Viva</Eyebrow>
         <div className="text-5xl mt-3">📋</div>
         <div className="text-2xl font-black italic mt-2">{meuTime}</div>
-        <div className="text-sm font-semibold mt-1" style={{ color: "#F2EDFA" }}>
-          Técnico {nomeTec || "Técnico"}
+        <div className="flex items-center justify-center gap-2 mt-2">
+          <AvatarTecnico avatarId={avatarId} nome={nomeTec} size={48} />
+          <div className="text-sm font-semibold" style={{ color: "#F2EDFA" }}>
+            Técnico {nomeTec || "Técnico"}
+          </div>
         </div>
         <div className="text-sm mt-3 tabular-nums" style={{ color: "#D9CCEE" }}>
           {SERIES[minhaSerie].label} · {minhaPosicao}º lugar

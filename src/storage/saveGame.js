@@ -55,13 +55,17 @@ export function localStorageDisponivel() {
 
 // Serializa o estado da temporada (save v2). A chave vem da série do próprio
 // S (S.serie). Retorna true se salvou, false se não deu.
-export function salvarJogo({ nomeTecnico, timeEscolhido, S }) {
+export function salvarJogo({ nomeTecnico, timeEscolhido, avatarId, S }) {
   if (!S || !localStorageDisponivel()) return false;
   const dados = {
     versao: 2,
     serie: S.serie || SERIE_PADRAO,
     nomeTecnico,
     timeEscolhido,
+    // Avatar do técnico (spec-marco2-polish.md §5): id da galeria fixa
+    // (/public/avatars/aXX.png) ou null — save antigo sem o campo cai no
+    // fallback de iniciais, sem migração especial necessária.
+    avatarId: avatarId ?? null,
     temporada: {
       rodadaAtual: S.rodada,
       calendario: S.calendario,
@@ -79,6 +83,7 @@ export function salvarJogo({ nomeTecnico, timeEscolhido, S }) {
       historico: S.mercado.historico,
     },
     torcida: S.torcida,
+    torcidaRef: S.torcidaRef,
     formaRecente: S.formaRecente,
     comentariosTorcida: S.comentariosTorcida,
     ultimaAtualizacao: new Date().toISOString(),
@@ -133,11 +138,13 @@ export function reconstruirS(save) {
   const times = Object.keys(save.elencos);
   const elencos = {};
   times.forEach((t) => {
-    elencos[t] = save.elencos[t].map((j) => ({
-      valor: valorInicial(j.attr),
-      timeOrigem: t,
-      ...j,
-    }));
+    elencos[t] = save.elencos[t].map((j) => {
+      const jogador = { valor: valorInicial(j.attr), timeOrigem: t, ...j };
+      // Setinha ▲▼ (spec-marco2-polish.md §1): save sem valorRef ainda —
+      // nasce igual ao valor atual, seta começa neutra.
+      if (jogador.valorRef == null) jogador.valorRef = jogador.valor;
+      return jogador;
+    });
   });
   return {
     serie: save.serie || SERIE_PADRAO, // saves antigos são sempre da Série C
@@ -157,8 +164,11 @@ export function reconstruirS(save) {
       ? { ...save.mercado, ofertas: [] }
       : { ...mercadoInicial(), janelaUsadaMeio: save.temporada.rodadaAtual > save.temporada.calendario.length / 2 },
     // Torcida (spec-marco2-polish.md §3): save antigo sem o campo inicializa
-    // 500 pra todos os times, sem forma/comentários acumulados.
+    // 500 pra todos os times, sem forma/comentários acumulados. torcidaRef
+    // ausente (save anterior à setinha) nasce igual à torcida atual — seta
+    // começa neutra em vez de comparar contra um valor inexistente.
     torcida: save.torcida || torcidaInicial(times),
+    torcidaRef: save.torcidaRef || save.torcida || torcidaInicial(times),
     formaRecente: save.formaRecente || {},
     comentariosTorcida: save.comentariosTorcida || [],
   };

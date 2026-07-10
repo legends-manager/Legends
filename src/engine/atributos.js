@@ -28,6 +28,7 @@ export function gerarElencos(times, elencosReais, serieBonus = 0) {
   times.forEach((t) => {
     elencos[t] = elencosReais[t].map((j, i) => {
       const attr = gerarAttr(j.g, j.a, j.mvp, serieBonus, j.mediaKL ?? null);
+      const valor = valorInicial(attr);
       return {
         id: `${t}|${i}`,
         nome: j.nome,
@@ -41,7 +42,11 @@ export function gerarElencos(times, elencosReais, serieBonus = 0) {
         a: j.a,
         origem: j.origem,
         time: t,
-        valor: valorInicial(attr),
+        valor,
+        // Setinha ▲▼ (spec-marco2-polish.md §1): referência pra comparação,
+        // atualizada ao fechar cada janela e no início da temporada — nasce
+        // igual a `valor`, então a seta começa neutra ("–").
+        valorRef: valor,
         timeOrigem: t,
       };
     });

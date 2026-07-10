@@ -13,6 +13,18 @@ const CREDITO = { vitoria: 150, empate: 50, derrota: -30 }; // L$ ⚙️
 const VALORIZACAO = { gol: 20, assistencia: 10, craque: 30, vitoriaTitular: 5 }; // L$ ⚙️
 const TETO_VALORIZACAO_RODADA = 60; // L$ ⚙️
 const PENALIDADE_OCIOSIDADE = -5; // L$ ⚙️
+const TOLERANCIA_SETINHA = 2; // L$ ⚙️ — §1
+
+// Setinha ▲▼ de valorização (spec-marco2-polish.md §1): compara `valor` com
+// `valorRef` (congelado no fechamento da última janela / início da
+// temporada). "–" dentro da tolerância. Informação PÚBLICA — pode ser
+// mostrada até pra jogador de outro time (só o atributo bruto fica oculto).
+export function setinhaValor(jogador) {
+  const diff = jogador.valor - jogador.valorRef;
+  if (diff > TOLERANCIA_SETINHA) return "▲";
+  if (diff < -TOLERANCIA_SETINHA) return "▼";
+  return "–";
+}
 
 // §3.2 — valor inicial por qualidade (curva convexa "perfil BRUTAL") + leve
 // mispricing (ruído no preço — o valor é um sinal IMPERFEITO do atributo).
@@ -229,11 +241,16 @@ export function recusarOferta(S, oferta) {
 }
 
 // Fecha a janela: listagens e ofertas expiram (§4). A janela do meio não reabre
-// (quem chama já marcou janelaUsadaMeio=true ao abri-la).
+// (quem chama já marcou janelaUsadaMeio=true ao abri-la). Também "zera" a
+// setinha de valorização (spec-marco2-polish.md §1): valorRef vira o valor
+// atual de todo jogador, então a próxima janela mede a partir daqui.
 export function fecharJanela(S) {
   S.mercado.listados = [];
   S.mercado.ofertas = [];
   S.mercado.janela = "fechada";
+  Object.values(S.elencos).forEach((elenco) => {
+    elenco.forEach((j) => { j.valorRef = j.valor; });
+  });
 }
 
 // ---------------- Comportamento das IAs (§5) ----------------

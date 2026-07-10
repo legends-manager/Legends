@@ -80,11 +80,14 @@ export function novaTemporada(serieId = SERIE_PADRAO, times = null, orcamentoAnt
   // Torcida (spec-marco2-polish.md §3): recomeça em 500 a cada temporada,
   // como fase — não é persistida entre temporadas como o orçamento.
   const torcida = torcidaInicial(timesDaTemporada);
+  // torcidaRef (spec-marco2-polish.md §3): referência pra setinha ▲▼ — nasce
+  // igual a torcida, então a seta começa neutra ("–").
+  const torcidaRef = torcidaInicial(timesDaTemporada);
   const formaRecente = {};
   return {
     serie: serieId, elencos, mult, fase, tabela, art: {},
     calendario: gerarCalendario(timesDaTemporada), rodada: 0, orcamento, mercado,
-    torcida, formaRecente, comentariosTorcida: [],
+    torcida, torcidaRef, formaRecente, comentariosTorcida: [],
   };
 }
 
