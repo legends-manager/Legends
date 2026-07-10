@@ -59,9 +59,10 @@ export function gerarBolo(n) {
 // SEMPRE de ELENCOS_GLOBAIS (busca por nome, independente da série atual —
 // spec-liga-viva.md §2), nunca de SERIES[serieId].elencos diretamente.
 // orcamentoAnterior (Marco 2, spec-mercado.md §0): em "Nova temporada" os
-// elencos voltam ao real e os valores ao piso (gerarElencos), mas o orçamento
-// por time é MANTIDO — passe o `S.orcamento` da temporada anterior DA MESMA
-// série aqui (orçamento de uma série nunca vaza pra outra).
+// elencos voltam ao real e os valores são recalculados (gerarElencos), mas o
+// orçamento por time é MANTIDO — passe o `S.orcamento` da temporada anterior.
+// Com a Liga Viva, um time promovido/rebaixado LEVA o caixa junto (o mapa é
+// por nome de time); quem não estiver no mapa cai no default L$1000.
 export function novaTemporada(serieId = SERIE_PADRAO, times = null, orcamentoAnterior = null) {
   const { serieBonus } = SERIES[serieId];
   const timesDaTemporada = times || SERIES[serieId].times;

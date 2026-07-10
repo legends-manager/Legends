@@ -6,7 +6,7 @@
 // continua com o MESMO elenco real, só muda em qual série ele compete.
 import { ELENCOS_REAIS, TIMES_SERIE_C } from "./elencos-reais";
 import { ELENCOS_SERIE_B, TIMES_SERIE_B } from "./elencos-reais-serie-b";
-import { ELENCOS_SERIE_A, TIMES_SERIE_A, PRESIDENTES_SERIE_A } from "./elencos-serie-a";
+import { ELENCOS_SERIE_A, TIMES_SERIE_A } from "./elencos-serie-a";
 
 export const SERIES = {
   A: {
@@ -17,7 +17,6 @@ export const SERIES = {
     // estes times "sobem" pro Mundial de Clubes (roadmap, guardado por ora).
     times: TIMES_SERIE_A,
     elencos: ELENCOS_SERIE_A,
-    presidentes: PRESIDENTES_SERIE_A,
     serieBonus: 12, // spec-multi-serie.md §3
     disponivel: true,
   },

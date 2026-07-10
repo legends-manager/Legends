@@ -89,12 +89,16 @@ export function valorizarJogadores(elencos, jogos) {
 
     const titularesCasa = new Set(x.escCasa.map((j) => j.id));
     const titularesFora = new Set(x.escFora.map((j) => j.id));
+    // Clamp nas duas pontas (§3.2: "nunca abaixo do piso, nunca acima do
+    // teto") — sem o teto aqui, um craque da Série A (valor inicial ~1700+)
+    // estourava L$2000 via drift ao longo da temporada.
+    const clampValor = (v) => Math.min(TETO_VALOR, Math.max(PISO_VALOR, v));
     const aplicar = (time, titulares) => {
       elencos[time].forEach((j) => {
         if (titulares.has(j.id)) {
-          j.valor = Math.max(PISO_VALOR, j.valor + Math.min(TETO_VALORIZACAO_RODADA, ganho[j.id] || 0));
+          j.valor = clampValor(j.valor + Math.min(TETO_VALORIZACAO_RODADA, ganho[j.id] || 0));
         } else {
-          j.valor = Math.max(PISO_VALOR, j.valor + PENALIDADE_OCIOSIDADE);
+          j.valor = clampValor(j.valor + PENALIDADE_OCIOSIDADE);
         }
       });
     };
@@ -316,15 +320,21 @@ function iaReforca(S, time) {
   }
 }
 
-// §5.3 — Oferta pelo humano: ~30% de chance por titular valioso do humano,
-// preço = valor × U(1,0–1,3).
-function iaOfertaPeloHumano(S, timeIA, meuTime) {
+// §5.3 — Oferta pelo humano: ~30% de chance por titular valioso, NO MÁXIMO
+// 1 oferta por titular na janela (a IA ofertante é sorteada entre as que têm
+// orçamento e vaga no elenco). Rodar isso por IA multiplicava a chance por 11
+// e inundava o humano de ofertas sempre ≥ valor — exploit de caixa: dava pra
+// vender meio elenco acima do justo toda janela.
+function iaOfertasPeloHumano(S, timesIA, meuTime) {
   const titulares = melhorEscalacao(S.elencos[meuTime]);
   titulares.forEach((j) => {
     if (Math.random() >= CHANCE_OFERTA) return;
-    if (S.mercado.ofertas.some((o) => o.idJogador === j.id && o.timeOfertante === timeIA)) return;
     const preco = Math.round(j.valor * (OFERTA_MULT_MIN + Math.random() * OFERTA_MULT_SPAN));
-    if (S.orcamento[timeIA] < preco) return;
+    const candidatas = timesIA.filter(
+      (t) => S.orcamento[t] >= preco && podeAdicionar(S.elencos[t]).ok
+    );
+    if (candidatas.length === 0) return;
+    const timeIA = candidatas[Math.floor(Math.random() * candidatas.length)];
     S.mercado.ofertas.push({ idJogador: j.id, timeOfertante: timeIA, preco });
   });
 }
@@ -337,6 +347,6 @@ export function iaNegocia(S, meuTime) {
   ordem.forEach((time) => {
     iaVendeExcedente(S, time);
     iaReforca(S, time);
-    iaOfertaPeloHumano(S, time, meuTime);
   });
+  iaOfertasPeloHumano(S, ordem, meuTime);
 }

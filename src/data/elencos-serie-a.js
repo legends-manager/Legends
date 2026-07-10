@@ -16,18 +16,10 @@ export const TIMES_SERIE_A = [
   "Furia FC", "G3X FC", "Fluxo FC", "Nyvelados FC", "DesimpaiN", "Podpah Funkbol Clube", "Dibrados FC", "Dendele FC", "Capim FC", "LOUD SC",
 ];
 
-export const PRESIDENTES_SERIE_A = {
-  "Furia FC": "Neymar e Cris Guedes",
-  "G3X FC": "Gaules e Kelvin Oliveira",
-  "Fluxo FC": "Cerol, Nobru e Toguro",
-  "Nyvelados FC": "Nyvi Estephan e Falcão",
-  "DesimpaiN": "Renato Vicente",
-  "Podpah Funkbol Clube": "Igão, Michel Elias e MC Hariel",
-  "Dibrados FC": "Allan Stag e Lucas Tylty",
-  "Dendele FC": "Paulinho o Loko e LuquEt4",
-  "Capim FC": "Jon Vlogs e Luva de Pedreiro",
-  "LOUD SC": "Coringa e Brabox",
-};
+// Presidentes dos times NÃO entram no app (spec-multi-serie.md §4: nomes de
+// pessoas famosas reais não são embutidos — direito de imagem individual é
+// risco à parte do IP dos times). A lista que existia aqui não era usada em
+// nenhuma tela e foi removida do bundle na auditoria (jul/2026).
 
 export const ELENCOS_SERIE_A = {
   "Furia FC": [

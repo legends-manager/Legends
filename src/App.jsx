@@ -20,7 +20,7 @@ import { mundoInicial, timesDaSerie, calcularAcessoRebaixamento, fecharTemporada
 import { SIGLA } from "./data/times";
 import { SERIE_PADRAO, SERIES, ORDEM_SERIES } from "./data/series";
 import {
-  carregarSave, reconstruirS, salvarJogo, localStorageDisponivel,
+  carregarSave, reconstruirS, salvarJogo, localStorageDisponivel, limparSave,
   carregarMundo, salvarMundo, migrarParaMundoSeNecessario, limparMundo,
 } from "./storage/saveGame";
 
@@ -145,6 +145,12 @@ export default function App() {
     const { serieDestino, resultado: meuResultado, minhaPosicao } =
       fecharTemporada(mundo, resultado, meuTime, minhaSerie);
     salvarMundo(mundo);
+    // A temporada foi processada: o save dela vira lixo perigoso — se ficasse,
+    // reabrir o app oferecia "Continuar" nela e o Fim de Temporada podia rodar
+    // DE NOVO (temporada dupla no mundo). Limpo já; quem fechar o app agora
+    // cai em "Começar temporada" (retomarCarreiraSemSave), que é o correto.
+    limparSave(minhaSerie);
+    setSaveData(null);
     setMundo({ ...mundo });
     setFimDeTemporadaResumo({ resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie });
     setTela("fimDeTemporada");
@@ -155,9 +161,13 @@ export default function App() {
   // "o técnico acompanha o time", §0), com o elenco ATUAL daquela série.
   const proximaTemporadaCarreira = () => {
     const { serieDestino } = fimDeTemporadaResumo;
-    const orcamentoAnterior = { [meuTime]: S.orcamento[meuTime] };
+    // spec-mercado.md §0: o orçamento POR TIME persiste entre temporadas
+    // ("administrar bem numa temporada dá poder de fogo na seguinte") — passa
+    // o mapa inteiro, não só o do humano. Times que chegam de OUTRA série não
+    // estão no S antigo e caem no default L$1000 dentro de novaTemporada (as
+    // séries de fundo não simulam economia, não há valor melhor a herdar).
     const times = timesDaSerie(mundo, serieDestino);
-    const nova = novaTemporada(serieDestino, times, orcamentoAnterior);
+    const nova = novaTemporada(serieDestino, times, S.orcamento);
     Sref.current = nova;
     setSerie(serieDestino);
     prepararEscalacao(meuTime, nova);
