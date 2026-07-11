@@ -34,6 +34,7 @@ import {
 } from "./storage/saveGame";
 import { incrementarMetrica } from "./storage/metricas";
 import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz";
+import { publicarTemporada } from "./storage/publicarOnline";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -197,6 +198,9 @@ export default function App() {
     if (meuResultado === "subiu") desbloquear("acesso");
     if (mundo.carreira.filter((c) => c.posicao === 1).length >= 3) desbloquear("tri");
     salvarMundo(mundo);
+    // Ranking online (Fase 1, spec-fase1-fundacao-online.md): melhor esforço,
+    // nunca bloqueia o fluxo local — sem login, é um no-op silencioso.
+    publicarTemporada(mundo);
     // A temporada foi processada: o save dela vira lixo perigoso — se ficasse,
     // reabrir o app oferecia "Continuar" nela e o Fim de Temporada podia rodar
     // DE NOVO (temporada dupla no mundo). Limpo já; quem fechar o app agora
@@ -634,7 +638,7 @@ export default function App() {
             setTela={setTela}
           />
         )}
-        {tela === "online" && <Online setTela={setTela} />}
+        {tela === "online" && <Online setTela={setTela} mundo={mundo} />}
         {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
         {tela === "historiaLiga" && mundo && <HistoriaLiga mundo={mundo} setTela={setTela} />}
         {tela === "escalacao" && S && (

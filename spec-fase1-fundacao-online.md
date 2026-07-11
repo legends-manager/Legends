@@ -6,76 +6,66 @@
 > Online (Fase 3) NÃO entram aqui. Portão de saída: "ranking usado semanalmente por N pessoas da
 > liga + pedidos 'quero criar o meu'".
 
-## 0. Quem simula o fechamento de temporada — RATIFICADO (Felyp, jul/2026): opção (B)
+## 0. Quem simula o fechamento de temporada — PIVÔ (Felyp, jul/2026)
 
-O doc-mãe (§4) já sinaliza isto como pendente: *"o cliente nunca reporta placar; o servidor
-simula e publica [...] Decisão a ratificar pelo Felyp."* Isso tem duas leituras possíveis pro
-ranking da Fase 1, com custo bem diferente:
+Histórico da decisão (pra não se perder o porquê):
+1. Primeira ratificação: opção **(B)** — servidor simula a temporada inteira (motor portado pra
+   Edge Function), sem escalação nem partida ao vivo online, só pra alimentar o ranking.
+2. Construído, testado ao vivo — e aí o Felyp corrigiu o objetivo real: **"a cereja do bolo é
+   jogar online com todas as modalidades do modo offline"** — escalação, mercado, partida ao vivo
+   minuto a minuto, tudo. Não é ranking de uma "carreira de brinquedo" simulada à parte; é ranking
+   da carreira DE VERDADE que ele já joga.
 
-- **(A) Cliente simula, servidor só guarda.** O app continua rodando o motor 100% local (como
-  hoje) e, ao fechar uma temporada, manda o resultado (`carreira_temporadas`, ver §2) pro
-  Supabase. Rápido de construir — é só autenticação + um `INSERT`. **Risco:** dá pra forjar
-  (editar o payload antes de mandar). Pra um grupo de amigos do WhatsApp isso pode ser aceitável
-  no começo (o mesmo argumento de "confiança" que já sustenta o offline).
-- **(B) Servidor simula, cliente só mostra.** Porta `engine/simulador.js` + `engine/mundo.js`
-  pra uma Edge Function (Deno). O cliente manda só a intenção ("fechar temporada"), o servidor
-  roda a simulação e escreve o resultado. Sem forjar, mas é a mudança de arquitetura de verdade —
-  e é trabalho que a Fase 2 (Meu Campeonato) vai precisar de qualquer jeito, então não é
-  desperdiçado.
+Isso reabre a mesma escolha do §0 original, mas agora com o requisito real na mesa:
 
-**Recomendação:** (B), mas só para o FECHAMENTO de temporada (chamar
-`novaTemporada`/`avancarRodadaSimples`/`calcularAcessoRebaixamento`/`fecharTemporada` no
-servidor) — a partida ao vivo minuto-a-minuto continua 100% cliente (não tem o que forjar ali,
-o placar da rodada não afeta ranking sozinho, só o resultado agregado da temporada afeta). Isso
-mantém a experiência de partida ao vivo intacta e ataca só o ponto que entra no ranking. Motor já
-provado standalone nesse formato (ver validação de 12 temporadas × 5 seeds, sem UI, na sessão
-anterior) — portar pra Deno é o mesmo tipo de ajuste de import que fiz pra rodar em Node.
+- **(B) revisitada — servidor roda tudo de verdade** (escalação, partida, mercado): só assim fica
+  à prova de trapaça com decisão humana em cada passo. Exige portar praticamente `engine/` inteiro
+  (simulação de partida, IA de mercado) pra Edge Functions, cliente vira uma tela fina que só
+  manda intenção. Projeto grande, cada ação (substituir jogador, comprar) passa a depender de
+  rede. Efetivamente é a arquitetura da Fase 2 (Meu Campeonato) aplicada ao single-player.
+- **(A) — cliente joga local, servidor só guarda o resultado.** **ESCOLHIDA.** A carreira
+  continua 100% local — mesmíssima experiência de sempre, sem depender de internet pra jogar. Ao
+  fechar cada temporada (`finalizarTemporadaCarreira`, já existente), o resultado é publicado no
+  Supabase pro ranking público. Troca-se rigor anti-fraude por velocidade de entrega — mesmo
+  modelo de confiança que já sustenta o resto do app (liga de amigos do WhatsApp).
 
-**Decidido: (B).** O servidor simula o fechamento de temporada (Edge Function); a partida ao vivo
-minuto a minuto continua 100% cliente, sem mudar a experiência atual.
+**Decidido: (A).** `carreiras` deixa de ser uma simulação isolada e vira o **espelho público do
+`mundo` local de verdade**. Zero mudança na experiência de jogo (escalação/mercado/partida ao
+vivo continuam exatamente iguais); só ganha um "publicar" silencioso no fim de cada temporada.
 
 ## 1. Pré-requisito — conta Supabase
 
-Não crio contas em serviços de terceiros. Passo a passo pro Felyp:
-1. `supabase.com` → "Start your project" → login com GitHub.
-2. "New project": nome (ex. `legends-manager`), senha do banco (guardar), região mais próxima
-   (South America - São Paulo, se disponível).
-3. Depois de criado: Project Settings → API → copiar `Project URL` e `anon public key`.
-4. Me passar essas duas strings (não é segredo de escrita — a `anon key` é pública por design,
-   protegida por Row Level Security nas tabelas, ver §4) via `.env.local` no projeto, nunca
-   direto na conversa em texto puro se puder evitar.
+Feito — projeto `legends-manager's Project` (`rcxbzbbvomqprpdjkwfe`), South America / us-east-1,
+Postgres 17. Chaves em `.env.local` (gitignorado).
 
-## 2. Schema proposto (Postgres/Supabase)
-
-Escopo mínimo pra "login + ranking" — NADA de calendário/elencos/mercado online ainda (isso é
-Meu Campeonato, Fase 2, fora daqui).
+## 2. Schema (Postgres/Supabase) — versão atual, pós-pivô
 
 ```sql
--- Perfil público do técnico. auth.users já vem do Supabase Auth (e-mail, senha/magic link).
+-- Perfil público do técnico. auth.users já vem do Supabase Auth (e-mail via magic link).
 create table profiles (
   id uuid primary key references auth.users(id) on delete cascade,
-  apelido text unique not null,          -- exibido no ranking, único (evita duplicata feia)
-  nome_tecnico text,                     -- nome que já existe hoje no jogo local (pôster)
-  avatar_id text,                        -- reaproveita os ids da galeria fixa (a01..a12)
+  apelido text unique,                   -- opcional (nullable) — sem função própria hoje,
+                                          -- mantido por se um dia precisar de handle público.
+  nome_tecnico text,                     -- o nome pedido ao usuário, aparece no ranking.
+  avatar_id text,                        -- reaproveita os ids da galeria fixa (a01..a12), não usado ainda
   criado_em timestamptz not null default now()
 );
 
--- Uma carreira (mundo) por usuário — mesmo conceito do `mundo` local (legends-manager:mundo-v1),
--- só que server-side. "Novo jogo" no online = INSERT de uma carreira nova; a antiga vira histórico.
+-- Espelho público do `mundo` local de UM usuário. No máximo 1 por usuário —
+-- "apagar minha jornada" = DELETE desta linha (cascade limpa carreira_temporadas junto).
 create table carreiras (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
   meu_time text not null,
   temporada_atual int not null default 1,
-  divisao jsonb not null,                -- { "Real União": "C", "Fúria FC": "A", ... }
+  divisao jsonb not null,                -- espelha mundo.divisao
   hall_campeoes jsonb not null default '[]',
   historico_acesso jsonb not null default '[]',
   recordes jsonb not null default '{}',
-  ativa boolean not null default true,   -- só 1 ativa por usuário (índice único parcial abaixo)
   criado_em timestamptz not null default now(),
-  atualizado_em timestamptz not null default now()
+  atualizado_em timestamptz not null default now(),
+  unique (user_id)
 );
-create unique index carreira_ativa_unica on carreiras (user_id) where ativa;
 
 -- Uma linha por temporada fechada — é a fonte de dados do ranking (§3).
 -- Espelha mundo.carreira[] do save local, normalizado.
@@ -98,7 +88,8 @@ MVP: títulos (1º lugar) + temporadas jogadas. Calibrável depois (⚙️) sem 
 a view.
 
 ```sql
-create view ranking_tecnicos as
+create view ranking_tecnicos
+with (security_invoker = true) as
 select
   p.apelido,
   p.nome_tecnico,
@@ -111,57 +102,69 @@ group by p.id, p.apelido, p.nome_tecnico
 order by titulos desc, temporadas_jogadas desc;
 ```
 
-## 4. Row Level Security (obrigatório desde o dia 1, não depois)
+## 4. Row Level Security
 
-- `profiles`: leitura pública (o ranking precisa ler apelido/nome de todo mundo); escrita só do
-  próprio dono (`auth.uid() = id`).
-- `carreiras` / `carreira_temporadas`: leitura pública (mesma razão), escrita só do dono — e, se
-  a decisão do §0 for (B), só a Edge Function escreve (usando a `service_role` key, que NUNCA
-  vai pro cliente), fechando a escrita direta do usuário de vez.
+- `profiles`: leitura pública (o ranking precisa mostrar nome de todo mundo); escrita (insert/
+  update) só do próprio dono (`auth.uid() = id`).
+- `carreiras`: leitura pública; **escrita direta do cliente autenticado**, só na própria linha
+  (`auth.uid() = user_id`) — insert, update E delete (delete = "apagar minha jornada"). Isso é o
+  que mudou no pivô: antes só a Edge Function (service_role) escrevia; agora o cliente publica
+  direto via `supabase-js`, sem Edge Function no meio.
+- `carreira_temporadas`: leitura pública; insert só se a `carreira_id` referenciada pertencer ao
+  usuário autenticado (subquery em `carreiras`). Sem update/delete direto — o histórico de
+  temporada, uma vez publicado, é append-only (apagar é só via apagar a carreira inteira, cascade).
 
-## 5. Mapeamento do estado local → schema (o que fica de fora)
+## 5. Mapeamento do estado local → schema
 
-| Local (`storage/saveGame.js`)          | Online (Fase 1)              | Motivo                                    |
+| Local (`storage/saveGame.js` / mundo) | Online (Fase 1) | Motivo |
 |-----------------------------------------|-------------------------------|--------------------------------------------|
-| `mundo.divisao`                         | `carreiras.divisao`           | igual, só troca de lugar                   |
+| `mundo.divisao`                         | `carreiras.divisao`           | espelho direto, sincronizado a cada fechamento de temporada |
 | `mundo.carreira[]`                      | `carreira_temporadas`         | normalizado, é a fonte do ranking          |
-| `mundo.hallCampeoes` / `historicoAcesso`| `carreiras.hall_campeoes` / `historico_acesso` | igual, jsonb (não precisa de query própria ainda) |
-| save por série (`elencos`, `tabela`, `mercado`, `calendario`, `torcida`...) | **fica só local** | é a temporada EM ANDAMENTO — Fase 1 só publica o resultado FECHADO. Colocar isso no servidor é trabalho de Meu Campeonato (Fase 2), não de ranking. |
+| `mundo.hallCampeoes` / `historicoAcesso`| `carreiras.hall_campeoes` / `historico_acesso` | espelho direto, jsonb |
+| save por série (`elencos`, `tabela`, `mercado`, `calendario`, `torcida`, escalação, partida ao vivo) | **fica só local, para sempre** | é onde a decisão humana acontece — publicar isso exigiria o motor rodando no servidor (opção (B) revisitada, não escolhida). |
 
-## 6. LGPD (CLAUDE.md/doc-mãe §7 — obrigatório na Fase 1, não opcional)
+## 6. Fluxo (pós-pivô)
 
-- Dado mínimo: e-mail (Supabase Auth) + apelido. Nada de CPF/telefone/nome completo obrigatório
-  (nome_tecnico já é livre hoje, sem validação de identidade real).
+- **`storage/publicarOnline.js`** — módulo novo, 3 funções:
+  - `publicarTemporada(mundo)`: chamada automaticamente de dentro de `finalizarTemporadaCarreira`
+    (App.jsx) toda vez que uma temporada fecha. Sem sessão logada, é um no-op silencioso — nunca
+    trava o jogo local.
+  - `vincularCarreira(mundo)`: ação manual na tela Online — sincroniza o estado atual E publica
+    de uma vez todas as temporadas já fechadas antes do login (`mundo.carreira[]` inteiro),
+    cobrindo quem já jogava offline antes de criar conta.
+  - `apagarCarreiraOnline(userId)`: apaga a linha de `carreiras` do usuário (cascade limpa
+    `carreira_temporadas`) — "recomeçar do zero" no ranking, sem afetar o save local.
+- **`components/Online.jsx`**: login (magic link) + a UI de vincular/publicar/apagar + ranking
+  público. Recebe `mundo` como prop do App.jsx (mesmo objeto que o resto do jogo usa).
+- Removidas do fluxo (mas ainda deployadas, sem uso): as Edge Functions `criar-carreira` e
+  `fechar-temporada` da primeira versão do §0 — representavam a "carreira de brinquedo" simulada
+  isolada, incompatível com o pivô. Não fazem mal deployadas e sem tráfego; podem ser apagadas
+  quando alguém tiver acesso ao dashboard/CLI do Supabase (a MCP usada aqui não tem ferramenta de
+  delete de Edge Function).
+
+## 7. LGPD (CLAUDE.md/doc-mãe §7 — obrigatório na Fase 1, não opcional)
+
+- Dado mínimo: e-mail (Supabase Auth) + nome do técnico (livre, sem validação de identidade real).
   Continua valendo a trava de sempre: CPF/identificação pessoal nunca entra em nenhuma tabela.
-- Excluir conta: `on delete cascade` já cobre o dado técnico; falta o botão/fluxo na UI
-  (Supabase tem `auth.admin.deleteUser`, precisa rodar via Edge Function com service_role).
+- Excluir conta (a de verdade, do Supabase Auth — diferente de "apagar minha jornada", que só
+  tira do ranking): `on delete cascade` cobre o dado técnico, mas falta o botão/fluxo na UI.
 - Política de privacidade: texto simples, uma página — pendente, sem bloquear o schema.
 
-## 7. Checklist de saída da Fase 1
+## 8. Checklist de saída da Fase 1
 - [x] Conta Supabase criada (projeto `legends-manager's Project`, `rcxbzbbvomqprpdjkwfe`).
-- [x] §0 ratificado: servidor simula o fechamento de temporada (Edge Function).
-- [x] Schema acima criado + RLS ativo em `profiles`/`carreiras`/`carreira_temporadas`
-      (0 avisos de segurança no advisor). `carreiras`/`carreira_temporadas` propositalmente
-      SEM policy de escrita pra usuário comum — só a Edge Function (service_role) vai escrever.
-- [x] Login leve funcionando (e-mail/magic link via Supabase Auth, sem senha). Tela `Online`
-      (`src/components/Online.jsx`), acessível pelo botão "🌐 Legends Online (beta)" na capa.
-      Testado ao vivo: link enviado com sucesso pro e-mail do Felyp. Sessão via
-      `supabase.auth.onAuthStateChange`, sem tocar no fluxo offline.
-- [x] Edge Functions implantadas: `criar-carreira` (equivalente a mundoInicial) e
-      `fechar-temporada` (motor portado — simula as 3 séries inteiras, calcula
-      acesso/rebaixamento, grava em `carreira_temporadas`, atualiza `carreiras`). Ambas
-      confirmadas no ar (401 controlado sem auth, sem erro de bundle nos logs). Lógica
-      interna (escrita real no banco) ainda não testada ponta a ponta — depende de login
-      de verdade, que ainda não existe (próximo item).
-- [x] Tela de ranking lê `ranking_tecnicos` e mostra pro usuário (só leitura, nenhuma ação nova).
-      Testado ao vivo, sem login: lista vazia renderizou certo ("ninguém fechou temporada
-      ainda"), sem erro de RLS pro papel anon.
+- [x] §0: pivô pra opção (A) — carreira local publica o resultado, servidor não simula.
+- [x] Schema + RLS ativo (0 avisos de segurança no advisor) — cliente autenticado escreve direto
+      na própria linha de `carreiras`/`carreira_temporadas`.
+- [x] Login leve funcionando (e-mail/magic link via Supabase Auth, sem senha). Testado ao vivo,
+      incluindo o problema real de redirect (`emailRedirectTo` precisa apontar pro `localhost`
+      de quem VAI clicar o link, não pro sandbox de teste) — resolvido rodando `npm run dev` na
+      máquina do Felyp.
+- [x] Tela de ranking lê `ranking_tecnicos`, pública, sem login. Testada ao vivo (vazia = ok).
+- [ ] **Vincular/publicar carreira real**: código pronto (`vincularCarreira`, `publicarTemporada`
+      chamado de `finalizarTemporadaCarreira`), build limpo, mas o fluxo completo (vincular uma
+      carreira offline de verdade, fechar uma temporada e ver aparecer no ranking) só o Felyp
+      consegue testar ponta a ponta — precisa de uma carreira local em andamento + sessão logada
+      de verdade, nenhuma das duas eu consigo simular.
 - [ ] Botão de excluir conta (LGPD) — ainda não construído.
-- [x] Offline continua funcionando sem login (doc-mãe §4 — Modo 1 nunca depende de servidor).
-      Nenhum arquivo de `engine/`, `storage/saveGame.js` ou `storage/mercado.js` foi tocado;
-      a tela Online é 100% aditiva (1 botão novo na capa + 1 tela nova).
-- [ ] **Pendência real de teste:** `criar-carreira`/`fechar-temporada` (escrita no banco) só
-      têm a lógica interna validada via o motor puro (12 temporadas × 5 seeds, sessão anterior)
-      — o caminho HTTP completo (Deno + supabase-js + service_role) ainda não rodou com um
-      usuário logado de verdade. Só o Felyp consegue completar isso (clicar o magic link e
-      testar "Criar carreira"/"Fechar temporada" na tela Online) — não posso simular login.
+- [x] Offline continua funcionando sem login — nenhum arquivo de `engine/` ou `storage/saveGame.js`
+      foi tocado; publicação é best-effort e nunca bloqueia o fluxo local.

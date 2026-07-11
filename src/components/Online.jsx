@@ -1,77 +1,67 @@
 // src/components/Online.jsx
-// Fase 1 (spec-fase1-fundacao-online.md): login leve (e-mail, sem senha),
-// carreira online (server-side, via Edge Functions) e ranking — os 3 itens
-// finais do checklist da fase. O Modo 1 (offline) nunca passa por aqui
-// (doc-mãe §4); o servidor sempre simula o fechamento de temporada (§0).
+// Fase 1 (spec-fase1-fundacao-online.md, pivô): login leve (e-mail, sem
+// senha) e ranking público que espelha a carreira offline DE VERDADE — sem
+// simulação paralela. Escalação, mercado e partida ao vivo continuam 100%
+// locais (App.jsx); esta tela só publica o resultado já decidido lá.
 import { useState, useEffect } from "react";
 import { supabase } from "../storage/supabaseClient";
-import { TODOS_OS_TIMES } from "../data/series";
+import { vincularCarreira, apagarCarreiraOnline } from "../storage/publicarOnline";
 import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
 
 const RESULTADO_LABEL = { subiu: "subiu", desceu: "desceu", manteve: "permaneceu" };
 
-// error.message do supabase-js pra erro de Edge Function é só um genérico
-// ("non-2xx status code") — o motivo de verdade vem no corpo da resposta,
-// acessível via error.context (a Response crua).
-const mensagemDeErro = async (error) => {
-  try {
-    const corpo = await error.context.json();
-    return corpo.error || error.message;
-  } catch (e) {
-    return error.message;
-  }
-};
-
-function CarreiraOnline({ sessao }) {
-  const [carreira, setCarreira] = useState(undefined); // undefined = carregando, null = nenhuma
-  const [meuTime, setMeuTime] = useState(TODOS_OS_TIMES[0]);
+function CarreiraOnline({ sessao, mundo }) {
+  const [publicada, setPublicada] = useState(undefined); // undefined = carregando, null = nenhuma ainda
   const [nomeTecnico, setNomeTecnico] = useState("");
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState(null);
-  const [ultimoResultado, setUltimoResultado] = useState(null);
+  const [confirmaApagar, setConfirmaApagar] = useState(false);
 
-  const carregarCarreira = async () => {
-    const { data } = await supabase
-      .from("carreiras")
-      .select("*")
-      .eq("user_id", sessao.user.id)
-      .eq("ativa", true)
-      .maybeSingle();
-    setCarreira(data || null);
-    // Pré-preenche o nome do técnico se ele já tiver um perfil (ex.: já
-    // fechou uma carreira antes e está criando outra).
-    const { data: perfil } = await supabase
-      .from("profiles")
-      .select("nome_tecnico")
-      .eq("id", sessao.user.id)
-      .maybeSingle();
+  const carregar = async () => {
+    const { data: perfil } = await supabase.from("profiles").select("nome_tecnico").eq("id", sessao.user.id).maybeSingle();
     if (perfil?.nome_tecnico) setNomeTecnico(perfil.nome_tecnico);
+    const { data } = await supabase.from("carreiras").select("*").eq("user_id", sessao.user.id).maybeSingle();
+    setPublicada(data || null);
   };
 
-  useEffect(() => { carregarCarreira(); }, [sessao.user.id]); // eslint-disable-line
+  useEffect(() => { carregar(); }, [sessao.user.id]); // eslint-disable-line
 
-  const criarCarreira = async () => {
+  const vincular = async () => {
     setErro(null);
     setProcessando(true);
-    const { data, error } = await supabase.functions.invoke("criar-carreira", { body: { meuTime, nomeTecnico } });
+    const { error: erroPerfil } = await supabase
+      .from("profiles")
+      .upsert({ id: sessao.user.id, nome_tecnico: nomeTecnico }, { onConflict: "id" });
+    if (erroPerfil) { setProcessando(false); setErro(erroPerfil.message); return; }
+    const { carreira, error } = await vincularCarreira(mundo);
     setProcessando(false);
-    if (error) { setErro(await mensagemDeErro(error)); return; }
-    setCarreira(data.carreira);
-    setUltimoResultado(null);
+    if (error) { setErro(error); return; }
+    setPublicada(carreira);
   };
 
-  const fecharTemporada = async () => {
-    setErro(null);
+  const apagar = async () => {
     setProcessando(true);
-    const { data, error } = await supabase.functions.invoke("fechar-temporada", { body: {} });
+    const { error } = await apagarCarreiraOnline(sessao.user.id);
     setProcessando(false);
-    if (error) { setErro(await mensagemDeErro(error)); return; }
-    setCarreira(data.carreira);
-    setUltimoResultado(data);
+    setConfirmaApagar(false);
+    if (error) { setErro(error); return; }
+    setPublicada(null);
   };
 
-  if (carreira === undefined) {
-    return <div className="text-sm mt-4" style={{ color: "#A78FC7" }}>Carregando carreira…</div>;
+  if (publicada === undefined) {
+    return <div className="text-sm mt-4" style={{ color: "#A78FC7" }}>Carregando…</div>;
+  }
+
+  if (!mundo) {
+    return (
+      <div className="rounded-xl p-4 mt-4" style={card}>
+        <Eyebrow>Ranking online</Eyebrow>
+        <p className="text-xs mt-1" style={{ color: "#A78FC7" }}>
+          Você ainda não tem uma carreira offline em andamento. Volta pra capa, escolhe um time e joga
+          normalmente — quando quiser, volta aqui e vincula ao ranking.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -82,69 +72,66 @@ function CarreiraOnline({ sessao }) {
         </div>
       )}
 
-      {!carreira && (
-        <div className="rounded-xl p-4" style={card}>
-          <Eyebrow>Carreira online</Eyebrow>
-          <p className="text-xs mt-1" style={{ color: "#A78FC7" }}>
-            Escolha um time — o servidor simula as temporadas e alimenta o ranking.
-          </p>
-          <input
-            value={nomeTecnico}
-            onChange={(e) => setNomeTecnico(e.target.value)}
-            placeholder="Nome do técnico (aparece no ranking)"
-            className="w-full mt-3 rounded-xl px-4 py-3 outline-none"
-            style={{ ...card, color: "#F2EDFA" }}
-          />
-          <select
-            value={meuTime}
-            onChange={(e) => setMeuTime(e.target.value)}
-            className="w-full mt-3 rounded-xl px-4 py-3 outline-none"
-            style={{ ...card, color: "#F2EDFA" }}
-          >
-            {TODOS_OS_TIMES.map((t) => <option key={t} value={t}>{t}</option>)}
-          </select>
-          <button
-            onClick={criarCarreira}
-            disabled={processando || !nomeTecnico.trim()}
-            className="w-full rounded-xl py-3.5 font-bold mt-3 disabled:opacity-50"
-            style={amber}
-          >
-            {processando ? "Criando…" : "Criar carreira"}
-          </button>
-        </div>
-      )}
-
-      {carreira && (
-        <div className="rounded-xl p-4" style={{ ...card, border: "1px solid #FFC53D" }}>
-          <div className="flex items-center gap-3">
-            <Avatar t={carreira.meu_time} />
-            <div className="flex-1">
-              <div className="font-black italic">{carreira.meu_time}</div>
-              <div className="text-xs" style={{ color: "#A78FC7" }}>
-                Série {carreira.divisao[carreira.meu_time]} · Temporada {carreira.temporada_atual}
-              </div>
+      <div className="rounded-xl p-4" style={{ ...card, border: publicada ? "1px solid #FFC53D" : undefined }}>
+        <Eyebrow>{publicada ? "Sua jornada" : "Vincular ao ranking online"}</Eyebrow>
+        <div className="flex items-center gap-3 mt-2">
+          <Avatar t={mundo.meuTime} />
+          <div className="flex-1">
+            <div className="font-black italic">{mundo.meuTime}</div>
+            <div className="text-xs" style={{ color: "#A78FC7" }}>
+              Série {mundo.divisao[mundo.meuTime]} · Temporada {mundo.temporada}
+              {mundo.carreira.length > 0 && ` · ${mundo.carreira.length} temporada${mundo.carreira.length === 1 ? "" : "s"} disputada${mundo.carreira.length === 1 ? "" : "s"}`}
             </div>
           </div>
+        </div>
 
-          {ultimoResultado && (
-            <div className="text-xs mt-3 rounded-lg p-2" style={{ background: "#150A26" }}>
-              Temporada {ultimoResultado.temporadaFechada}: {ultimoResultado.minhaPosicao}º na Série{" "}
-              {ultimoResultado.minhaSerie} — {RESULTADO_LABEL[ultimoResultado.meuResultado]}, vai pra Série{" "}
-              {ultimoResultado.serieDestino}.
-            </div>
-          )}
+        <input
+          value={nomeTecnico}
+          onChange={(e) => setNomeTecnico(e.target.value)}
+          placeholder="Nome do técnico (aparece no ranking)"
+          className="w-full mt-3 rounded-xl px-4 py-3 outline-none"
+          style={{ ...card, color: "#F2EDFA" }}
+        />
 
-          <button
-            onClick={fecharTemporada}
-            disabled={processando}
-            className="w-full rounded-xl py-3.5 font-bold mt-3 disabled:opacity-50"
-            style={amber}
-          >
-            {processando ? "Simulando no servidor…" : `Fechar temporada ${carreira.temporada_atual}`}
-          </button>
+        <button
+          onClick={vincular}
+          disabled={processando || !nomeTecnico.trim()}
+          className="w-full rounded-xl py-3.5 font-bold mt-3 disabled:opacity-50"
+          style={amber}
+        >
+          {processando ? "Publicando…" : publicada ? "Atualizar ranking" : "Vincular ao ranking"}
+        </button>
+        {!publicada && (
           <p className="text-xs mt-2 text-center" style={{ color: "#6E5A92" }}>
-            O servidor simula as 3 séries inteiras e decide o resultado — sem escalação, sem partida ao vivo.
+            A partir daqui, toda vez que você fechar uma temporada no jogo (jogando normal, com
+            escalação e tudo), o resultado é publicado aqui automaticamente.
           </p>
+        )}
+      </div>
+
+      {publicada && !confirmaApagar && (
+        <button
+          onClick={() => setConfirmaApagar(true)}
+          className="w-full rounded-xl py-3 font-bold mt-3 text-sm"
+          style={{ ...card, color: "#FF5A5A" }}
+        >
+          Apagar minha jornada do ranking
+        </button>
+      )}
+      {confirmaApagar && (
+        <div className="rounded-xl p-4 mt-3" style={{ ...card, border: "1px solid #FF5A5A" }}>
+          <p className="text-xs" style={{ color: "#D9CCEE" }}>
+            Isso apaga seu histórico do <b>ranking público</b> (não mexe no seu save local — o jogo
+            offline continua de onde parou). Não dá pra desfazer.
+          </p>
+          <div className="flex gap-2 mt-3">
+            <button onClick={() => setConfirmaApagar(false)} className="flex-1 rounded-xl py-2.5 font-bold text-sm" style={card}>
+              Cancelar
+            </button>
+            <button onClick={apagar} disabled={processando} className="flex-1 rounded-xl py-2.5 font-bold text-sm" style={{ background: "#FF5A5A", color: "#1A1607" }}>
+              Apagar
+            </button>
+          </div>
         </div>
       )}
     </div>
@@ -171,7 +158,7 @@ function Ranking() {
       <Eyebrow>Ranking de técnicos</Eyebrow>
       {linhas === undefined && <div className="text-sm mt-2" style={{ color: "#A78FC7" }}>Carregando…</div>}
       {linhas && linhas.length === 0 && (
-        <div className="text-sm mt-2" style={{ color: "#A78FC7" }}>Ninguém fechou uma temporada ainda — seja o primeiro.</div>
+        <div className="text-sm mt-2" style={{ color: "#A78FC7" }}>Ninguém publicou uma temporada ainda — seja o primeiro.</div>
       )}
       {linhas && linhas.length > 0 && (
         <div className="mt-2 space-y-1">
@@ -179,7 +166,7 @@ function Ranking() {
             <div key={i} className="rounded-xl px-3 py-2 text-sm flex items-center justify-between" style={card}>
               <span>
                 <span style={{ color: "#A78FC7" }}>{i + 1}º</span>{" "}
-                <b>{l.nome_tecnico || l.apelido}</b>
+                <b>{l.nome_tecnico || l.apelido || "Técnico anônimo"}</b>
               </span>
               <span className="text-xs" style={{ color: "#FFC53D" }}>
                 🏆 {l.titulos} · {l.temporadas_jogadas} temporada{l.temporadas_jogadas === 1 ? "" : "s"}
@@ -192,7 +179,7 @@ function Ranking() {
   );
 }
 
-export default function Online({ setTela }) {
+export default function Online({ setTela, mundo }) {
   const [sessao, setSessao] = useState(undefined); // undefined = carregando, null = deslogado
   const [email, setEmail] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -230,8 +217,8 @@ export default function Online({ setTela }) {
       <Eyebrow>Legends Online · Fase 1 (beta)</Eyebrow>
       <h1 className="text-xl font-black italic mt-1">Entrar</h1>
       <p className="text-sm mt-2" style={{ color: "#A78FC7" }}>
-        Login leve, sem senha — só pra identificar seu técnico no ranking online.
-        O jogo offline (Ligas Oficiais) continua funcionando sem isso.
+        Login leve, sem senha — sua carreira continua sendo jogada offline igual sempre; aqui só
+        publicamos o resultado de cada temporada num ranking público de técnicos.
       </p>
 
       {!supabase && (
@@ -284,7 +271,7 @@ export default function Online({ setTela }) {
         </div>
       )}
 
-      {supabase && sessao && <CarreiraOnline sessao={sessao} />}
+      {supabase && sessao && <CarreiraOnline sessao={sessao} mundo={mundo} />}
 
       <Ranking />
 
