@@ -6,10 +6,12 @@
 //   jogador (a divisão persiste — não se reescolhe a cada temporada) e um
 //   botão "Continuar"/"Começar temporada", em vez do seletor. "Novo jogo"
 //   reinicia tudo.
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { SERIES, ORDEM_SERIES } from "../data/series";
 import { totalRodadas } from "../engine/calendario";
+import { supabase } from "../storage/supabaseClient";
 import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
+import LoginOnline from "./LoginOnline";
 
 const RESULTADO_LABEL = { subiu: "subiu", desceu: "desceu", manteve: "permaneceu" };
 
@@ -72,7 +74,7 @@ function CampoTecnico({ nomeTec, setNomeTec }) {
 // ---------------- Modo carreira (com mundo) ----------------
 function TelaCarreira({
   mundo, nomeTec, setNomeTec, saveData, continuarJogo, retomarCarreiraSemSave, novoJogo, setTela,
-  promptInstalar, instalarApp,
+  promptInstalar, instalarApp, sessao,
 }) {
   const [confirmaNovoJogo, setConfirmaNovoJogo] = useState(false);
   const minhaSerie = mundo.divisao[mundo.meuTime];
@@ -148,8 +150,13 @@ function TelaCarreira({
         Apaga a carreira inteira (todas as séries) e volta a escolher time.
       </p>
 
-      <button onClick={() => setTela("online")} className="w-full rounded-xl py-3 font-bold mt-3 text-sm" style={card}>
-        🌐 Legends Online (beta)
+      {sessao === null && (
+        <div className="mt-3">
+          <LoginOnline sessao={sessao} />
+        </div>
+      )}
+      <button onClick={() => setTela("ranking")} className="w-full rounded-xl py-3 font-bold mt-3 text-sm" style={card}>
+        🏆 Ranking online
       </button>
 
       <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />
@@ -187,9 +194,18 @@ function TelaCarreira({
 // ---------------- Sem mundo: seletor de série + time (1ª vez / pós "Novo jogo") ----------------
 function TelaEscolha({
   serie, setSerie, nomeTec, setNomeTec, iniciarTemporada, avisoSemSave,
-  promptInstalar, instalarApp, setTela,
+  promptInstalar, instalarApp, setTela, sessao,
 }) {
   const serieAtiva = SERIES[serie];
+
+  // Se já logado antes (ex.: voltou depois de "Novo jogo") e o nome ainda
+  // está vazio, pré-preenche com o nome já cadastrado no perfil online —
+  // "tudo uma coisa só", não pede o mesmo nome duas vezes.
+  useEffect(() => {
+    if (!supabase || !sessao || nomeTec) return;
+    supabase.from("profiles").select("nome_tecnico").eq("id", sessao.user.id).maybeSingle()
+      .then(({ data }) => { if (data?.nome_tecnico) setNomeTec(data.nome_tecnico); });
+  }, [sessao]); // eslint-disable-line
 
   return (
     <div className="pt-6">
@@ -229,6 +245,16 @@ function TelaEscolha({
         </div>
       )}
 
+      <div className="mt-5">
+        <Eyebrow>{sessao ? "Concorrendo no ranking online" : "Ranking online (opcional)"}</Eyebrow>
+        <p className="text-xs mt-1 mb-2" style={{ color: "#A78FC7" }}>
+          {sessao
+            ? "Sua carreira vai publicar pontos aqui sozinha a cada temporada."
+            : "Entra com e-mail e sua carreira já nasce concorrendo — sem senha, opcional, o jogo funciona igual sem isso."}
+        </p>
+        <LoginOnline sessao={sessao} />
+      </div>
+
       <CampoTecnico nomeTec={nomeTec} setNomeTec={setNomeTec} />
 
       <div className="mt-5">
@@ -252,8 +278,8 @@ function TelaEscolha({
         Elencos reais (Copa10). Achou nome errado? Corrige em ✏️ na tela de escalação.
       </div>
 
-      <button onClick={() => setTela("online")} className="w-full rounded-xl py-3 font-bold mt-3 text-sm" style={card}>
-        🌐 Legends Online (beta)
+      <button onClick={() => setTela("ranking")} className="w-full rounded-xl py-3 font-bold mt-3 text-sm" style={card}>
+        🏆 Ver ranking online
       </button>
 
       <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />
@@ -265,7 +291,7 @@ function TelaEscolha({
 
 export default function TelaInicial({
   serie, setSerie, nomeTec, setNomeTec, iniciarTemporada, saveData, continuarJogo, avisoSemSave,
-  mundo, novoJogo, retomarCarreiraSemSave, setTela, promptInstalar, instalarApp,
+  mundo, novoJogo, retomarCarreiraSemSave, setTela, promptInstalar, instalarApp, sessao,
 }) {
   if (mundo) {
     return (
@@ -280,6 +306,7 @@ export default function TelaInicial({
         setTela={setTela}
         promptInstalar={promptInstalar}
         instalarApp={instalarApp}
+        sessao={sessao}
       />
     );
   }
@@ -294,6 +321,7 @@ export default function TelaInicial({
       promptInstalar={promptInstalar}
       instalarApp={instalarApp}
       setTela={setTela}
+      sessao={sessao}
     />
   );
 }

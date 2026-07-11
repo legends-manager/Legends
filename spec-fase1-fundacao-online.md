@@ -181,6 +181,35 @@ logo em seguida, mesmo pra quem ainda não jogou nenhuma temporada (motivação 
 `CarreiraOnline` (vincular/publicar/apagar) continua exigindo um `mundo` local de verdade — isso
 não muda, só a ORDEM em que as coisas aparecem na tela.
 
+## 6.5 Segundo pivô: "tudo uma coisa só" (Felyp, jul/2026 — funcionou, mas confuso)
+
+Depois de testar tudo funcionando, feedback: a tela `Online` separada, com login E cadastro E
+vincular como passos distintos, ficou confusa — duas telas, dois lugares pra "nome do técnico"
+(o da capa offline e o do perfil online), um botão "vincular" manual sobrando. Pedido: uma coisa
+só, e "estude técnicas pra melhorar o layout e caminho do usuário".
+
+Redesenho (princípios aplicados: reduzir pontos de decisão, uma fonte de verdade por dado,
+progressive disclosure, caminho de menor resistência é o default):
+- **`Online.jsx` foi removido**, dividido em dois componentes menores e reaproveitáveis:
+  - `components/LoginOnline.jsx` — widget compacto (e-mail + link mágico / "logado como X, sair"),
+    sem estado de sessão próprio (recebe `sessao` como prop).
+  - `components/Ranking.jsx` — só a lista + o widget de login + "vincular"/"apagar" pra quem já
+    tinha carreira ANTES de logar (caso legado). Vira só mais uma tela do jogo, igual Tabela ou
+    Artilharia, acessada por "🏆 Ranking online" — não uma seção "modo online" à parte.
+- **Sessão sobe pro `App.jsx`** (era local de `Online.jsx`): uma única fonte de verdade, passada
+  como prop pra `TelaInicial` e `Ranking`, em vez de cada tela ter seu próprio listener de auth.
+- **`LoginOnline` aparece direto na capa** (`TelaEscolha`), antes do campo de nome — entrar com
+  e-mail vira parte do fluxo normal de começar uma carreira, não uma seção separada pra descobrir.
+- **Um só campo de nome**: o "Nome do técnico" que já existia na capa (offline, sempre existiu)
+  passa a ser TAMBÉM o nome do perfil online — sincronizado só na hora de escolher o time
+  (`iniciarTemporada`), sem duplicar o campo. Se o usuário já tinha um nome cadastrado (login
+  antigo), a capa pré-preenche sozinha.
+- **Vincular vira automático**: `iniciarTemporada` (App.jsx), se já tem sessão, chama
+  `vincularCarreira` sozinho, junto de escolher o time — sem botão manual. O botão "Vincular
+  minha carreira ao ranking" em `Ranking.jsx` só aparece pro caso legado (carreira offline criada
+  ANTES de existir login).
+- Testado ao vivo: build limpo, capa unificada carregando certo, ranking acessível em 1 clique.
+
 ## 7. LGPD (CLAUDE.md/doc-mãe §7 — obrigatório na Fase 1, não opcional)
 
 - Dado mínimo: e-mail (Supabase Auth) + nome do técnico (livre, sem validação de identidade real).

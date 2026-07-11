@@ -34,7 +34,7 @@ import {
 } from "./storage/saveGame";
 import { incrementarMetrica } from "./storage/metricas";
 import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz";
-import { publicarTemporada } from "./storage/publicarOnline";
+import { publicarTemporada, vincularCarreira } from "./storage/publicarOnline";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -49,7 +49,8 @@ import Artilharia from "./components/Artilharia";
 import FimDeTemporada from "./components/FimDeTemporada";
 import QuizModal from "./components/QuizModal";
 import TelaCopa from "./components/TelaCopa";
-import Online from "./components/Online";
+import Ranking from "./components/Ranking";
+import { supabase } from "./storage/supabaseClient";
 
 export default function App() {
   const Sref = useRef(null);
@@ -79,6 +80,9 @@ export default function App() {
   const [quizAtual, setQuizAtual] = useState(null); // pergunta sorteada (quiz de curiosidades), ou null
   const [ultimaPerguntaQuiz, setUltimaPerguntaQuiz] = useState(null); // evita repetir a mesma 2x seguidas
   const [fimDeTemporadaResumo, setFimDeTemporadaResumo] = useState(null);
+  // Sessão online (Fase 1): fonte única, controlada aqui e passada pra quem
+  // precisa (TelaInicial, Ranking) — undefined = carregando, null = deslogado.
+  const [sessao, setSessao] = useState(undefined);
   const anunciados = useRef(0);
   const anunciadosChance = useRef(0);
   const jogoRef = useRef(null);
@@ -141,6 +145,14 @@ export default function App() {
     setPromptInstalar(null); // aceito ou não, o evento só serve uma vez
   };
 
+  // ---------- sessão online (Fase 1) ----------
+  useEffect(() => {
+    if (!supabase) { setSessao(null); return; }
+    supabase.auth.getSession().then(({ data }) => setSessao(data.session));
+    const { data: sub } = supabase.auth.onAuthStateChange((_ev, s) => setSessao(s));
+    return () => sub.subscription.unsubscribe();
+  }, []);
+
   // ---------- carregar save da série ativa ----------
   useEffect(() => {
     if (!localStorageDisponivel()) return;
@@ -170,6 +182,13 @@ export default function App() {
     // Persiste já no início: forças/atributos sorteados não podem se perder nem
     // ser re-sorteados no meio da temporada.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: time, avatarId, S: nova });
+    // Ranking online (Fase 1): se já logado, a carreira nasce vinculada na
+    // hora — "tudo uma coisa só", sem passo manual de "vincular" depois.
+    // Melhor esforço: sem sessão, ou com erro de rede, o jogo local segue normal.
+    if (sessao) {
+      supabase.from("profiles").upsert({ id: sessao.user.id, nome_tecnico: nomeTec }, { onConflict: "id" });
+      vincularCarreira(novoMundo);
+    }
     setTela("mercado");
   };
 
@@ -637,9 +656,10 @@ export default function App() {
             novoJogo={novoJogo}
             retomarCarreiraSemSave={retomarCarreiraSemSave}
             setTela={setTela}
+            sessao={sessao}
           />
         )}
-        {tela === "online" && <Online setTela={setTela} mundo={mundo} />}
+        {tela === "ranking" && <Ranking setTela={setTela} mundo={mundo} sessao={sessao} />}
         {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
         {tela === "historiaLiga" && mundo && <HistoriaLiga mundo={mundo} setTela={setTela} />}
         {tela === "escalacao" && S && (
