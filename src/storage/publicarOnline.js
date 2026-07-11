@@ -5,11 +5,19 @@
 // Nunca bloqueia nem atrasa o jogo: sem sessão, é um no-op silencioso.
 import { supabase } from "./supabaseClient";
 
+// Ranking por pontos (pedido do Felyp): pontos da temporada = P da tabela
+// local (3/vitória + 1/empate, mesmo cálculo que a Tabela.jsx já mostra) +
+// bônus por título. ⚙️ calibrável.
+export const PONTOS_TITULO = 50;
+
 // Sincroniza o estado atual do mundo (divisão, hall de campeões, histórico de
 // acesso) e publica a temporada que acabou de fechar em carreira_temporadas.
 // Chamado automaticamente ao fim de cada finalizarTemporadaCarreira — best
 // effort: erro de rede não deve travar o jogo, só fica sem publicar.
-export async function publicarTemporada(mundo) {
+// `pontosTemporada` vem de S.tabela[meuTime].P (o P já existe no motor, ver
+// engine/classificacao.js) — passado pelo chamador porque S some depois que
+// a temporada fecha.
+export async function publicarTemporada(mundo, pontosTemporada) {
   if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
@@ -36,6 +44,7 @@ export async function publicarTemporada(mundo) {
     // A última entrada de mundo.carreira[] é a temporada que acabou de fechar.
     const ultima = mundo.carreira[mundo.carreira.length - 1];
     if (!ultima) return;
+    const pontos = (pontosTemporada || 0) + (ultima.posicao === 1 ? PONTOS_TITULO : 0);
     await supabase.from("carreira_temporadas").upsert(
       {
         carreira_id: carreira.id,
@@ -44,6 +53,7 @@ export async function publicarTemporada(mundo) {
         time: ultima.time,
         posicao: ultima.posicao,
         resultado: ultima.resultado,
+        pontos,
       },
       { onConflict: "carreira_id,temporada" },
     );
@@ -78,19 +88,31 @@ export async function vincularCarreira(mundo) {
     .single();
   if (erroUpsert) return { error: erroUpsert.message };
 
+  // Só INSERE as que ainda não existem — nunca sobrescreve uma temporada já
+  // publicada (essa pode ter pontos reais de V/E/D já registrados por
+  // publicarTemporada; temporadas antigas aqui só ganham o bônus de título,
+  // porque o placar de vitória/empate daquela época não ficou salvo em
+  // lugar nenhum antes deste recurso existir).
   if (mundo.carreira.length > 0) {
-    const linhas = mundo.carreira.map((c) => ({
-      carreira_id: carreira.id,
-      temporada: c.temporada,
-      serie: c.serie,
-      time: c.time,
-      posicao: c.posicao,
-      resultado: c.resultado,
-    }));
-    const { error: erroTemporadas } = await supabase
+    const { data: existentes } = await supabase
       .from("carreira_temporadas")
-      .upsert(linhas, { onConflict: "carreira_id,temporada" });
-    if (erroTemporadas) return { error: erroTemporadas.message, carreira };
+      .select("temporada")
+      .eq("carreira_id", carreira.id);
+    const jaPublicadas = new Set((existentes || []).map((e) => e.temporada));
+    const faltantes = mundo.carreira.filter((c) => !jaPublicadas.has(c.temporada));
+    if (faltantes.length > 0) {
+      const linhas = faltantes.map((c) => ({
+        carreira_id: carreira.id,
+        temporada: c.temporada,
+        serie: c.serie,
+        time: c.time,
+        posicao: c.posicao,
+        resultado: c.resultado,
+        pontos: c.posicao === 1 ? PONTOS_TITULO : 0,
+      }));
+      const { error: erroTemporadas } = await supabase.from("carreira_temporadas").insert(linhas);
+      if (erroTemporadas) return { error: erroTemporadas.message, carreira };
+    }
   }
 
   return { carreira };

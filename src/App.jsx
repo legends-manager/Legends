@@ -200,7 +200,8 @@ export default function App() {
     salvarMundo(mundo);
     // Ranking online (Fase 1, spec-fase1-fundacao-online.md): melhor esforço,
     // nunca bloqueia o fluxo local — sem login, é um no-op silencioso.
-    publicarTemporada(mundo);
+    // Pontos vêm de S.tabela AGORA, antes de S sumir na próxima temporada.
+    publicarTemporada(mundo, S.tabela[meuTime].P);
     // A temporada foi processada: o save dela vira lixo perigoso — se ficasse,
     // reabrir o app oferecia "Continuar" nela e o Fim de Temporada podia rodar
     // DE NOVO (temporada dupla no mundo). Limpo já; quem fechar o app agora

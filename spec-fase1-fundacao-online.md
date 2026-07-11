@@ -142,6 +142,45 @@ order by titulos desc, temporadas_jogadas desc;
   quando alguém tiver acesso ao dashboard/CLI do Supabase (a MCP usada aqui não tem ferramenta de
   delete de Edge Function).
 
+## 6.1 Bugfix ao vivo: faltava policy de UPDATE
+
+Testando de verdade, "Atualizar ranking" pela segunda vez quebrava com *"new row violates row-
+level security policy for table carreira_temporadas"*. Causa: o upsert (`onConflict:
+carreira_id,temporada`) vira `UPDATE` quando a temporada já existe, e só existia policy de
+`INSERT`. Corrigido com uma policy de `UPDATE` espelhando a de insert (dono da `carreira_id`).
+`vincularCarreira` também foi endurecida pra nunca sobrescrever pontos já publicados: agora só
+faz `INSERT` das temporadas que ainda não existem, checando antes.
+
+## 6.2 Ranking por pontos (pedido do Felyp, não só contagem de títulos)
+
+`carreira_temporadas` ganhou a coluna `pontos`. Fórmula: **P da tabela da temporada** (3/vitória
++ 1/empate — o mesmo `P` que `engine/classificacao.js` já calcula, passado pelo App.jsx via
+`S.tabela[meuTime].P` antes de `S` sumir) **+ `PONTOS_TITULO` (50, ⚙️) se foi campeão**. A view
+`ranking_tecnicos` agora ordena por `pontos desc` (títulos continua exibido, mas como estatística
+secundária). Temporadas antigas, publicadas via `vincularCarreira` (backfill) de antes deste
+recurso existir, não têm o V/E/D salvo em lugar nenhum — contam só o bônus de título, nunca são
+retroativamente "inventadas".
+
+## 6.3 Elenco fictício no topo do ranking (decisão explícita do Felyp)
+
+A view `ranking_tecnicos` inclui um `UNION ALL` com 6 nomes fictícios (Phelps liderando com 1850
+pts, depois Ricardinho_10/CoachZeus/TecnicoFera/Mestre_Tatico/NovatoChampion em ordem decrescente)
+— **sem nenhuma marcação de "exemplo"**, indistinguíveis de técnicos reais. Decisão pedida
+explicitamente pelo Felyp pra criar senso de competição enquanto a base real de usuários ainda não
+alimenta o ranking sozinha; eu levantei a tensão com a "regra de ouro" do doc-mãe ("gente real
+jogando o campeonato real dela") antes de implementar — ele confirmou a rota sem marcação mesmo
+assim. **Isto é temporário por natureza**: quando a liga real começar a publicar pontos de
+verdade, alguém precisa rodar uma nova migration trocando a view de volta pro `SELECT` real (sem
+o `UNION ALL`) — CHECKLIST não fecha essa fase sozinho, é uma ação manual futura.
+
+## 6.4 Cadastro do nome vira parte do login, não um passo opcional depois
+
+`PerfilOnline` (dentro de `Online.jsx`) aparece imediatamente após o login, antes até de existir
+uma carreira vinculada — pedido do Felyp ("obrigatório desde o início"). O ranking também aparece
+logo em seguida, mesmo pra quem ainda não jogou nenhuma temporada (motivação antes de começar).
+`CarreiraOnline` (vincular/publicar/apagar) continua exigindo um `mundo` local de verdade — isso
+não muda, só a ORDEM em que as coisas aparecem na tela.
+
 ## 7. LGPD (CLAUDE.md/doc-mãe §7 — obrigatório na Fase 1, não opcional)
 
 - Dado mínimo: e-mail (Supabase Auth) + nome do técnico (livre, sem validação de identidade real).
@@ -159,12 +198,15 @@ order by titulos desc, temporadas_jogadas desc;
       incluindo o problema real de redirect (`emailRedirectTo` precisa apontar pro `localhost`
       de quem VAI clicar o link, não pro sandbox de teste) — resolvido rodando `npm run dev` na
       máquina do Felyp.
-- [x] Tela de ranking lê `ranking_tecnicos`, pública, sem login. Testada ao vivo (vazia = ok).
-- [ ] **Vincular/publicar carreira real**: código pronto (`vincularCarreira`, `publicarTemporada`
-      chamado de `finalizarTemporadaCarreira`), build limpo, mas o fluxo completo (vincular uma
-      carreira offline de verdade, fechar uma temporada e ver aparecer no ranking) só o Felyp
-      consegue testar ponta a ponta — precisa de uma carreira local em andamento + sessão logada
-      de verdade, nenhuma das duas eu consigo simular.
+- [x] Tela de ranking lê `ranking_tecnicos`, pública, sem login, ordenada por pontos. Testada ao
+      vivo com dados reais: Phelps (fictício) liderando, Felyp aparecendo depois dos fictícios.
+- [x] **Vincular/publicar carreira real**: testado ao vivo pelo Felyp — achou e corrigimos 1 bug
+      real (RLS de update faltando, §6.1). Fluxo completo (vincular, fechar temporada, ver
+      aparecer no ranking) confirmado funcionando.
+- [x] Ranking por pontos (não só títulos) — §6.2.
+- [x] Cadastro do nome do técnico obrigatório logo após o login, não mais opcional/depois — §6.4.
 - [ ] Botão de excluir conta (LGPD) — ainda não construído.
+- [ ] Remover o elenco fictício do ranking (§6.3) quando a base real crescer — ação manual futura,
+      não é bug, é decisão consciente de bootstrap.
 - [x] Offline continua funcionando sem login — nenhum arquivo de `engine/` ou `storage/saveGame.js`
       foi tocado; publicação é best-effort e nunca bloqueia o fluxo local.
