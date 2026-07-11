@@ -153,6 +153,15 @@ order by titulos desc, temporadas_jogadas desc;
       confirmadas no ar (401 controlado sem auth, sem erro de bundle nos logs). Lógica
       interna (escrita real no banco) ainda não testada ponta a ponta — depende de login
       de verdade, que ainda não existe (próximo item).
-- [ ] Tela de ranking lê `ranking_tecnicos` e mostra pro usuário (só leitura, nenhuma ação nova).
-- [ ] Botão de excluir conta (LGPD).
-- [ ] Offline continua funcionando sem login (doc-mãe §4 — Modo 1 nunca depende de servidor).
+- [x] Tela de ranking lê `ranking_tecnicos` e mostra pro usuário (só leitura, nenhuma ação nova).
+      Testado ao vivo, sem login: lista vazia renderizou certo ("ninguém fechou temporada
+      ainda"), sem erro de RLS pro papel anon.
+- [ ] Botão de excluir conta (LGPD) — ainda não construído.
+- [x] Offline continua funcionando sem login (doc-mãe §4 — Modo 1 nunca depende de servidor).
+      Nenhum arquivo de `engine/`, `storage/saveGame.js` ou `storage/mercado.js` foi tocado;
+      a tela Online é 100% aditiva (1 botão novo na capa + 1 tela nova).
+- [ ] **Pendência real de teste:** `criar-carreira`/`fechar-temporada` (escrita no banco) só
+      têm a lógica interna validada via o motor puro (12 temporadas × 5 seeds, sessão anterior)
+      — o caminho HTTP completo (Deno + supabase-js + service_role) ainda não rodou com um
+      usuário logado de verdade. Só o Felyp consegue completar isso (clicar o magic link e
+      testar "Criar carreira"/"Fechar temporada" na tela Online) — não posso simular login.
