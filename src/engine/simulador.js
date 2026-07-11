@@ -3,9 +3,10 @@
 // Toda a lógica é idêntica à da demo — apenas separada em módulos.
 import { gerarElencos } from "./atributos";
 import { gerarCalendario } from "./calendario";
-import { SERIES, SERIE_PADRAO, ELENCOS_GLOBAIS } from "../data/series";
+import { SERIES, SERIE_PADRAO, ELENCOS_GLOBAIS, ORDEM_SERIES } from "../data/series";
 import { ORCAMENTO_INICIAL, mercadoInicial } from "./mercado";
 import { torcidaInicial } from "./torcida";
+import { timesDaSerie } from "./mundo";
 
 // ---------------- utilidades ----------------
 export const ri = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
@@ -63,7 +64,9 @@ export function gerarBolo(n) {
 // orçamento por time é MANTIDO — passe o `S.orcamento` da temporada anterior.
 // Com a Liga Viva, um time promovido/rebaixado LEVA o caixa junto (o mapa é
 // por nome de time); quem não estiver no mapa cai no default L$1000.
-export function novaTemporada(serieId = SERIE_PADRAO, times = null, orcamentoAnterior = null) {
+// `mundo` (Liga Viva): usado só pra gerar o estado paralelo das OUTRAS duas
+// séries (ver outrasSeries abaixo) — passe undefined fora do modo carreira.
+export function novaTemporada(serieId = SERIE_PADRAO, times = null, orcamentoAnterior = null, mundo = null) {
   const { serieBonus } = SERIES[serieId];
   const timesDaTemporada = times || SERIES[serieId].times;
   const elencos = gerarElencos(timesDaTemporada, ELENCOS_GLOBAIS, serieBonus);
@@ -85,11 +88,89 @@ export function novaTemporada(serieId = SERIE_PADRAO, times = null, orcamentoAnt
   // igual a torcida, então a seta começa neutra ("–").
   const torcidaRef = torcidaInicial(timesDaTemporada);
   const formaRecente = {};
+
+  // Tabela ao vivo das 3 séries (Liga Viva): as outras duas séries que o
+  // jogador NÃO está disputando ganham um estado leve (elenco/força/tabela,
+  // SEM mercado/torcida/orçamento — ninguém administra essas, só acompanha a
+  // classificação) e avançam 1 rodada por vez, em paralelo, cada vez que o
+  // jogador termina uma rodada da sua (ver avancarRodadaSimples, chamado do
+  // App). Sem `mundo` (não deveria acontecer — Liga Viva sempre cria o mundo
+  // antes de qualquer temporada), fica vazio e a UI ignora.
+  const outrasSeries = {};
+  if (mundo) {
+    ORDEM_SERIES.filter((s) => s !== serieId).forEach((s) => {
+      outrasSeries[s] = iniciarSerieParalela(timesDaSerie(mundo, s), SERIES[s].serieBonus);
+    });
+  }
+
   return {
     serie: serieId, elencos, mult, fase, tabela, art: {},
     calendario: gerarCalendario(timesDaTemporada), rodada: 0, orcamento, mercado,
-    torcida, torcidaRef, formaRecente, comentariosTorcida: [],
+    torcida, torcidaRef, formaRecente, comentariosTorcida: [], outrasSeries,
   };
+}
+
+// ---------------- séries paralelas (tabela ao vivo das 3, sem clock) ----------------
+// Estado leve de UMA série que o jogador não disputa nesta temporada: mesma
+// engine de força interna/fase/Poisson, mas sem partida ao vivo, mercado,
+// torcida ou orçamento (ninguém gerencia essas séries — só acompanha a
+// tabela). elencos vêm sempre de ELENCOS_GLOBAIS por nome (Liga Viva §2).
+export function iniciarSerieParalela(times, serieBonus) {
+  const elencos = gerarElencos(times, ELENCOS_GLOBAIS, serieBonus);
+  const pool = gerarBolo(times.length).sort(() => Math.random() - 0.5);
+  const mult = {}, fase = {}, tabela = {};
+  times.forEach((t, i) => {
+    mult[t] = pool[i];
+    fase[t] = 1;
+    tabela[t] = { P: 0, J: 0, V: 0, E: 0, D: 0, GP: 0, GC: 0 };
+  });
+  return { elencos, mult, fase, tabela, art: {}, calendario: gerarCalendario(times), rodada: 0 };
+}
+
+// Avança EXATAMENTE 1 rodada de uma série paralela (noop se já encerrou —
+// calendário mais curto que o da série do jogador, ex. jogador na C/22
+// rodadas com A ou B/18: elas terminam antes e ficam paradas no resultado
+// final). Muta `estado` in-place, mesmo padrão do resto do motor.
+export function avancarRodadaSimples(estado) {
+  if (estado.rodada >= estado.calendario.length) return;
+  const rodada = estado.calendario[estado.rodada];
+  const Slocal = { mult: estado.mult, fase: estado.fase };
+  rodada.forEach(({ casa, fora }) => {
+    const escCasa = escalacaoIA(estado.elencos[casa]);
+    const escFora = escalacaoIA(estado.elencos[fora]);
+    const ev = [
+      ...simMetade(Slocal, casa, fora, escCasa, escFora, 1),
+      ...simMetade(Slocal, casa, fora, escCasa, escFora, 2),
+    ];
+    const gc = golsDe(ev, casa), gf = golsDe(ev, fora);
+    const tc = estado.tabela[casa], tf = estado.tabela[fora];
+    tc.J++; tf.J++; tc.GP += gc; tc.GC += gf; tf.GP += gf; tf.GC += gc;
+    if (gc > gf) {
+      tc.V++; tc.P += 3; tf.D++;
+      estado.fase[casa] = Math.min(1.08, estado.fase[casa] + 0.04);
+      estado.fase[fora] = Math.max(0.92, estado.fase[fora] - 0.04);
+    } else if (gf > gc) {
+      tf.V++; tf.P += 3; tc.D++;
+      estado.fase[fora] = Math.min(1.08, estado.fase[fora] + 0.04);
+      estado.fase[casa] = Math.max(0.92, estado.fase[casa] - 0.04);
+    } else { tc.E++; tf.E++; tc.P++; tf.P++; }
+    ev.filter((e) => e.tipo === "gol").forEach((e) => {
+      estado.art[e.autor.id] = estado.art[e.autor.id] || { nome: e.autor.nome, time: e.autor.time, g: 0 };
+      estado.art[e.autor.id].g++;
+    });
+  });
+  estado.rodada++;
+}
+
+// Migração/sincronização: saves antigos (sem outrasSeries) ou uma série
+// recém-criada precisam "alcançar" a rodada atual do jogador de uma vez só,
+// na hora de carregar — mesma lógica de avançar, só que em loop instantâneo
+// (barato, ver spec-liga-viva.md §5). Também cobre o fim de temporada quando
+// a série paralela tem calendário MAIS LONGO que o do jogador (ex. jogador
+// na A/18 rodadas, C ainda tem 4 pra jogar quando a temporada dele acaba).
+export function sincronizarSerieParalela(estado, ateRodada) {
+  const alvo = Math.min(ateRodada, estado.calendario.length);
+  while (estado.rodada < alvo) avancarRodadaSimples(estado);
 }
 
 // ---------------- escalações ----------------

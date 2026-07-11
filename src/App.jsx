@@ -8,6 +8,7 @@ import { useState, useEffect, useRef } from "react";
 // =====================================================================
 import {
   novaTemporada, melhores, escalacaoIA, simMetade, golsDe,
+  avancarRodadaSimples, sincronizarSerieParalela,
 } from "./engine/simulador";
 import {
   creditarOrcamentos, valorizarJogadores, unionPorId,
@@ -15,7 +16,6 @@ import {
   posicaoDoTime,
 } from "./engine/mercado";
 import { atualizarTorcida, humorTorcida, gerarComentario } from "./engine/torcida";
-import { simularTemporadaRapida } from "./engine/simulacaoRapida";
 import {
   mundoInicial, timesDaSerie, calcularAcessoRebaixamento, fecharTemporada,
   atualizarRecordeGoleada, atualizarRecordeArtilheiro,
@@ -172,7 +172,7 @@ export default function App() {
     salvarMundo(novoMundo);
 
     const times = timesDaSerie(novoMundo, serie);
-    const nova = novaTemporada(serie, times, null); // carreira nova: orçamento sempre do zero
+    const nova = novaTemporada(serie, times, null, novoMundo); // carreira nova: orçamento sempre do zero
     Sref.current = nova;
     setMeuTime(time);
     prepararEscalacao(time, nova);
@@ -186,15 +186,18 @@ export default function App() {
   };
 
   // ---------- Liga Viva (Marco 3.5, spec-liga-viva.md §3) ----------
-  // Fim da temporada do jogador: simula as OUTRAS duas séries em segundo
-  // plano (§5), calcula quem sobe/desce/permanece nas três, atualiza o mundo
-  // (divisão, hall de campeões, carreira) e mostra a tela de Fim de Temporada.
+  // Fim da temporada do jogador: as OUTRAS duas séries já vêm sendo
+  // simuladas rodada a rodada, em paralelo, desde o início (S.outrasSeries —
+  // tabela ao vivo, não mais um "simula tudo de uma vez no fim"). Se alguma
+  // tiver calendário mais LONGO que o do jogador (ex. ele na A/18 rodadas e
+  // a C ainda tem rodadas 19-22 pra jogar), completa o resto agora, instantâneo.
   const finalizarTemporadaCarreira = () => {
     const minhaSerie = S.serie;
     const tabelasPorSerie = { [minhaSerie]: S.tabela };
     ORDEM_SERIES.filter((s) => s !== minhaSerie).forEach((s) => {
-      const times = timesDaSerie(mundo, s);
-      tabelasPorSerie[s] = simularTemporadaRapida(times, SERIES[s].serieBonus);
+      const estado = S.outrasSeries[s];
+      sincronizarSerieParalela(estado, estado.calendario.length);
+      tabelasPorSerie[s] = estado.tabela;
     });
     const resultado = calcularAcessoRebaixamento(tabelasPorSerie);
     // Recorde de artilheiro usa a temporada ainda corrente (fecharTemporada
@@ -230,7 +233,7 @@ export default function App() {
     // estão no S antigo e caem no default L$1000 dentro de novaTemporada (as
     // séries de fundo não simulam economia, não há valor melhor a herdar).
     const times = timesDaSerie(mundo, serieDestino);
-    const nova = novaTemporada(serieDestino, times, S.orcamento);
+    const nova = novaTemporada(serieDestino, times, S.orcamento, mundo);
     Sref.current = nova;
     setSerie(serieDestino);
     prepararEscalacao(meuTime, nova);
@@ -247,7 +250,7 @@ export default function App() {
   const retomarCarreiraSemSave = () => {
     const minhaSerieAgora = mundo.divisao[mundo.meuTime];
     const times = timesDaSerie(mundo, minhaSerieAgora);
-    const nova = novaTemporada(minhaSerieAgora, times, null);
+    const nova = novaTemporada(minhaSerieAgora, times, null, mundo);
     Sref.current = nova;
     setSerie(minhaSerieAgora);
     setMeuTime(mundo.meuTime);
@@ -273,7 +276,7 @@ export default function App() {
 
   const continuarJogo = () => {
     if (!saveData) return;
-    const s = reconstruirS(saveData);
+    const s = reconstruirS(saveData, mundo);
     Sref.current = s;
     setSerie(s.serie); // mantém o seletor alinhado à temporada retomada
     setNomeTec(saveData.nomeTecnico || "");
@@ -460,6 +463,11 @@ export default function App() {
     const craque = craques[0];
 
     S.rodada++;
+
+    // Tabela ao vivo das 3 séries: avança 1 rodada de CADA série paralela
+    // junto com a do jogador (noop pra quem já encerrou — calendário mais
+    // curto, ex. A/B com 18 rodadas quando o jogador está na C com 22).
+    if (S.outrasSeries) Object.values(S.outrasSeries).forEach(avancarRodadaSimples);
 
     // Torcida (spec-marco2-polish.md §3): atualiza pra todos os times da
     // rodada (camada de apresentação, nunca entra em fórmula do motor). O

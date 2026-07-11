@@ -33,8 +33,9 @@
 
 import { valorInicial, orcamentosIniciais, mercadoInicial } from "../engine/mercado";
 import { torcidaInicial } from "../engine/torcida";
-import { mundoInicial } from "../engine/mundo";
-import { SERIE_PADRAO, ORDEM_SERIES } from "../data/series";
+import { iniciarSerieParalela, sincronizarSerieParalela } from "../engine/simulador";
+import { mundoInicial, timesDaSerie } from "../engine/mundo";
+import { SERIE_PADRAO, ORDEM_SERIES, SERIES } from "../data/series";
 
 // Marco 3 (spec-multi-serie.md §1): save POR SÉRIE — temporadas de séries
 // diferentes nunca se misturam.
@@ -86,6 +87,10 @@ export function salvarJogo({ nomeTecnico, timeEscolhido, avatarId, S }) {
     torcidaRef: S.torcidaRef,
     formaRecente: S.formaRecente,
     comentariosTorcida: S.comentariosTorcida,
+    // Tabela ao vivo das 3 séries (Liga Viva): estado das duas séries que o
+    // jogador NÃO disputa, avançado em paralelo — precisa persistir pra não
+    // "voltar no tempo" (desincronizar de S.rodada) a cada reload.
+    outrasSeries: S.outrasSeries,
     ultimaAtualizacao: new Date().toISOString(),
   };
   try {
@@ -134,7 +139,10 @@ export function carregarSave(serie = SERIE_PADRAO) {
 // migram pros valores da spec-mercado.md §7 sem quebrar a temporada em andamento.
 // `valor` usa a curva (§3.2) sobre o `attr` já salvo, não mais um piso fixo —
 // consistente com como um jogador novo é precificado.
-export function reconstruirS(save) {
+// `mundo` (Liga Viva): necessário só pra reconstruir/sincronizar outrasSeries
+// (tabela ao vivo) quando o save é antigo ou ficou pra trás — passe undefined
+// fora do modo carreira (outrasSeries fica vazio, Tabela.jsx ignora as abas).
+export function reconstruirS(save, mundo = null) {
   const times = Object.keys(save.elencos);
   const elencos = {};
   times.forEach((t) => {
@@ -146,6 +154,20 @@ export function reconstruirS(save) {
       return jogador;
     });
   });
+
+  // Tabela ao vivo das 3 séries: reidrata o que foi salvo; save antigo (sem
+  // o campo) ou uma série que ficou pra trás nasce/alcança a rodada atual
+  // numa sincronização instantânea (sincronizarSerieParalela), sem perder a
+  // consistência com S.rodada.
+  const outrasSeries = {};
+  if (mundo) {
+    ORDEM_SERIES.filter((s) => s !== save.serie).forEach((s) => {
+      const estadoSalvo = save.outrasSeries?.[s];
+      outrasSeries[s] = estadoSalvo || iniciarSerieParalela(timesDaSerie(mundo, s), SERIES[s].serieBonus);
+      sincronizarSerieParalela(outrasSeries[s], save.temporada.rodadaAtual);
+    });
+  }
+
   return {
     serie: save.serie || SERIE_PADRAO, // saves antigos são sempre da Série C
     elencos,
@@ -171,6 +193,7 @@ export function reconstruirS(save) {
     torcidaRef: save.torcidaRef || save.torcida || torcidaInicial(times),
     formaRecente: save.formaRecente || {},
     comentariosTorcida: save.comentariosTorcida || [],
+    outrasSeries,
   };
 }
 
