@@ -10,9 +10,22 @@ import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
 
 const RESULTADO_LABEL = { subiu: "subiu", desceu: "desceu", manteve: "permaneceu" };
 
+// error.message do supabase-js pra erro de Edge Function é só um genérico
+// ("non-2xx status code") — o motivo de verdade vem no corpo da resposta,
+// acessível via error.context (a Response crua).
+const mensagemDeErro = async (error) => {
+  try {
+    const corpo = await error.context.json();
+    return corpo.error || error.message;
+  } catch (e) {
+    return error.message;
+  }
+};
+
 function CarreiraOnline({ sessao }) {
   const [carreira, setCarreira] = useState(undefined); // undefined = carregando, null = nenhuma
   const [meuTime, setMeuTime] = useState(TODOS_OS_TIMES[0]);
+  const [nomeTecnico, setNomeTecnico] = useState("");
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState(null);
   const [ultimoResultado, setUltimoResultado] = useState(null);
@@ -25,6 +38,14 @@ function CarreiraOnline({ sessao }) {
       .eq("ativa", true)
       .maybeSingle();
     setCarreira(data || null);
+    // Pré-preenche o nome do técnico se ele já tiver um perfil (ex.: já
+    // fechou uma carreira antes e está criando outra).
+    const { data: perfil } = await supabase
+      .from("profiles")
+      .select("nome_tecnico")
+      .eq("id", sessao.user.id)
+      .maybeSingle();
+    if (perfil?.nome_tecnico) setNomeTecnico(perfil.nome_tecnico);
   };
 
   useEffect(() => { carregarCarreira(); }, [sessao.user.id]); // eslint-disable-line
@@ -32,9 +53,9 @@ function CarreiraOnline({ sessao }) {
   const criarCarreira = async () => {
     setErro(null);
     setProcessando(true);
-    const { data, error } = await supabase.functions.invoke("criar-carreira", { body: { meuTime } });
+    const { data, error } = await supabase.functions.invoke("criar-carreira", { body: { meuTime, nomeTecnico } });
     setProcessando(false);
-    if (error) { setErro(error.message); return; }
+    if (error) { setErro(await mensagemDeErro(error)); return; }
     setCarreira(data.carreira);
     setUltimoResultado(null);
   };
@@ -44,7 +65,7 @@ function CarreiraOnline({ sessao }) {
     setProcessando(true);
     const { data, error } = await supabase.functions.invoke("fechar-temporada", { body: {} });
     setProcessando(false);
-    if (error) { setErro(error.message); return; }
+    if (error) { setErro(await mensagemDeErro(error)); return; }
     setCarreira(data.carreira);
     setUltimoResultado(data);
   };
@@ -67,6 +88,13 @@ function CarreiraOnline({ sessao }) {
           <p className="text-xs mt-1" style={{ color: "#A78FC7" }}>
             Escolha um time — o servidor simula as temporadas e alimenta o ranking.
           </p>
+          <input
+            value={nomeTecnico}
+            onChange={(e) => setNomeTecnico(e.target.value)}
+            placeholder="Nome do técnico (aparece no ranking)"
+            className="w-full mt-3 rounded-xl px-4 py-3 outline-none"
+            style={{ ...card, color: "#F2EDFA" }}
+          />
           <select
             value={meuTime}
             onChange={(e) => setMeuTime(e.target.value)}
@@ -77,7 +105,7 @@ function CarreiraOnline({ sessao }) {
           </select>
           <button
             onClick={criarCarreira}
-            disabled={processando}
+            disabled={processando || !nomeTecnico.trim()}
             className="w-full rounded-xl py-3.5 font-bold mt-3 disabled:opacity-50"
             style={amber}
           >
