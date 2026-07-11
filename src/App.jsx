@@ -78,58 +78,32 @@ export default function App() {
   const [ultimaPerguntaQuiz, setUltimaPerguntaQuiz] = useState(null); // evita repetir a mesma 2x seguidas
   const [fimDeTemporadaResumo, setFimDeTemporadaResumo] = useState(null);
   const anunciados = useRef(0);
-  const audioCtx = useRef(null);
+  const anunciadosChance = useRef(0);
   const jogoRef = useRef(null);
   jogoRef.current = jogo;
 
   const S = Sref.current;
 
-  // Som de gol: "explosão de torcida" sintetizada (pedido do Felyp — algo
-  // como um grito rápido de gol, não um bip). Rajada de ruído branco com
-  // filtro passa-banda subindo (o "UUURRA" da arquibancada) + um sopro grave
-  // curto no ataque (a bola estufando a rede). Sem arquivo de áudio, tudo
-  // Web Audio — continua funcionando offline e respeitando o botão de mudo.
-  const beep = () => {
-    // Vibração tátil no gol (independente do mudo — mudo silencia som, não
-    // tato). Padrão curto "gol-gol": ignorado por navegadores sem suporte.
-    try { if (navigator.vibrate) navigator.vibrate([70, 40, 110]); } catch (e) { /* sem vibração */ }
+  // Efeitos sonoros reais (ElevenLabs, jul/2026 — substituem o "beep"
+  // sintetizado anterior). Arquivos em public/sfx/, respeitam o botão de mudo.
+  const tocarSfx = (caminho, volume = 1) => {
     if (mudo) return;
     try {
-      if (!audioCtx.current) audioCtx.current = new (window.AudioContext || window.webkitAudioContext)();
-      const ctx = audioCtx.current, t = ctx.currentTime;
-
-      // Torcida: ruído branco ~0,9s, filtro subindo 350→1400Hz, ataque rápido
-      // e cauda longa (grito que explode e vai morrendo).
-      const dur = 0.9;
-      const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
-      const data = buf.getChannelData(0);
-      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
-      const noise = ctx.createBufferSource();
-      noise.buffer = buf;
-      const bp = ctx.createBiquadFilter();
-      bp.type = "bandpass";
-      bp.Q.value = 0.8;
-      bp.frequency.setValueAtTime(350, t);
-      bp.frequency.exponentialRampToValueAtTime(1400, t + 0.15);
-      bp.frequency.exponentialRampToValueAtTime(500, t + dur);
-      const gN = ctx.createGain();
-      gN.gain.setValueAtTime(0.0001, t);
-      gN.gain.exponentialRampToValueAtTime(0.22, t + 0.06); // explosão
-      gN.gain.exponentialRampToValueAtTime(0.001, t + dur); // morrendo
-      noise.connect(bp); bp.connect(gN); gN.connect(ctx.destination);
-      noise.start(t); noise.stop(t + dur);
-
-      // Rede: sopro grave curtíssimo no primeiro instante (bola batendo na rede).
-      const o = ctx.createOscillator(), gO = ctx.createGain();
-      o.type = "sine";
-      o.frequency.setValueAtTime(160, t);
-      o.frequency.exponentialRampToValueAtTime(60, t + 0.12);
-      gO.gain.setValueAtTime(0.15, t);
-      gO.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
-      o.connect(gO); gO.connect(ctx.destination);
-      o.start(t); o.stop(t + 0.15);
+      const a = new Audio(caminho);
+      a.volume = volume;
+      a.play().catch(() => {}); // autoplay bloqueado em algum navegador: silenciosamente ignora
     } catch (e) { /* sem áudio, sem drama */ }
   };
+
+  // Som de gol: torcida vibrando + vibração tátil (independente do mudo —
+  // mudo silencia som, não tato). Padrão curto "gol-gol": ignorado por
+  // navegadores sem suporte a vibração.
+  const beep = () => {
+    try { if (navigator.vibrate) navigator.vibrate([70, 40, 110]); } catch (e) { /* sem vibração */ }
+    tocarSfx("/sfx/torcida-gol.mp3");
+  };
+  const apito = () => tocarSfx("/sfx/apito.mp3");
+  const chute = () => tocarSfx("/sfx/chute.mp3", 0.7);
 
   // ---------- abertura: mundo (Liga Viva) tem prioridade sobre o seletor ----------
   // Se existe mundo (ou um save antigo migra pra um), a série deixa de ser
@@ -420,7 +394,9 @@ export default function App() {
   const jogarAoVivo = () => {
     const j = montarJogo();
     anunciados.current = 0;
+    anunciadosChance.current = 0;
     setJogo(j); setMinuto(0); setRodando(true); setTela("aoVivo");
+    apito();
   };
 
   const iniciarSegundoTempo = () => {
@@ -431,6 +407,7 @@ export default function App() {
     setJogo({ ...j, ev2, meiaFase: "2T" });
     setSelOut(null); setSelIn(null);
     setRodando(true); setTela("aoVivo");
+    apito();
   };
 
   const rodadaRapida = () => {
@@ -614,6 +591,13 @@ export default function App() {
       beep();
       anunciados.current = evs.length;
       setTimeout(() => setBanner(null), 1600);
+    }
+    const evsChance = [...jogo.ev1, ...(jogo.ev2 || [])]
+      .filter((e) => e.tipo === "chance" && e.min <= minuto)
+      .sort((a, b) => a.min - b.min);
+    if (evsChance.length > anunciadosChance.current) {
+      chute();
+      anunciadosChance.current = evsChance.length;
     }
     if (minuto >= 25 && jogo.meiaFase === "1T") {
       setRodando(false);
