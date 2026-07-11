@@ -234,7 +234,16 @@ progressive disclosure, caminho de menor resistência é o default):
       aparecer no ranking) confirmado funcionando.
 - [x] Ranking por pontos (não só títulos) — §6.2.
 - [x] Cadastro do nome do técnico obrigatório logo após o login, não mais opcional/depois — §6.4.
-- [ ] Botão de excluir conta (LGPD) — ainda não construído.
+- [x] **Em produção**: `https://legends-iota-steel.vercel.app` — código enviado ao GitHub, chaves
+      do Supabase configuradas nas env vars do Vercel (produção), redirect de e-mail autorizado no
+      painel do Supabase. Testado ao vivo pelo Felyp, funcionando.
+- [x] Botão de excluir conta (LGPD): Edge Function `excluir-conta` (usa `auth.admin.deleteUser`,
+      só possível com `service_role` — por isso não dá pra fazer direto do cliente). Cascata via FK
+      já existente apaga `profiles`/`carreiras`/`carreira_temporadas` junto. Botão em
+      `Ranking.jsx`, com confirmação, deixando claro que é diferente de "apagar minha jornada"
+      (aqui desloga e perde o login, não só o histórico). **Só testei o deploy da função (401
+      controlado sem auth) — o clique de verdade, com sessão logada, precisa do Felyp**, é
+      destrutivo e não simulo login.
 - [ ] Remover o elenco fictício do ranking (§6.3) quando a base real crescer — ação manual futura,
       não é bug, é decisão consciente de bootstrap.
 - [x] Offline continua funcionando sem login — nenhum arquivo de `engine/` ou `storage/saveGame.js`

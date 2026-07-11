@@ -16,6 +16,7 @@ export default function Ranking({ setTela, mundo, sessao }) {
   const [processando, setProcessando] = useState(false);
   const [erro, setErro] = useState(null);
   const [confirmaApagar, setConfirmaApagar] = useState(false);
+  const [confirmaExcluirConta, setConfirmaExcluirConta] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -49,6 +50,23 @@ export default function Ranking({ setTela, mundo, sessao }) {
     setConfirmaApagar(false);
     if (error) { setErro(error); return; }
     setPublicada(null);
+  };
+
+  // LGPD (spec-fase1-fundacao-online.md §7): apaga a conta de verdade (auth
+  // + profiles + carreiras + carreira_temporadas, em cascata) — diferente de
+  // "apagar minha jornada", que só tira do ranking e mantém o login.
+  const excluirConta = async () => {
+    setErro(null);
+    setProcessando(true);
+    const { error } = await supabase.functions.invoke("excluir-conta", { body: {} });
+    setProcessando(false);
+    setConfirmaExcluirConta(false);
+    if (error) {
+      const corpo = await error.context?.json?.().catch(() => null);
+      setErro(corpo?.error || error.message);
+      return;
+    }
+    await supabase.auth.signOut();
   };
 
   return (
@@ -126,6 +144,34 @@ export default function Ranking({ setTela, mundo, sessao }) {
             </button>
             <button onClick={apagar} disabled={processando} className="flex-1 rounded-xl py-2.5 font-bold text-sm" style={{ background: "#FF5A5A", color: "#1A1607" }}>
               Apagar
+            </button>
+          </div>
+        </div>
+      )}
+
+      {sessao && !confirmaExcluirConta && (
+        <button
+          onClick={() => setConfirmaExcluirConta(true)}
+          className="w-full text-xs mt-4 text-center"
+          style={{ color: "#6E5A92" }}
+        >
+          Excluir minha conta (LGPD)
+        </button>
+      )}
+      {confirmaExcluirConta && (
+        <div className="rounded-xl p-4 mt-3" style={{ ...card, border: "1px solid #FF5A5A" }}>
+          <p className="text-xs" style={{ color: "#D9CCEE" }}>
+            Isso apaga sua conta de verdade — login, perfil e todo o histórico do ranking. Diferente
+            de "apagar minha jornada", aqui você é <b>desconectado</b> e precisaria criar uma conta
+            nova (novo e-mail ou o mesmo, do zero) pra voltar a concorrer. Não mexe no seu save
+            local offline. Não dá pra desfazer.
+          </p>
+          <div className="flex gap-2 mt-3">
+            <button onClick={() => setConfirmaExcluirConta(false)} className="flex-1 rounded-xl py-2.5 font-bold text-sm" style={card}>
+              Cancelar
+            </button>
+            <button onClick={excluirConta} disabled={processando} className="flex-1 rounded-xl py-2.5 font-bold text-sm" style={{ background: "#FF5A5A", color: "#1A1607" }}>
+              {processando ? "Excluindo…" : "Excluir conta"}
             </button>
           </div>
         </div>
