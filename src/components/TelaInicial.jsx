@@ -9,7 +9,7 @@
 import { useState } from "react";
 import { SERIES, ORDEM_SERIES } from "../data/series";
 import { totalRodadas } from "../engine/calendario";
-import { Eyebrow, Rodape, Avatar, AvatarTecnico, AVATAR_IDS, card, amber } from "./ui";
+import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
 
 const RESULTADO_LABEL = { subiu: "subiu", desceu: "desceu", manteve: "permaneceu" };
 
@@ -54,7 +54,7 @@ function HintInstalar({ promptInstalar, instalarApp }) {
   return null;
 }
 
-function CampoTecnico({ nomeTec, setNomeTec, avatarId, setAvatarId }) {
+function CampoTecnico({ nomeTec, setNomeTec }) {
   return (
     <div className="mt-5">
       <Eyebrow>Nome do técnico</Eyebrow>
@@ -65,28 +65,13 @@ function CampoTecnico({ nomeTec, setNomeTec, avatarId, setAvatarId }) {
         className="w-full mt-1 rounded-xl px-4 py-3 outline-none"
         style={{ ...card, color: "#F2EDFA" }}
       />
-      <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
-        {AVATAR_IDS.map((id) => (
-          <button
-            key={id}
-            onClick={() => setAvatarId(avatarId === id ? null : id)}
-            className="rounded-full shrink-0 active:opacity-70"
-            style={{
-              padding: 2,
-              border: avatarId === id ? "2px solid #FFC53D" : "2px solid transparent",
-            }}
-          >
-            <AvatarTecnico avatarId={id} fallback={id.slice(1)} size={44} />
-          </button>
-        ))}
-      </div>
     </div>
   );
 }
 
 // ---------------- Modo carreira (com mundo) ----------------
 function TelaCarreira({
-  mundo, nomeTec, setNomeTec, avatarId, setAvatarId, saveData, continuarJogo, retomarCarreiraSemSave, novoJogo, setTela,
+  mundo, nomeTec, setNomeTec, saveData, continuarJogo, retomarCarreiraSemSave, novoJogo, setTela,
   promptInstalar, instalarApp,
 }) {
   const [confirmaNovoJogo, setConfirmaNovoJogo] = useState(false);
@@ -141,7 +126,7 @@ function TelaCarreira({
         </button>
       )}
 
-      <CampoTecnico nomeTec={nomeTec} setNomeTec={setNomeTec} avatarId={avatarId} setAvatarId={setAvatarId} />
+      <CampoTecnico nomeTec={nomeTec} setNomeTec={setNomeTec} />
 
       <div className="flex gap-2 mt-5">
         <button onClick={() => setTela("historiaCarreira")} className="flex-1 rounded-xl py-3 font-bold text-sm" style={card}>
@@ -197,7 +182,7 @@ function TelaCarreira({
 
 // ---------------- Sem mundo: seletor de série + time (1ª vez / pós "Novo jogo") ----------------
 function TelaEscolha({
-  serie, setSerie, nomeTec, setNomeTec, avatarId, setAvatarId, iniciarTemporada, avisoSemSave,
+  serie, setSerie, nomeTec, setNomeTec, iniciarTemporada, avisoSemSave,
   promptInstalar, instalarApp,
 }) {
   const serieAtiva = SERIES[serie];
@@ -240,7 +225,7 @@ function TelaEscolha({
         </div>
       )}
 
-      <CampoTecnico nomeTec={nomeTec} setNomeTec={setNomeTec} avatarId={avatarId} setAvatarId={setAvatarId} />
+      <CampoTecnico nomeTec={nomeTec} setNomeTec={setNomeTec} />
 
       <div className="mt-5">
         <Eyebrow>Escolha seu time</Eyebrow>
@@ -271,7 +256,7 @@ function TelaEscolha({
 }
 
 export default function TelaInicial({
-  serie, setSerie, nomeTec, setNomeTec, avatarId, setAvatarId, iniciarTemporada, saveData, continuarJogo, avisoSemSave,
+  serie, setSerie, nomeTec, setNomeTec, iniciarTemporada, saveData, continuarJogo, avisoSemSave,
   mundo, novoJogo, retomarCarreiraSemSave, setTela, promptInstalar, instalarApp,
 }) {
   if (mundo) {
@@ -280,8 +265,6 @@ export default function TelaInicial({
         mundo={mundo}
         nomeTec={nomeTec}
         setNomeTec={setNomeTec}
-        avatarId={avatarId}
-        setAvatarId={setAvatarId}
         saveData={saveData}
         continuarJogo={continuarJogo}
         retomarCarreiraSemSave={retomarCarreiraSemSave}
@@ -298,8 +281,6 @@ export default function TelaInicial({
       setSerie={setSerie}
       nomeTec={nomeTec}
       setNomeTec={setNomeTec}
-      avatarId={avatarId}
-      setAvatarId={setAvatarId}
       iniciarTemporada={iniciarTemporada}
       avisoSemSave={avisoSemSave}
       promptInstalar={promptInstalar}

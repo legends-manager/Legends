@@ -637,8 +637,6 @@ export default function App() {
             setSerie={setSerie}
             nomeTec={nomeTec}
             setNomeTec={setNomeTec}
-            avatarId={avatarId}
-            setAvatarId={setAvatarId}
             promptInstalar={promptInstalar}
             instalarApp={instalarApp}
             iniciarTemporada={iniciarTemporada}

@@ -4,14 +4,6 @@
 import { useState } from "react";
 import { SIGLA, COR } from "../data/times";
 
-// Galeria de avatares do técnico (spec-marco2-polish.md §5): 12 slots fixos
-// em /public/avatars/aXX.png — pré-gerados pelo Felyp, mesmo estilo da capa.
-// Podem não existir ainda; tudo aqui funciona sem os arquivos (fallback).
-export const AVATAR_IDS = [
-  "a01", "a02", "a03", "a04", "a05", "a06",
-  "a07", "a08", "a09", "a10", "a11", "a12",
-];
-
 export const card = { background: "#1E1233", border: "1px solid rgba(139,105,190,0.35)" };
 export const amber = { background: "#FFC53D", color: "#1A1607" };
 
@@ -38,7 +30,7 @@ export const Avatar = ({ t, sm }) => (
 // Avatar do técnico: PNG da galeria se `avatarId` existir e carregar; senão
 // (ausente, "sem avatar" ou 404 — pasta /public/avatars pode nem existir)
 // cai pro círculo com as iniciais do nome. Nunca quebra.
-export const AvatarTecnico = ({ avatarId, nome, fallback, size = 40 }) => {
+export const AvatarTecnico = ({ avatarId, nome, size = 40 }) => {
   const [erro, setErro] = useState(false);
   if (avatarId && !erro) {
     return (
@@ -52,9 +44,7 @@ export const AvatarTecnico = ({ avatarId, nome, fallback, size = 40 }) => {
     );
   }
   const iniciais =
-    fallback ||
-    (nome || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") ||
-    "?";
+    (nome || "").trim().split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0].toUpperCase()).join("") || "?";
   return (
     <span
       className="rounded-full inline-flex items-center justify-center font-black italic shrink-0 text-white"
