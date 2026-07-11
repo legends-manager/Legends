@@ -48,6 +48,7 @@ import Artilharia from "./components/Artilharia";
 import FimDeTemporada from "./components/FimDeTemporada";
 import QuizModal from "./components/QuizModal";
 import TelaCopa from "./components/TelaCopa";
+import Online from "./components/Online";
 
 export default function App() {
   const Sref = useRef(null);
@@ -633,6 +634,7 @@ export default function App() {
             setTela={setTela}
           />
         )}
+        {tela === "online" && <Online setTela={setTela} />}
         {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
         {tela === "historiaLiga" && mundo && <HistoriaLiga mundo={mundo} setTela={setTela} />}
         {tela === "escalacao" && S && (

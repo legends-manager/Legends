@@ -148,6 +148,10 @@ function TelaCarreira({
         Apaga a carreira inteira (todas as séries) e volta a escolher time.
       </p>
 
+      <button onClick={() => setTela("online")} className="w-full rounded-xl py-3 font-bold mt-3 text-sm" style={card}>
+        🌐 Legends Online (beta)
+      </button>
+
       <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />
 
       <Rodape />
@@ -183,7 +187,7 @@ function TelaCarreira({
 // ---------------- Sem mundo: seletor de série + time (1ª vez / pós "Novo jogo") ----------------
 function TelaEscolha({
   serie, setSerie, nomeTec, setNomeTec, iniciarTemporada, avisoSemSave,
-  promptInstalar, instalarApp,
+  promptInstalar, instalarApp, setTela,
 }) {
   const serieAtiva = SERIES[serie];
 
@@ -248,6 +252,10 @@ function TelaEscolha({
         Elencos reais (Copa10). Achou nome errado? Corrige em ✏️ na tela de escalação.
       </div>
 
+      <button onClick={() => setTela("online")} className="w-full rounded-xl py-3 font-bold mt-3 text-sm" style={card}>
+        🌐 Legends Online (beta)
+      </button>
+
       <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />
 
       <Rodape />
@@ -285,6 +293,7 @@ export default function TelaInicial({
       avisoSemSave={avisoSemSave}
       promptInstalar={promptInstalar}
       instalarApp={instalarApp}
+      setTela={setTela}
     />
   );
 }
