@@ -34,8 +34,9 @@
 import { valorInicial, orcamentosIniciais, mercadoInicial } from "../engine/mercado";
 import { torcidaInicial } from "../engine/torcida";
 import { iniciarSerieParalela, sincronizarSerieParalela } from "../engine/simulador";
+import { iniciarCopa } from "../engine/copa";
 import { mundoInicial, timesDaSerie } from "../engine/mundo";
-import { SERIE_PADRAO, ORDEM_SERIES, SERIES } from "../data/series";
+import { SERIE_PADRAO, ORDEM_SERIES, SERIES, TODOS_OS_TIMES } from "../data/series";
 
 // Marco 3 (spec-multi-serie.md §1): save POR SÉRIE — temporadas de séries
 // diferentes nunca se misturam.
@@ -91,6 +92,8 @@ export function salvarJogo({ nomeTecnico, timeEscolhido, avatarId, S }) {
     // jogador NÃO disputa, avançado em paralelo — precisa persistir pra não
     // "voltar no tempo" (desincronizar de S.rodada) a cada reload.
     outrasSeries: S.outrasSeries,
+    // Copa cruzando as 3 séries: chaves + fase atual + campeão (se já saiu).
+    copa: S.copa,
     ultimaAtualizacao: new Date().toISOString(),
   };
   try {
@@ -194,6 +197,10 @@ export function reconstruirS(save, mundo = null) {
     formaRecente: save.formaRecente || {},
     comentariosTorcida: save.comentariosTorcida || [],
     outrasSeries,
+    // Copa cruzando as 3 séries: save antigo sem o campo ganha um sorteio
+    // novo (não tem como recuperar a chave original) — só afeta quem já
+    // tinha uma temporada em andamento antes desta feature existir.
+    copa: save.copa || iniciarCopa(TODOS_OS_TIMES),
   };
 }
 

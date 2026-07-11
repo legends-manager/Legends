@@ -13,6 +13,7 @@ import {
 import {
   creditarOrcamentos, valorizarJogadores, unionPorId,
   listarJogador, retirarListagem, comprarJogador, aceitarOferta, recusarOferta, fecharJanela, iaNegocia,
+  proporJogador,
   posicaoDoTime,
 } from "./engine/mercado";
 import { atualizarTorcida, humorTorcida, gerarComentario } from "./engine/torcida";
@@ -21,13 +22,18 @@ import {
   atualizarRecordeGoleada, atualizarRecordeArtilheiro,
 } from "./engine/mundo";
 import { desbloquear } from "./storage/conquistas";
+import {
+  iniciarCopa, avancarFaseCopa, confrontoPendenteDoJogador, eliminadoDaCopa,
+  historicoDoJogador, simularJogoCopa, nomeFase, PREMIO_VITORIA_COPA, PREMIO_CAMPEAO_COPA,
+} from "./engine/copa";
 import { SIGLA } from "./data/times";
-import { SERIE_PADRAO, SERIES, ORDEM_SERIES } from "./data/series";
+import { SERIE_PADRAO, SERIES, ORDEM_SERIES, TODOS_OS_TIMES } from "./data/series";
 import {
   carregarSave, reconstruirS, salvarJogo, localStorageDisponivel, limparSave,
   carregarMundo, salvarMundo, migrarParaMundoSeNecessario, limparMundo,
 } from "./storage/saveGame";
 import { incrementarMetrica } from "./storage/metricas";
+import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -40,6 +46,8 @@ import Resultado from "./components/Resultado";
 import Tabela from "./components/Tabela";
 import Artilharia from "./components/Artilharia";
 import FimDeTemporada from "./components/FimDeTemporada";
+import QuizModal from "./components/QuizModal";
+import TelaCopa from "./components/TelaCopa";
 
 export default function App() {
   const Sref = useRef(null);
@@ -66,6 +74,8 @@ export default function App() {
   const [avisoSemSave, setAvisoSemSave] = useState(false); // localStorage indisponível
   const [mundo, setMundo] = useState(null); // Liga Viva (Marco 3.5) — null = sem carreira ainda
   const [promptInstalar, setPromptInstalar] = useState(null); // evento beforeinstallprompt (PWA)
+  const [quizAtual, setQuizAtual] = useState(null); // pergunta sorteada (quiz de curiosidades), ou null
+  const [ultimaPerguntaQuiz, setUltimaPerguntaQuiz] = useState(null); // evita repetir a mesma 2x seguidas
   const [fimDeTemporadaResumo, setFimDeTemporadaResumo] = useState(null);
   const anunciados = useRef(0);
   const audioCtx = useRef(null);
@@ -173,6 +183,8 @@ export default function App() {
 
     const times = timesDaSerie(novoMundo, serie);
     const nova = novaTemporada(serie, times, null, novoMundo); // carreira nova: orçamento sempre do zero
+    // Copa cruzando as 3 séries: sorteio novo a cada temporada, 32 times reais.
+    nova.copa = iniciarCopa(TODOS_OS_TIMES);
     Sref.current = nova;
     setMeuTime(time);
     prepararEscalacao(time, nova);
@@ -234,6 +246,7 @@ export default function App() {
     // séries de fundo não simulam economia, não há valor melhor a herdar).
     const times = timesDaSerie(mundo, serieDestino);
     const nova = novaTemporada(serieDestino, times, S.orcamento, mundo);
+    nova.copa = iniciarCopa(TODOS_OS_TIMES); // sorteio novo a cada temporada
     Sref.current = nova;
     setSerie(serieDestino);
     prepararEscalacao(meuTime, nova);
@@ -251,6 +264,7 @@ export default function App() {
     const minhaSerieAgora = mundo.divisao[mundo.meuTime];
     const times = timesDaSerie(mundo, minhaSerieAgora);
     const nova = novaTemporada(minhaSerieAgora, times, null, mundo);
+    nova.copa = iniciarCopa(TODOS_OS_TIMES); // sorteio novo a cada temporada
     Sref.current = nova;
     setSerie(minhaSerieAgora);
     setMeuTime(mundo.meuTime);
@@ -324,6 +338,11 @@ export default function App() {
   const recusarOfertaHumano = (oferta) => {
     recusarOferta(S, oferta);
     rerender();
+  };
+  const proporNoMercado = (idJogador, preco) => {
+    const r = proporJogador(S, meuTime, idJogador, preco);
+    if (r.ok) rerender();
+    return r;
   };
 
   const prepararEscalacao = (time, S2) => {
@@ -469,6 +488,13 @@ export default function App() {
     // curto, ex. A/B com 18 rodadas quando o jogador está na C com 22).
     if (S.outrasSeries) Object.values(S.outrasSeries).forEach(avancarRodadaSimples);
 
+    // Copa cruzando as 3 séries: avança a fase inteira SE o jogador não tiver
+    // confronto pendente nela (senão, ela espera — ele precisa jogar o dele
+    // primeiro, na tela Copa, antes de todo mundo mais avançar junto).
+    if (S.copa && !S.copa.campeao && !confrontoPendenteDoJogador(S.copa, meuTime)) {
+      avancarFaseCopa(S.copa, S);
+    }
+
     // Torcida (spec-marco2-polish.md §3): atualiza pra todos os times da
     // rodada (camada de apresentação, nunca entra em fórmula do motor). O
     // comentário (1 por rodada) é só do time do humano.
@@ -510,7 +536,62 @@ export default function App() {
     setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario });
     setJogo(null);
     setTela("resultado");
+
+    // Quiz de curiosidades: chance baixa por rodada concluída, camada de
+    // apresentação/economia leve — não mexe no motor. Aparece por cima da
+    // tela de Resultado que acabou de abrir.
+    if (sorteiaSeAparece()) {
+      const p = sortearPergunta(ultimaPerguntaQuiz);
+      setUltimaPerguntaQuiz(p.pergunta);
+      setQuizAtual(p);
+    }
     rerender();
+  };
+
+  // Resposta do quiz: crédito só se acertar (sem penalidade por errar/pular).
+  // Retorna o prêmio pra o modal mostrar o valor exato.
+  const responderQuiz = (correta) => {
+    if (!correta) return 0;
+    const premio = sortearPremio();
+    S.orcamento[meuTime] += premio;
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
+    rerender();
+    return premio;
+  };
+
+  // ---------- Copa cruzando as 3 séries ----------
+  // Joga o confronto pendente do jogador na fase atual, com a escalação
+  // ATUAL dele (a mesma da liga — a copa não tem tela de escalação própria,
+  // simplificação consciente de v1). Resolve o resto da fase em seguida
+  // (avancarFaseCopa) e credita prêmio de vitória/título. Retorna o
+  // resultado pra TelaCopa mostrar o placar sem precisar reler o estado.
+  const jogarPartidaCopa = () => {
+    const c = confrontoPendenteDoJogador(S.copa, meuTime);
+    if (!c) return null;
+    const souA = c.a === meuTime;
+    const timeAdv = souA ? c.b : c.a;
+    const minhaEsc = escSelecionada();
+    const r = souA
+      ? simularJogoCopa(S, meuTime, timeAdv, minhaEsc, null)
+      : simularJogoCopa(S, timeAdv, meuTime, null, minhaEsc);
+    c.vencedor = r.vencedor; c.placarA = r.placarA; c.placarB = r.placarB; c.penaltis = r.penaltis;
+
+    const venceu = r.vencedor === meuTime;
+    if (venceu) S.orcamento[meuTime] += PREMIO_VITORIA_COPA;
+    avancarFaseCopa(S.copa, S); // resolve o resto da fase (não envolve o jogador) e avança
+    const campeao = S.copa.campeao === meuTime;
+    if (campeao) {
+      S.orcamento[meuTime] += PREMIO_CAMPEAO_COPA;
+      desbloquear("campeao-copa");
+    }
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
+    rerender();
+    return {
+      adversario: timeAdv,
+      placarMeu: souA ? r.placarA : r.placarB,
+      placarAdv: souA ? r.placarB : r.placarA,
+      venceu, campeao, penaltis: r.penaltis,
+    };
   };
 
   // ---------- relógio da partida ----------
@@ -585,12 +666,16 @@ export default function App() {
             jogarAoVivo={jogarAoVivo}
             rodadaRapida={rodadaRapida}
             confronto={confronto}
+            setTela={setTela}
             modalNomes={modalNomes}
             setModalNomes={setModalNomes}
             textoNomes={textoNomes}
             setTextoNomes={setTextoNomes}
             salvarNomes={salvarNomes}
           />
+        )}
+        {tela === "copa" && S && S.copa && (
+          <TelaCopa S={S} meuTime={meuTime} jogarPartidaCopa={jogarPartidaCopa} setTela={setTela} />
         )}
         {tela === "aoVivo" && S && (
           <PartidaAoVivo S={S} jogo={jogo} minuto={minuto} banner={banner} mudo={mudo} setMudo={setMudo} />
@@ -618,6 +703,7 @@ export default function App() {
             cancelarListagem={cancelarListagem}
             aceitarOfertaHumano={aceitarOfertaHumano}
             recusarOfertaHumano={recusarOfertaHumano}
+            proporNoMercado={proporNoMercado}
             fecharJanelaEIrEscalacao={fecharJanelaEIrEscalacao}
           />
         )}
@@ -642,6 +728,13 @@ export default function App() {
           />
         )}
       </div>
+      {quizAtual && (
+        <QuizModal
+          quiz={quizAtual}
+          onResponder={responderQuiz}
+          onFechar={() => setQuizAtual(null)}
+        />
+      )}
     </div>
   );
 }

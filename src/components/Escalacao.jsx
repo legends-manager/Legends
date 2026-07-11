@@ -3,6 +3,7 @@
 // Inclui o modal de correção de nomes (✏️).
 import { tendenciaTorcida } from "../engine/torcida";
 import { setinhaValor } from "../engine/mercado";
+import { confrontoPendenteDoJogador } from "../engine/copa";
 import { Eyebrow, Rodape, Avatar, AvatarTecnico, Barra, card, amber } from "./ui";
 
 const corSetinha = (s) => (s === "▲" ? "#7FE0A8" : s === "▼" ? "#FF5A5A" : "#A78FC7");
@@ -86,7 +87,7 @@ function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
 
 export default function Escalacao({
   S, meuTime, nomeTec, avatarId, escolhidos, toggleJogador, escSelecionada, escValida,
-  jogarAoVivo, rodadaRapida, confronto,
+  jogarAoVivo, rodadaRapida, confronto, setTela,
   modalNomes, setModalNomes, textoNomes, setTextoNomes, salvarNomes,
 }) {
   const c = confronto();
@@ -96,6 +97,7 @@ export default function Escalacao({
   const grupos = ["GOL", "DEF", "MEI", "ATA"];
   const nLinha = escSelecionada().filter((j) => j.pos !== "GOL").length;
   const nGol = escSelecionada().filter((j) => j.pos === "GOL").length;
+  const pendenteCopa = S.copa ? confrontoPendenteDoJogador(S.copa, meuTime) : null;
 
   return (
     <div className="pt-6">
@@ -117,6 +119,17 @@ export default function Escalacao({
           ✏️ nomes
         </button>
       </div>
+
+      {S.copa && (
+        <button
+          onClick={() => setTela("copa")}
+          className="w-full rounded-xl px-3 py-2 mt-3 text-xs font-bold flex items-center justify-between active:opacity-70"
+          style={pendenteCopa ? { ...card, border: "1px solid #FFC53D" } : card}
+        >
+          <span>🏆 Copa cruzando as 3 séries</span>
+          <span style={{ color: pendenteCopa ? "#FFC53D" : "#A78FC7" }}>{pendenteCopa ? "jogo pendente!" : "ver"}</span>
+        </button>
+      )}
 
       <div className="rounded-xl px-3 py-2 mt-3 text-xs flex justify-between" style={card}>
         <span>Orçamento</span>

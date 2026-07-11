@@ -18,15 +18,18 @@ const ABAS = [
   ["comprar", "Comprar"],
   ["vender", "Vender"],
   ["ofertas", "Ofertas"],
+  ["times", "Times"],
 ];
 
 export default function Mercado({
   S, meuTime, comprarNoMercado, listarNoMercado, cancelarListagem,
-  aceitarOfertaHumano, recusarOfertaHumano, fecharJanelaEIrEscalacao,
+  aceitarOfertaHumano, recusarOfertaHumano, proporNoMercado, fecharJanelaEIrEscalacao,
 }) {
   const [aba, setAba] = useState("comprar");
   const [erro, setErro] = useState(null);
   const [precos, setPrecos] = useState({}); // idJogador -> preço digitado (aba Vender)
+  const [timeVisitado, setTimeVisitado] = useState(null); // aba Times: time cujo elenco está aberto
+  const [propostas, setPropostas] = useState({}); // idJogador -> proposta digitada (aba Times)
 
   const janela = S.mercado.janela;
   const tituloJanela = janela === "pre" ? "Janela de pré-temporada" : "Janela do meio de temporada (única)";
@@ -205,6 +208,70 @@ export default function Mercado({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {aba === "times" && (
+        <div className="mt-3">
+          {!timeVisitado ? (
+            <div className="grid grid-cols-2 gap-2">
+              {Object.keys(S.elencos).filter((t) => t !== meuTime).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTimeVisitado(t)}
+                  className="rounded-xl px-3 py-3 flex items-center gap-2 text-left active:opacity-70"
+                  style={card}
+                >
+                  <Avatar t={t} sm />
+                  <span className="text-sm font-semibold leading-tight">{t}</span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-1.5">
+              <button
+                onClick={() => setTimeVisitado(null)}
+                className="text-xs font-semibold mb-1"
+                style={{ color: "#A78FC7" }}
+              >
+                ← Voltar aos times
+              </button>
+              <div className="flex items-center gap-2 mb-2">
+                <Avatar t={timeVisitado} sm />
+                <span className="font-bold">{timeVisitado}</span>
+              </div>
+              {S.elencos[timeVisitado].map((j) => (
+                <div key={j.id} className="rounded-xl px-3 py-2.5 flex items-center gap-2" style={card}>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm leading-tight truncate">{j.nome}</div>
+                    {/* §8: sem atributo bruto — mesmo sinal público da aba Comprar
+                        (g/a reais + valor de mercado), só que pra QUALQUER
+                        jogador do elenco, não só quem está listado. */}
+                    <div className="text-xs" style={{ color: "#A78FC7" }}>
+                      {j.pos} · {j.g}g {j.a}a · valor L$ {j.valor} <Setinha jogador={j} />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <input
+                      type="number"
+                      min={PISO_VALOR}
+                      value={propostas[j.id] ?? j.valor}
+                      onChange={(e) => setPropostas({ ...propostas, [j.id]: e.target.value })}
+                      className="w-16 rounded-lg px-2 py-2 text-xs text-right outline-none"
+                      style={{ background: "#150A26", color: "#F2EDFA", border: "1px solid rgba(139,105,190,0.35)" }}
+                    />
+                    <button
+                      onClick={() => rodar(() => proporNoMercado(j.id, Number(propostas[j.id]) || j.valor))}
+                      className="rounded-lg px-3 py-2 text-xs font-bold"
+                      style={amber}
+                    >
+                      Propor
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

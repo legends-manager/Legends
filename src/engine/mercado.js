@@ -212,6 +212,39 @@ export function comprarJogador(S, timeComprador, idJogador) {
   return { ok: true, motivo: null };
 }
 
+// Proposta direta do humano por um jogador de OUTRO time da sua série, sem
+// ele precisar estar listado (aba "Times" do Mercado — visitar o elenco
+// inteiro e propor, igual Brasfoot). O atributo bruto continua oculto na UI
+// pra jogador de time alheio (spec-mercado.md §8); isso só decide a
+// transação, não revela nada de novo. A IA vendedora só aceita proposta
+// generosa o bastante — sem oferta pendente/negociação, decisão na hora.
+const LIMIAR_ACEITE_PROPOSTA = 1.35; // ⚙️ precisa oferecer ≥ 35% acima do valor
+export function proporJogador(S, timeComprador, idJogador, preco) {
+  const timeVendedor = donoDoJogador(S.elencos, idJogador);
+  if (!timeVendedor) return { ok: false, motivo: "Jogador não encontrado." };
+  if (timeVendedor === timeComprador) return { ok: false, motivo: "Esse jogador já é seu." };
+  const jogador = buscarJogador(S.elencos, idJogador);
+  const limiar = Math.ceil(jogador.valor * LIMIAR_ACEITE_PROPOSTA);
+  if (preco < limiar) {
+    return { ok: false, recusada: true, motivo: `${timeVendedor} recusou — quer pelo menos L$ ${limiar} por esse jogador.` };
+  }
+  if (S.orcamento[timeComprador] < preco) return { ok: false, motivo: "Orçamento insuficiente." };
+  const chkSai = podeRemover(S.elencos[timeVendedor], idJogador);
+  if (!chkSai.ok) return { ok: false, motivo: `${timeVendedor} não pode vender: ${chkSai.motivo}` };
+  const chkEntra = podeAdicionar(S.elencos[timeComprador]);
+  if (!chkEntra.ok) return chkEntra;
+
+  S.elencos[timeVendedor] = S.elencos[timeVendedor].filter((j) => j.id !== idJogador);
+  jogador.time = timeComprador;
+  S.elencos[timeComprador] = [...S.elencos[timeComprador], jogador];
+  S.orcamento[timeComprador] -= preco;
+  S.orcamento[timeVendedor] += preco;
+  S.mercado.historico.push({
+    jogador: jogador.nome, de: timeVendedor, para: timeComprador, valor: preco, rodada: S.rodada,
+  });
+  return { ok: true, motivo: null };
+}
+
 // Aceita uma oferta de IA por um jogador do humano.
 // oferta: { idJogador, timeOfertante, preco }
 export function aceitarOferta(S, oferta) {

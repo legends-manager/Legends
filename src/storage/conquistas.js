@@ -12,6 +12,7 @@ export const CONQUISTAS = [
   { id: "acesso", emoji: "🔼", titulo: "Acesso!", desc: "Suba de divisão com seu time." },
   { id: "serie-a", emoji: "👑", titulo: "Entre os grandes", desc: "Dispute uma partida na Série A." },
   { id: "tri", emoji: "💎", titulo: "Tricampeão", desc: "Conquiste 3 títulos na carreira." },
+  { id: "campeao-copa", emoji: "🏆", titulo: "Campeão da Copa", desc: "Vença a copa mata-mata cruzando as 3 séries." },
 ];
 
 export function carregarConquistas() {
