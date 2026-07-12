@@ -50,6 +50,7 @@ import FimDeTemporada from "./components/FimDeTemporada";
 import QuizModal from "./components/QuizModal";
 import TelaCopa from "./components/TelaCopa";
 import Ranking from "./components/Ranking";
+import BottomNav from "./components/BottomNav";
 import { supabase } from "./storage/supabaseClient";
 
 export default function App() {
@@ -359,6 +360,16 @@ export default function App() {
     }
   };
 
+  // Aba "Jogar" do BottomNav: volta pra onde o fluxo está, sem resetar a
+  // escalação customizada (diferente do irProximaRodada, que re-prepara —
+  // aqui é só navegação de consulta, o fluxo de rodada continua o mesmo).
+  const irJogar = () => {
+    if (!S) return;
+    if (S.mercado.janela !== "fechada") setTela("mercado");
+    else if (S.rodada >= S.calendario.length) setTela("tabela");
+    else setTela("escalacao");
+  };
+
   const confronto = () => {
     const rod = S.calendario[S.rodada];
     return rod.find((j) => j.casa === meuTime || j.fora === meuTime);
@@ -634,12 +645,20 @@ export default function App() {
     }
   }, [minuto, tela]); // eslint-disable-line
 
+  // BottomNav só nas telas de consulta durante uma temporada — nunca no fluxo
+  // linear (capa, partida ao vivo, intervalo, resultado, fim de temporada).
+  const TELAS_COM_NAV = ["escalacao", "mercado", "tabela", "artilharia", "copa", "ranking", "historiaCarreira", "historiaLiga"];
+  const mostrarNav = !!S && TELAS_COM_NAV.includes(tela);
+
   return (
     <div
       className="min-h-screen"
       style={{ background: "#150A26", color: "#F2EDFA", fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
     >
-      <div className="max-w-md mx-auto px-4">
+      {/* key={tela} re-monta o wrapper a cada troca de tela → re-dispara a
+          animação de entrada (micro-interação, index.css). pb extra quando o
+          BottomNav está visível, pra nada ficar escondido atrás da barra. */}
+      <div key={tela} className={`max-w-md mx-auto px-4 tela-entra${mostrarNav ? " pb-16" : ""}`}>
         {tela === "inicio" && (
           <TelaInicial
             serie={serie}
@@ -737,6 +756,9 @@ export default function App() {
           />
         )}
       </div>
+      {mostrarNav && (
+        <BottomNav tela={tela} setTela={setTela} irJogar={irJogar} temCopa={!!(S && S.copa)} meuTime={meuTime} />
+      )}
       {quizAtual && (
         <QuizModal
           quiz={quizAtual}

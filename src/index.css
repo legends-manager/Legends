@@ -9,3 +9,34 @@ body,
   min-height: 100%;
   background: #150a26;
 }
+
+/* Micro-interações (jul/2026): resposta tátil nos botões e entrada suave de
+   cada tela. Barato, sem lib — só CSS. prefers-reduced-motion respeitado. */
+button {
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+button:active {
+  transform: scale(0.97);
+}
+
+@keyframes telaEntra {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.tela-entra {
+  animation: telaEntra 0.22s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button,
+  .tela-entra {
+    transition: none;
+    animation: none;
+  }
+}

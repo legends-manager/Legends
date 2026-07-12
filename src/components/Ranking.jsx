@@ -10,7 +10,12 @@ import LoginOnline from "./LoginOnline";
 import { vincularCarreira, apagarCarreiraOnline } from "../storage/publicarOnline";
 import { Eyebrow, Rodape, card, amber } from "./ui";
 
+const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
+
 export default function Ranking({ setTela, mundo, sessao }) {
+  // Ranking sazonal (retenção): aba "Este mês" zera todo dia 1º — qualquer um
+  // pode ser o nº 1 do mês. "Geral" é o all-time (onde mora o elenco fictício).
+  const [aba, setAba] = useState("mes");
   const [linhas, setLinhas] = useState(undefined); // undefined = carregando
   const [publicada, setPublicada] = useState(undefined); // undefined = carregando/sem sessão, null = sem carreira publicada
   const [processando, setProcessando] = useState(false);
@@ -20,13 +25,14 @@ export default function Ranking({ setTela, mundo, sessao }) {
 
   useEffect(() => {
     if (!supabase) return;
+    setLinhas(undefined);
     supabase
-      .from("ranking_tecnicos")
+      .from(aba === "mes" ? "ranking_tecnicos_mes" : "ranking_tecnicos")
       .select("*")
       .order("pontos", { ascending: false })
       .limit(20)
       .then(({ data }) => setLinhas(data || []));
-  }, []);
+  }, [aba]);
 
   useEffect(() => {
     if (!sessao) { setPublicada(undefined); return; }
@@ -101,9 +107,36 @@ export default function Ranking({ setTela, mundo, sessao }) {
         </button>
       )}
 
+      <div className="flex gap-1 mt-4">
+        <button
+          onClick={() => setAba("mes")}
+          className="flex-1 rounded-lg py-2 text-xs font-bold"
+          style={aba === "mes" ? amber : card}
+        >
+          🗓️ {MESES[new Date().getMonth()]}
+        </button>
+        <button
+          onClick={() => setAba("geral")}
+          className="flex-1 rounded-lg py-2 text-xs font-bold"
+          style={aba === "geral" ? amber : card}
+        >
+          🏆 Geral
+        </button>
+      </div>
+      {aba === "mes" && (
+        <p className="text-xs mt-2" style={{ color: "#6E5A92" }}>
+          O ranking do mês zera todo dia 1º — todo mundo recomeça, qualquer um pode terminar em 1º.
+        </p>
+      )}
+
       {linhas === undefined && <div className="text-sm mt-4" style={{ color: "#A78FC7" }}>Carregando…</div>}
+      {linhas && linhas.length === 0 && (
+        <div className="rounded-xl p-4 mt-3 text-sm text-center" style={{ ...card, color: "#A78FC7" }}>
+          Ninguém pontuou em {MESES[new Date().getMonth()]} ainda — feche uma temporada e seja o 1º do mês.
+        </div>
+      )}
       {linhas && linhas.length > 0 && (
-        <div className="mt-4 space-y-1">
+        <div className="mt-3 space-y-1">
           {linhas.map((l, i) => (
             <div
               key={i}
