@@ -684,7 +684,7 @@ export default function App() {
             sessao={sessao}
           />
         )}
-        {tela === "ranking" && <Ranking setTela={setTela} mundo={mundo} sessao={sessao} />}
+        {tela === "ranking" && <Ranking setTela={setTela} mundo={mundo} sessao={sessao} S={S} meuTime={meuTime} />}
         {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
         {tela === "historiaLiga" && mundo && <HistoriaLiga mundo={mundo} setTela={setTela} />}
         {tela === "escalacao" && S && (

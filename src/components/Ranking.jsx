@@ -13,7 +13,7 @@ import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
-export default function Ranking({ setTela, mundo, sessao }) {
+export default function Ranking({ setTela, mundo, sessao, S, meuTime }) {
   // Ranking sazonal (retenção): aba "Este mês" zera todo dia 1º — qualquer um
   // pode ser o nº 1 do mês. "Geral" é o all-time (onde mora o elenco fictício).
   const [aba, setAba] = useState("mes");
@@ -44,7 +44,12 @@ export default function Ranking({ setTela, mundo, sessao }) {
   const vincular = async () => {
     setErro(null);
     setProcessando(true);
-    const { carreira, error } = await vincularCarreira(mundo);
+    // Se tem temporada em andamento (S existe — a maioria dos casos, já que
+    // é daqui que dá pra vincular), manda o progresso atual junto: quem já
+    // jogou 15 rodadas sem nunca ter vinculado não fica esperando o próximo
+    // checkpoint de 3 em 3 pra aparecer no ranking.
+    const pontosAtuais = S && meuTime ? (S.tabela[meuTime]?.P ?? 0) : 0;
+    const { carreira, error } = await vincularCarreira(mundo, pontosAtuais);
     setProcessando(false);
     if (error) { setErro(error); return; }
     setPublicada(carreira);

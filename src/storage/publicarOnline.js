@@ -94,7 +94,11 @@ export async function publicarProgresso(mundo, pontosAtuais) {
 // "Vincular carreira online": além de sincronizar o estado atual, publica de
 // uma vez TODAS as temporadas já fechadas localmente (mundo.carreira) que
 // ainda não estão no ranking — cobre quem loga depois de já ter jogado.
-export async function vincularCarreira(mundo) {
+// `pontosAtuais` (opcional, S.tabela[meuTime].P): quem vincula NO MEIO de
+// uma temporada em andamento (ex. já na rodada 15, nunca tinha vinculado)
+// precisa que o progresso atual entre JÁ, sem esperar o próximo checkpoint
+// de 3 em 3 rodadas (publicarProgresso) — senão fica "invisível" até lá.
+export async function vincularCarreira(mundo, pontosAtuais = 0) {
   if (!supabase) return { error: "Modo online não configurado" };
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { error: "Não logado" };
@@ -110,6 +114,7 @@ export async function vincularCarreira(mundo) {
         hall_campeoes: mundo.hallCampeoes,
         historico_acesso: mundo.historicoAcesso,
         recordes: mundo.recordes || {},
+        pontos_temporada_atual: pontosAtuais,
       },
       { onConflict: "user_id" },
     )
