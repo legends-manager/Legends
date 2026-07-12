@@ -34,6 +34,10 @@ export async function publicarTemporada(mundo, pontosTemporada) {
           hall_campeoes: mundo.hallCampeoes,
           historico_acesso: mundo.historicoAcesso,
           recordes: mundo.recordes || {},
+          // Zera o progresso da temporada agora fechada — ela já vira uma
+          // linha de carreira_temporadas logo abaixo, então não deve mais
+          // somar em dobro via pontos_temporada_atual.
+          pontos_temporada_atual: 0,
         },
         { onConflict: "user_id" },
       )
@@ -59,6 +63,31 @@ export async function publicarTemporada(mundo, pontosTemporada) {
     );
   } catch (e) {
     /* melhor esforço — o jogo local já fechou a temporada, isso é só o espelho público */
+  }
+}
+
+// Progresso DENTRO de uma temporada em andamento (pedido do Felyp: "gravar
+// antes de fechar, de 3 em 3 jogos") — chamado de finalizarRodada (App.jsx)
+// a cada 3 rodadas. Só atualiza carreiras.pontos_temporada_atual; não mexe
+// em carreira_temporadas (que continua sendo só temporadas FECHADAS, com
+// posição/resultado final). Silencioso de propósito: sem carreira vinculada
+// ainda, é um no-op (não força vínculo — isso é ação explícita do usuário).
+export async function publicarProgresso(mundo, pontosAtuais) {
+  if (!supabase) return;
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return;
+  try {
+    await supabase
+      .from("carreiras")
+      .update({
+        meu_time: mundo.meuTime,
+        divisao: mundo.divisao,
+        pontos_temporada_atual: pontosAtuais,
+        atualizado_em: new Date().toISOString(),
+      })
+      .eq("user_id", session.user.id);
+  } catch (e) {
+    /* melhor esforço */
   }
 }
 

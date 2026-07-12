@@ -34,7 +34,7 @@ import {
 } from "./storage/saveGame";
 import { incrementarMetrica } from "./storage/metricas";
 import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz";
-import { publicarTemporada, vincularCarreira } from "./storage/publicarOnline";
+import { publicarTemporada, publicarProgresso, vincularCarreira } from "./storage/publicarOnline";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -495,6 +495,12 @@ export default function App() {
     const craque = craques[0];
 
     S.rodada++;
+
+    // Ranking online (Fase 1, pedido do Felyp): publica o progresso a cada 3
+    // rodadas, sem esperar a temporada fechar — melhor esforço, nunca trava
+    // o jogo. Não força vínculo: se o técnico nunca vinculou a carreira, é
+    // um no-op silencioso (ver publicarProgresso).
+    if (mundo && S.rodada % 3 === 0) publicarProgresso(mundo, S.tabela[meuTime].P);
 
     // Tabela ao vivo das 3 séries: avança 1 rodada de CADA série paralela
     // junto com a do jogador (noop pra quem já encerrou — calendário mais

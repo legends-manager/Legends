@@ -210,6 +210,29 @@ progressive disclosure, caminho de menor resistência é o default):
   ANTES de existir login).
 - Testado ao vivo: build limpo, capa unificada carregando certo, ranking acessível em 1 clique.
 
+## 6.6 Ranking mostra todo mundo vinculado + progresso a cada 3 rodadas (Felyp, jul/2026)
+
+Três lacunas fechadas juntas:
+- **Ranking passa a listar TODOS que já vincularam carreira**, não só quem fechou pelo menos 1
+  temporada. `ranking_tecnicos`/`ranking_tecnicos_mes` mudaram de `FROM carreira_temporadas JOIN
+  carreiras` (inner — escondia quem tinha 0 temporadas fechadas) pra `FROM carreiras LEFT JOIN
+  (agregado de carreira_temporadas)`.
+- **Mostra o time de cada técnico** (`carreiras.meu_time`, já existia, só não estava na view).
+  Fictícios (§6.3) ganharam um time real cada, pra continuar indistinguíveis dos reais.
+- **Pontos atualizam a cada 3 rodadas**, não só no fechamento da temporada. Nova coluna
+  `carreiras.pontos_temporada_atual` (progresso da temporada EM ANDAMENTO — separado de
+  `carreira_temporadas`, que continua sendo só temporadas FECHADAS com posição/resultado final).
+  `publicarProgresso()` (storage/publicarOnline.js) roda de `finalizarRodada` (App.jsx) quando
+  `S.rodada % 3 === 0`; `publicarTemporada()` zera esse campo ao fechar (o valor já foi "bancado"
+  como linha em `carreira_temporadas`). Ranking soma histórico + progresso atual; o mensal só
+  conta o progresso atual se `carreiras.atualizado_em` cair no mês corrente (evita carregar
+  pontos de quem parou de jogar).
+- Bug pego e corrigido antes de ir pro ar: a primeira versão dos `VALUES` dos fictícios tinha a
+  ordem de colunas errada (apelido e time trocados) — óbvio ao testar, mas ficou registrado aqui
+  como lembrete de sempre testar UNION ALL com dado real do outro lado.
+- Testado ao vivo: time aparece certo pros 6 fictícios e pro Felyp (FORZA F.C), sem erro de
+  console, ranking mensal e geral consistentes.
+
 ## 7. LGPD (CLAUDE.md/doc-mãe §7 — obrigatório na Fase 1, não opcional)
 
 - Dado mínimo: e-mail (Supabase Auth) + nome do técnico (livre, sem validação de identidade real).

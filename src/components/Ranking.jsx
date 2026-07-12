@@ -8,7 +8,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "../storage/supabaseClient";
 import LoginOnline from "./LoginOnline";
 import { vincularCarreira, apagarCarreiraOnline } from "../storage/publicarOnline";
-import { Eyebrow, Rodape, card, amber } from "./ui";
+import { SIGLA } from "../data/times";
+import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
@@ -140,14 +141,22 @@ export default function Ranking({ setTela, mundo, sessao }) {
           {linhas.map((l, i) => (
             <div
               key={i}
-              className="rounded-xl px-3 py-2 text-sm flex items-center justify-between"
+              className="rounded-xl px-3 py-2 text-sm flex items-center justify-between gap-2"
               style={i === 0 ? { ...card, border: "1px solid #FFC53D" } : card}
             >
-              <span>
-                <span style={{ color: "#A78FC7" }}>{i + 1}º</span>{" "}
-                <b>{l.nome_tecnico || l.apelido || "Técnico anônimo"}</b>
+              <span className="flex items-center gap-2 min-w-0">
+                <span style={{ color: "#A78FC7" }}>{i + 1}º</span>
+                {l.meu_time && <Avatar t={l.meu_time} sm />}
+                <span className="min-w-0">
+                  <b className="block truncate">{l.nome_tecnico || l.apelido || "Técnico anônimo"}</b>
+                  {l.meu_time && (
+                    <span className="block text-[10px] truncate" style={{ color: "#6E5A92" }}>
+                      {SIGLA[l.meu_time] || l.meu_time}
+                    </span>
+                  )}
+                </span>
               </span>
-              <span className="text-xs text-right" style={{ color: "#FFC53D" }}>
+              <span className="text-xs text-right shrink-0" style={{ color: "#FFC53D" }}>
                 <b>{l.pontos} pts</b>
                 <span style={{ color: "#6E5A92" }}> · 🏆{l.titulos} · {l.temporadas_jogadas}t</span>
               </span>
