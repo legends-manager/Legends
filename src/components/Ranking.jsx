@@ -1,19 +1,19 @@
 // src/components/Ranking.jsx
 // Ranking online — mais uma tela do jogo (igual Tabela/Artilharia), não uma
 // seção "online" à parte. Login mora aqui via LoginOnline (mesmo widget da
-// capa). Vincular/apagar continuam existindo só pra quem já tinha carreira
-// offline ANTES de logar — quem loga e escolhe time depois já nasce vinculado
-// automaticamente (App.jsx, iniciarTemporada).
+// capa). Vínculo é 100% automático (App.jsx: efeito de auto-vínculo +
+// iniciarTemporada + publicarProgresso/publicarTemporada) — nenhum botão de
+// "vincular" aqui; só "apagar minha jornada", que é ação deliberada mesmo.
 import { useState, useEffect } from "react";
 import { supabase } from "../storage/supabaseClient";
 import LoginOnline from "./LoginOnline";
-import { vincularCarreira, apagarCarreiraOnline } from "../storage/publicarOnline";
+import { apagarCarreiraOnline } from "../storage/publicarOnline";
 import { SIGLA } from "../data/times";
 import { Eyebrow, Rodape, Avatar, card, amber } from "./ui";
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 
-export default function Ranking({ setTela, mundo, sessao, S, meuTime }) {
+export default function Ranking({ setTela, sessao }) {
   // Ranking sazonal (retenção): aba "Este mês" zera todo dia 1º — qualquer um
   // pode ser o nº 1 do mês. "Geral" é o all-time (onde mora o elenco fictício).
   const [aba, setAba] = useState("mes");
@@ -40,20 +40,6 @@ export default function Ranking({ setTela, mundo, sessao, S, meuTime }) {
     supabase.from("carreiras").select("*").eq("user_id", sessao.user.id).maybeSingle()
       .then(({ data }) => setPublicada(data || null));
   }, [sessao]);
-
-  const vincular = async () => {
-    setErro(null);
-    setProcessando(true);
-    // Se tem temporada em andamento (S existe — a maioria dos casos, já que
-    // é daqui que dá pra vincular), manda o progresso atual junto: quem já
-    // jogou 15 rodadas sem nunca ter vinculado não fica esperando o próximo
-    // checkpoint de 3 em 3 pra aparecer no ranking.
-    const pontosAtuais = S && meuTime ? (S.tabela[meuTime]?.P ?? 0) : 0;
-    const { carreira, error } = await vincularCarreira(mundo, pontosAtuais);
-    setProcessando(false);
-    if (error) { setErro(error); return; }
-    setPublicada(carreira);
-  };
 
   const apagar = async () => {
     setProcessando(true);
@@ -100,17 +86,10 @@ export default function Ranking({ setTela, mundo, sessao, S, meuTime }) {
         </div>
       )}
 
-      {/* Só aparece pra quem já tinha carreira offline ANTES de logar — quem
-          começa depois desta versão já nasce vinculado automaticamente. */}
-      {sessao && mundo && publicada === null && (
-        <button
-          onClick={vincular}
-          disabled={processando}
-          className="w-full rounded-xl py-3 font-bold mt-3 text-sm disabled:opacity-50"
-          style={amber}
-        >
-          {processando ? "Vinculando…" : "Vincular minha carreira ao ranking"}
-        </button>
+      {sessao && publicada === null && (
+        <p className="text-xs mt-3 text-center" style={{ color: "#6E5A92" }}>
+          Assim que você jogar uma rodada, sua carreira entra no ranking sozinha.
+        </p>
       )}
 
       <div className="flex gap-1 mt-4">

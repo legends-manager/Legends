@@ -233,6 +233,27 @@ Três lacunas fechadas juntas:
 - Testado ao vivo: time aparece certo pros 6 fictícios e pro Felyp (FORZA F.C), sem erro de
   console, ranking mensal e geral consistentes.
 
+## 6.7 Vínculo 100% automático — nenhum botão "Vincular" (Felyp, jul/2026)
+
+Pedido: "coloca o nome, joga e já entra automaticamente" — nada de clicar em nada pra aparecer
+no ranking. Antes, quem já tinha carreira offline ANTES de logar precisava clicar "Vincular" na
+tela de Ranking; agora isso dispara sozinho:
+- **`App.jsx` ganha um efeito** (`autoVinculadoRef`, guardado por `sessao.user.id + meu_time` pra
+  não repetir a cada re-render) que chama `vincularCarreira` assim que sessão + carreira em
+  andamento coexistem — cobre login no meio de uma carreira já rolando, ou abrir o app já logado
+  com carreira carregada do save. Também sincroniza `profiles.nome_tecnico` nesse momento (quem
+  loga depois de já jogar não passava pelo upsert de nome que só existia em `iniciarTemporada`).
+- **`publicarProgresso` (checkpoint de 3 em 3 rodadas) virou upsert**, não mais `update` simples —
+  se por algum motivo o vínculo ainda não existir quando o checkpoint dispara, ele mesmo cria a
+  linha (self-healing), em vez de silenciosamente atualizar 0 linhas pra sempre.
+- `iniciarTemporada` perdeu a chamada explícita de `vincularCarreira` — o efeito genérico já
+  cobre carreira nova (dispara quando `mundo` muda).
+- Botão "Vincular minha carreira ao ranking" **removido** de `Ranking.jsx`. Fica só uma frase
+  discreta pra quem ainda não pontuou nada ("assim que você jogar uma rodada, entra sozinho").
+  "Apagar minha jornada" continua manual — esse é ação deliberada, não automática.
+- Testado: build limpo, tela de Ranking sem o botão, sem erro de console. O clique de login real
+  (magic link) eu não simulo — mesma limitação de sempre.
+
 ## 7. LGPD (CLAUDE.md/doc-mãe §7 — obrigatório na Fase 1, não opcional)
 
 - Dado mínimo: e-mail (Supabase Auth) + nome do técnico (livre, sem validação de identidade real).

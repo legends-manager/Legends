@@ -70,22 +70,31 @@ export async function publicarTemporada(mundo, pontosTemporada) {
 // antes de fechar, de 3 em 3 jogos") — chamado de finalizarRodada (App.jsx)
 // a cada 3 rodadas. Só atualiza carreiras.pontos_temporada_atual; não mexe
 // em carreira_temporadas (que continua sendo só temporadas FECHADAS, com
-// posição/resultado final). Silencioso de propósito: sem carreira vinculada
-// ainda, é um no-op (não força vínculo — isso é ação explícita do usuário).
+// posição/resultado final).
+// Upsert (não update simples) de propósito: sem vínculo nenhum ainda a
+// existir (raro, mas possível se o login acontecer entre um checkpoint e
+// outro), cria a linha na hora — nada de "vincular" manual, o ranking se
+// mantém sozinho o tempo todo (pedido do Felyp: "coloca o nome, joga e já
+// entra automaticamente").
 export async function publicarProgresso(mundo, pontosAtuais) {
   if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
   try {
-    await supabase
-      .from("carreiras")
-      .update({
+    await supabase.from("carreiras").upsert(
+      {
+        user_id: session.user.id,
         meu_time: mundo.meuTime,
         divisao: mundo.divisao,
+        temporada_atual: mundo.temporada,
+        hall_campeoes: mundo.hallCampeoes,
+        historico_acesso: mundo.historicoAcesso,
+        recordes: mundo.recordes || {},
         pontos_temporada_atual: pontosAtuais,
         atualizado_em: new Date().toISOString(),
-      })
-      .eq("user_id", session.user.id);
+      },
+      { onConflict: "user_id" },
+    );
   } catch (e) {
     /* melhor esforço */
   }

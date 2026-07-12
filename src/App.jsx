@@ -154,6 +154,28 @@ export default function App() {
     return () => sub.subscription.unsubscribe();
   }, []);
 
+  // Vínculo automático ao ranking (pedido do Felyp: "coloca o nome, joga e
+  // já entra automaticamente" — nada de botão "Vincular" manual). Dispara
+  // sozinho assim que sessão + carreira em andamento coexistem: cobre login
+  // no meio de uma carreira já rolando, e também o caso de abrir o app já
+  // logado com uma carreira carregada do localStorage. iniciarTemporada
+  // (carreira NOVA) já vincula na hora de escolher o time; este efeito é o
+  // reforço pros outros dois casos. Guardado por ref pra não repetir a cada
+  // re-render — só re-sincroniza se a sessão ou o time mudar de verdade.
+  const autoVinculadoRef = useRef(null);
+  useEffect(() => {
+    if (!sessao || !mundo) return;
+    const chave = `${sessao.user.id}|${mundo.meuTime}`;
+    if (autoVinculadoRef.current === chave) return;
+    autoVinculadoRef.current = chave;
+    // Sincroniza o nome também aqui — quem loga DEPOIS de já ter carreira
+    // (não passou pelo upsert de profiles que iniciarTemporada faz) não pode
+    // ficar "Técnico anônimo" no ranking por falta desse passo.
+    if (nomeTec) supabase.from("profiles").upsert({ id: sessao.user.id, nome_tecnico: nomeTec }, { onConflict: "id" });
+    const pontosAtuais = S && meuTime ? (S.tabela[meuTime]?.P ?? 0) : 0;
+    vincularCarreira(mundo, pontosAtuais);
+  }, [sessao, mundo]); // eslint-disable-line
+
   // ---------- carregar save da série ativa ----------
   useEffect(() => {
     if (!localStorageDisponivel()) return;
@@ -183,13 +205,9 @@ export default function App() {
     // Persiste já no início: forças/atributos sorteados não podem se perder nem
     // ser re-sorteados no meio da temporada.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: time, avatarId, S: nova });
-    // Ranking online (Fase 1): se já logado, a carreira nasce vinculada na
-    // hora — "tudo uma coisa só", sem passo manual de "vincular" depois.
-    // Melhor esforço: sem sessão, ou com erro de rede, o jogo local segue normal.
-    if (sessao) {
-      supabase.from("profiles").upsert({ id: sessao.user.id, nome_tecnico: nomeTec }, { onConflict: "id" });
-      vincularCarreira(novoMundo);
-    }
+    // Ranking online (Fase 1): o efeito de vínculo automático (acima) cuida
+    // de vincular + sincronizar o nome assim que `mundo` mudar — nada a
+    // fazer aqui além de deixar setMundo(novoMundo) já ter sido chamado.
     setTela("mercado");
   };
 
@@ -684,7 +702,7 @@ export default function App() {
             sessao={sessao}
           />
         )}
-        {tela === "ranking" && <Ranking setTela={setTela} mundo={mundo} sessao={sessao} S={S} meuTime={meuTime} />}
+        {tela === "ranking" && <Ranking setTela={setTela} sessao={sessao} />}
         {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
         {tela === "historiaLiga" && mundo && <HistoriaLiga mundo={mundo} setTela={setTela} />}
         {tela === "escalacao" && S && (
