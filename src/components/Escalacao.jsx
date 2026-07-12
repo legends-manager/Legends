@@ -190,7 +190,11 @@ export default function Escalacao({
         </div>
       ))}
 
-      <div className="fixed bottom-0 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #150A26 30%)" }}>
+      {/* bottom-16: fica ACIMA do BottomNav fixo (App.jsx) — as duas barras
+          sempre coexistem aqui (Escalação exige S, que é exatamente quando o
+          BottomNav aparece), então a posição é sempre relativa a ele, não a
+          uma condição própria. */}
+      <div className="fixed bottom-16 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #150A26 30%)" }}>
         <div className="max-w-md mx-auto px-4 pb-5 pt-6 flex gap-2">
           <button
             disabled={!escValida()}
@@ -210,7 +214,7 @@ export default function Escalacao({
           </button>
         </div>
       </div>
-      <div className="h-24" />
+      <div className="h-40" />
 
       {modalNomes && (
         <ModalNomes

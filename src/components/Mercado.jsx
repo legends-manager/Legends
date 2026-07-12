@@ -275,14 +275,16 @@ export default function Mercado({
         </div>
       )}
 
-      <div className="fixed bottom-0 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #150A26 30%)" }}>
+      {/* bottom-16: fica ACIMA do BottomNav fixo (App.jsx) — Mercado sempre
+          exige S, mesma condição que faz o BottomNav aparecer. */}
+      <div className="fixed bottom-16 inset-x-0 z-40" style={{ background: "linear-gradient(transparent, #150A26 30%)" }}>
         <div className="max-w-md mx-auto px-4 pb-5 pt-6">
           <button onClick={fecharJanelaEIrEscalacao} className="w-full rounded-xl py-3.5 font-bold" style={amber}>
             Fechar janela e ir pra escalação →
           </button>
         </div>
       </div>
-      <div className="h-24" />
+      <div className="h-40" />
     </div>
   );
 }
