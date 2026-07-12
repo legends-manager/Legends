@@ -5,7 +5,11 @@
 // CPF/documento NÃO incluídos. Posições Copa10 mapeadas: CB/ZAG->DEF, VOL/MC/MD/ME/MEI->MEI,
 // SA/PD/ATA->ATA. Jogadores marcados 'N/A' no Copa10 tiveram posição ATRIBUÍDA (pos10:'NA').
 // Série B é 'um pouco mais forte' que a C → serieBonus no engine (não aqui).
-// Nação NH não cadastrou atletas → nomes FICTÍCIOS (origem:'placeholder'), a atualizar.
+// Nação NH: elenco real recebido do Felyp em jul/2026 (lista da Copa10, sem
+// fotos/CPF) — substitui os 14 nomes fictícios que existiam antes. O jogador
+// Vitor Giovane da Silva Vieira veio sem a linha de estatísticas na fonte
+// (mensagem cortada); os outros 11 vieram todos com G/A/MVP zerados, então
+// assumi zerado por padrão — CONFERIR com o Felyp se ele tem estatística real.
 // CONFERÊNCIA final do Felyp continua recomendada antes de publicar.
 // =============================================================================
 
@@ -165,20 +169,18 @@ export const ELENCOS_SERIE_B = {
     J("Adalberto Gonçalves Dias", "ATA", "ATA"),
   ],
   "Nação NH": [
-    J("Gabriel Martins (fictício)", "GOL", "NA", "placeholder"),
-    J("Lucas Ferreira (fictício)", "GOL", "NA", "placeholder"),
-    J("Rafael Souza (fictício)", "DEF", "NA", "placeholder"),
-    J("Matheus Lima (fictício)", "DEF", "NA", "placeholder"),
-    J("Bruno Alves (fictício)", "DEF", "NA", "placeholder"),
-    J("Felipe Rocha (fictício)", "DEF", "NA", "placeholder"),
-    J("João Pedro Nunes (fictício)", "MEI", "NA", "placeholder"),
-    J("Diego Barbosa (fictício)", "MEI", "NA", "placeholder"),
-    J("Vitor Cardoso (fictício)", "MEI", "NA", "placeholder"),
-    J("Guilherme Dias (fictício)", "MEI", "NA", "placeholder"),
-    J("Rodrigo Teixeira (fictício)", "ATA", "NA", "placeholder"),
-    J("Caio Moreira (fictício)", "ATA", "NA", "placeholder"),
-    J("André Gomes (fictício)", "ATA", "NA", "placeholder"),
-    J("Thiago Ramos (fictício)", "ATA", "NA", "placeholder"),
+    J("Laércio Alves Magri Junior", "GOL", "GOL"),
+    J("Edson dos Santos Gomes Garcia", "DEF", "ZAG"),
+    J("Eduardo dos Santos Gomes", "DEF", "ZAG"),
+    J("Anilton", "DEF", "ZAG"),
+    J("Gelson Ramos", "DEF", "ZAG"),
+    J("José Emanuel", "MEI", "MC"),
+    J("Luã Mateus da Silva", "MEI", "MD"),
+    J("Matheus Wesley", "MEI", "ME"),
+    J("Welton Maia", "ATA", "PD"),
+    J("Wendry Maia Ribeiro", "ATA", "PD"),
+    J("Mateus Rufino", "ATA", "ATA"),
+    J("Vitor Giovane da Silva Vieira", "ATA", "ATA"),
   ],
 };
 
