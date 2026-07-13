@@ -254,6 +254,49 @@ tela de Ranking; agora isso dispara sozinho:
 - Testado: build limpo, tela de Ranking sem o botão, sem erro de console. O clique de login real
   (magic link) eu não simulo — mesma limitação de sempre.
 
+## 6.8 AUDITORIA: ranking não estava salvando ninguém real (bug crítico, jul/2026)
+
+Felyp reportou que jogadores reais da liga logaram e jogaram, mas não apareceram no ranking.
+Auditoria com dado real do banco (não suposição):
+
+**Evidência**: `select count(*) from auth.users` → 13 contas. `select count(*) from profiles` → 1.
+`select count(*) from carreiras` → 1. Ou seja: **12 e-mails reais da liga** (murilocastrom12,
+eduadocosta549, guigato20001, luizhenriquezaina99, rogerio.rso92, matheus.savoy08,
+keviinalmeida.santoss, junior.oliveirak20, dodo.fernando30, mcardoso1812, edsonpita20,
+legendsligafut7) fizeram login e **nenhum** ganhou perfil ou carreira. RLS conferida e correta
+(não era o problema).
+
+**Causa raiz**: o efeito de vínculo automático (§6.7) só criava `profiles` se `nomeTec` (estado
+local do App.jsx) já estivesse preenchido:
+```js
+if (nomeTec) supabase.from("profiles").upsert(...)   // pulado se nomeTec ainda vazio
+vincularCarreira(mundo, pontosAtuais);                 // roda de qualquer jeito
+```
+`nomeTec` só é restaurado do save quando o jogador clica "▶ Continuar" — mas o widget de login
+já aparece na capa ANTES desse clique (fluxo normal: abrir app → logar por curiosidade → só
+depois continuar). Nesse momento `nomeTec === ""`, o perfil não é criado, e `vincularCarreira`
+tenta gravar em `carreiras` (que referencia `profiles` por chave estrangeira) e **falha em
+silêncio** — o App.jsx nunca aguardava/checava esse retorno. Pior: a trava anti-repetição
+(`autoVinculadoRef`) marcava "já tentei" mesmo na falha, bloqueando qualquer nova tentativa
+(inclusive os checkpoints de 3 rodadas seguintes) pelo resto daquela sessão do navegador.
+
+**Correção** (`storage/publicarOnline.js`): nova função `garantirPerfil(userId, nomeTecnico)`,
+chamada no INÍCIO de `vincularCarreira`, `publicarProgresso` e `publicarTemporada` — cada uma
+agora garante o próprio perfil antes de tocar em `carreiras`, em vez de depender de alguém ter
+feito isso antes. Upsert sem a chave `nome_tecnico` quando não há nome disponível ainda (não
+apaga um nome já salvo). As três funções ganharam um parâmetro `nomeTecnico`, passado pelo
+App.jsx nos 3 pontos de chamada. Se o nome ainda estiver vazio no primeiro contato, o próximo
+checkpoint de 3 rodadas (que roda de qualquer forma) corrige sozinho.
+
+**Sobre os 12 afetados — não há dado perdido, e não migrei nada manualmente**: o `mundo` (time,
+divisão, temporadas jogadas) de cada um continua intacto no `localStorage` do próprio aparelho —
+nunca saiu de lá, porque a escrita falhava ANTES de qualquer coisa ser enviada. Não tenho acesso
+a esses dados (são client-side) nem seria correto inventar/pré-criar registros no servidor sem
+eles. A correção é **auto-curativa**: assim que cada um abrir o app de novo (sessão ainda válida
++ carreira ainda no localStorage), o mesmo efeito — agora corrigido — roda sozinho e sincroniza
+tudo, incluindo o backfill de temporadas já fechadas (`vincularCarreira` já fazia isso). Nenhuma
+ação manual dos jogadores nem migração de dados do meu lado é necessária ou possível.
+
 ## 7. LGPD (CLAUDE.md/doc-mãe §7 — obrigatório na Fase 1, não opcional)
 
 - Dado mínimo: e-mail (Supabase Auth) + nome do técnico (livre, sem validação de identidade real).

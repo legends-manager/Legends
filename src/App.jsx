@@ -162,18 +162,22 @@ export default function App() {
   // (carreira NOVA) já vincula na hora de escolher o time; este efeito é o
   // reforço pros outros dois casos. Guardado por ref pra não repetir a cada
   // re-render — só re-sincroniza se a sessão ou o time mudar de verdade.
+  // BUGFIX (jul/2026): antes, o perfil só era criado se `nomeTec` já
+  // estivesse preenchido — o que falha pra quase todo mundo, porque o login
+  // aparece na capa ANTES do jogador clicar "Continuar" (que é quem repõe
+  // nomeTec do save). Sem perfil, TODA escrita em carreiras falha por chave
+  // estrangeira, em silêncio. Agora garantirPerfil() roda DENTRO de
+  // vincularCarreira/publicarProgresso/publicarTemporada — não depende mais
+  // de nomeTec estar certo neste exato instante; se estiver vazio aqui, o
+  // próximo checkpoint de 3 rodadas (que também passa nomeTec) corrige sozinho.
   const autoVinculadoRef = useRef(null);
   useEffect(() => {
     if (!sessao || !mundo) return;
     const chave = `${sessao.user.id}|${mundo.meuTime}`;
     if (autoVinculadoRef.current === chave) return;
     autoVinculadoRef.current = chave;
-    // Sincroniza o nome também aqui — quem loga DEPOIS de já ter carreira
-    // (não passou pelo upsert de profiles que iniciarTemporada faz) não pode
-    // ficar "Técnico anônimo" no ranking por falta desse passo.
-    if (nomeTec) supabase.from("profiles").upsert({ id: sessao.user.id, nome_tecnico: nomeTec }, { onConflict: "id" });
     const pontosAtuais = S && meuTime ? (S.tabela[meuTime]?.P ?? 0) : 0;
-    vincularCarreira(mundo, pontosAtuais);
+    vincularCarreira(mundo, pontosAtuais, nomeTec);
   }, [sessao, mundo]); // eslint-disable-line
 
   // ---------- carregar save da série ativa ----------
@@ -239,7 +243,7 @@ export default function App() {
     // Ranking online (Fase 1, spec-fase1-fundacao-online.md): melhor esforço,
     // nunca bloqueia o fluxo local — sem login, é um no-op silencioso.
     // Pontos vêm de S.tabela AGORA, antes de S sumir na próxima temporada.
-    publicarTemporada(mundo, S.tabela[meuTime].P);
+    publicarTemporada(mundo, S.tabela[meuTime].P, nomeTec);
     // A temporada foi processada: o save dela vira lixo perigoso — se ficasse,
     // reabrir o app oferecia "Continuar" nela e o Fim de Temporada podia rodar
     // DE NOVO (temporada dupla no mundo). Limpo já; quem fechar o app agora
@@ -518,7 +522,7 @@ export default function App() {
     // rodadas, sem esperar a temporada fechar — melhor esforço, nunca trava
     // o jogo. Não força vínculo: se o técnico nunca vinculou a carreira, é
     // um no-op silencioso (ver publicarProgresso).
-    if (mundo && S.rodada % 3 === 0) publicarProgresso(mundo, S.tabela[meuTime].P);
+    if (mundo && S.rodada % 3 === 0) publicarProgresso(mundo, S.tabela[meuTime].P, nomeTec);
 
     // Tabela ao vivo das 3 séries: avança 1 rodada de CADA série paralela
     // junto com a do jogador (noop pra quem já encerrou — calendário mais

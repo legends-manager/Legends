@@ -10,6 +10,25 @@ import { supabase } from "./supabaseClient";
 // bônus por título. ⚙️ calibrável.
 export const PONTOS_TITULO = 50;
 
+// BUGFIX (jul/2026, auditoria pós-lançamento): `carreiras.user_id` referencia
+// `profiles(id)` — sem uma linha em profiles, QUALQUER escrita em carreiras
+// falha por chave estrangeira. Antes, só App.jsx criava o perfil, e só
+// quando `nomeTec` (estado local) já estava preenchido — o que não é
+// garantido no momento do login (o widget de login aparece na capa antes do
+// jogador clicar "Continuar", que é quem repõe nomeTec). Resultado real:
+// 12 de 13 contas criadas na liga nunca ganharam perfil, e toda tentativa de
+// vincular falhava em silêncio (o erro nem era aguardado no App.jsx).
+// Correção: cada função abaixo GARANTE o próprio perfil antes de tocar em
+// carreiras — não depende mais de ninguém ter feito isso antes. Upsert sem a
+// chave nome_tecnico quando não há nome ainda, pra não apagar um nome já
+// salvo com um valor vazio.
+async function garantirPerfil(userId, nomeTecnico) {
+  const payload = { id: userId };
+  if (nomeTecnico) payload.nome_tecnico = nomeTecnico;
+  const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+  return error;
+}
+
 // Sincroniza o estado atual do mundo (divisão, hall de campeões, histórico de
 // acesso) e publica a temporada que acabou de fechar em carreira_temporadas.
 // Chamado automaticamente ao fim de cada finalizarTemporadaCarreira — best
@@ -17,12 +36,13 @@ export const PONTOS_TITULO = 50;
 // `pontosTemporada` vem de S.tabela[meuTime].P (o P já existe no motor, ver
 // engine/classificacao.js) — passado pelo chamador porque S some depois que
 // a temporada fecha.
-export async function publicarTemporada(mundo, pontosTemporada) {
+export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
   if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 
   try {
+    await garantirPerfil(session.user.id, nomeTecnico);
     const { data: carreira, error: erroUpsert } = await supabase
       .from("carreiras")
       .upsert(
@@ -76,11 +96,12 @@ export async function publicarTemporada(mundo, pontosTemporada) {
 // outro), cria a linha na hora — nada de "vincular" manual, o ranking se
 // mantém sozinho o tempo todo (pedido do Felyp: "coloca o nome, joga e já
 // entra automaticamente").
-export async function publicarProgresso(mundo, pontosAtuais) {
+export async function publicarProgresso(mundo, pontosAtuais, nomeTecnico) {
   if (!supabase) return;
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
   try {
+    await garantirPerfil(session.user.id, nomeTecnico);
     await supabase.from("carreiras").upsert(
       {
         user_id: session.user.id,
@@ -107,10 +128,13 @@ export async function publicarProgresso(mundo, pontosAtuais) {
 // uma temporada em andamento (ex. já na rodada 15, nunca tinha vinculado)
 // precisa que o progresso atual entre JÁ, sem esperar o próximo checkpoint
 // de 3 em 3 rodadas (publicarProgresso) — senão fica "invisível" até lá.
-export async function vincularCarreira(mundo, pontosAtuais = 0) {
+export async function vincularCarreira(mundo, pontosAtuais = 0, nomeTecnico) {
   if (!supabase) return { error: "Modo online não configurado" };
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return { error: "Não logado" };
+
+  const erroPerfil = await garantirPerfil(session.user.id, nomeTecnico);
+  if (erroPerfil) return { error: `perfil: ${erroPerfil.message}` };
 
   const { data: carreira, error: erroUpsert } = await supabase
     .from("carreiras")
