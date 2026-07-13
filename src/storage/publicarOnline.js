@@ -58,6 +58,14 @@ export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
 
   try {
     await garantirPerfil(session.user.id, nomeTecnico, OPERACAO);
+    // ORDEM IMPORTA (Etapa C, revisão técnica): antes, este upsert já
+    // zerava `pontos_temporada_atual` no mesmo passo em que sincronizava a
+    // carreira — se a gravação da temporada fechada (abaixo) fosse
+    // recusada pelo banco por qualquer motivo (ex. violação de uma
+    // constraint), o progresso já tinha sido zerado sem o resultado da
+    // temporada ter sido salvo em lugar nenhum: perda de dado no ranking
+    // online. Agora o progresso só é zerado DEPOIS de confirmar que a
+    // temporada fechada foi gravada com sucesso (ver abaixo).
     const { data: carreira, error: erroUpsert } = await supabase
       .from("carreiras")
       .upsert(
@@ -69,10 +77,6 @@ export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
           hall_campeoes: mundo.hallCampeoes,
           historico_acesso: mundo.historicoAcesso,
           recordes: mundo.recordes || {},
-          // Zera o progresso da temporada agora fechada — ela já vira uma
-          // linha de carreira_temporadas logo abaixo, então não deve mais
-          // somar em dobro via pontos_temporada_atual.
-          pontos_temporada_atual: 0,
         },
         { onConflict: "user_id" },
       )
@@ -101,6 +105,20 @@ export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
     );
     if (erroTemporada) {
       logSincronizacao({ operacao: OPERACAO, etapa: "upsertCarreiraTemporada", temSessao: true, erro: erroTemporada });
+      // NÃO zera pontos_temporada_atual — a temporada fechada não foi
+      // salva, então o progresso continua visível online até uma nova
+      // tentativa (próximo login/checkpoint) conseguir publicá-la.
+      return;
+    }
+
+    // Só agora, com a temporada fechada já salva com sucesso, é seguro
+    // zerar o progresso em andamento (evita somar em dobro depois).
+    const { error: erroZerar } = await supabase
+      .from("carreiras")
+      .update({ pontos_temporada_atual: 0 })
+      .eq("user_id", session.user.id);
+    if (erroZerar) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "zerarProgresso", temSessao: true, erro: erroZerar });
     }
   } catch (e) {
     // melhor esforço — o jogo local já fechou a temporada, isso é só o
@@ -143,7 +161,13 @@ export async function publicarProgresso(mundo, pontosAtuais, nomeTecnico) {
         historico_acesso: mundo.historicoAcesso,
         recordes: mundo.recordes || {},
         pontos_temporada_atual: pontosAtuais,
-        atualizado_em: new Date().toISOString(),
+        // `atualizado_em` NÃO é enviado daqui de propósito (Etapa C, análise
+        // de integridade do ranking): antes, este era o relógio do
+        // NAVEGADOR do usuário decidindo a data de "última atividade" usada
+        // pelo ranking mensal — permitindo manipular a própria elegibilidade
+        // só ajustando o relógio do aparelho. Agora o valor vem sempre do
+        // servidor (coluna com `default now()` + trigger que sobrescreve em
+        // todo INSERT/UPDATE, ver migration 20260713120000).
       },
       { onConflict: "user_id" },
     );
