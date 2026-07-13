@@ -127,6 +127,29 @@ export function iniciarSerieParalela(times, serieBonus) {
   return { elencos, mult, fase, tabela, art: {}, calendario: gerarCalendario(times), rodada: 0 };
 }
 
+// Aplica o resultado de UM jogo (gols já apurados) na tabela/fase/artilharia
+// de `estado` — extraído de avancarRodadaSimples (auditoria técnica, Etapa
+// A) pra poder testar a regra de pontuação (3 vitória / 1 empate / fase
+// ▲▼) isoladamente, sem depender de Poisson/aleatoriedade. Nenhuma mudança
+// de comportamento: é o mesmo bloco de código que já existia inline aqui.
+export function aplicarResultado(estado, casa, fora, gc, gf, ev) {
+  const tc = estado.tabela[casa], tf = estado.tabela[fora];
+  tc.J++; tf.J++; tc.GP += gc; tc.GC += gf; tf.GP += gf; tf.GC += gc;
+  if (gc > gf) {
+    tc.V++; tc.P += 3; tf.D++;
+    estado.fase[casa] = Math.min(1.08, estado.fase[casa] + 0.04);
+    estado.fase[fora] = Math.max(0.92, estado.fase[fora] - 0.04);
+  } else if (gf > gc) {
+    tf.V++; tf.P += 3; tc.D++;
+    estado.fase[fora] = Math.min(1.08, estado.fase[fora] + 0.04);
+    estado.fase[casa] = Math.max(0.92, estado.fase[casa] - 0.04);
+  } else { tc.E++; tf.E++; tc.P++; tf.P++; }
+  ev.filter((e) => e.tipo === "gol").forEach((e) => {
+    estado.art[e.autor.id] = estado.art[e.autor.id] || { nome: e.autor.nome, time: e.autor.time, g: 0 };
+    estado.art[e.autor.id].g++;
+  });
+}
+
 // Avança EXATAMENTE 1 rodada de uma série paralela (noop se já encerrou —
 // calendário mais curto que o da série do jogador, ex. jogador na C/22
 // rodadas com A ou B/18: elas terminam antes e ficam paradas no resultado
@@ -143,21 +166,7 @@ export function avancarRodadaSimples(estado) {
       ...simMetade(Slocal, casa, fora, escCasa, escFora, 2),
     ];
     const gc = golsDe(ev, casa), gf = golsDe(ev, fora);
-    const tc = estado.tabela[casa], tf = estado.tabela[fora];
-    tc.J++; tf.J++; tc.GP += gc; tc.GC += gf; tf.GP += gf; tf.GC += gc;
-    if (gc > gf) {
-      tc.V++; tc.P += 3; tf.D++;
-      estado.fase[casa] = Math.min(1.08, estado.fase[casa] + 0.04);
-      estado.fase[fora] = Math.max(0.92, estado.fase[fora] - 0.04);
-    } else if (gf > gc) {
-      tf.V++; tf.P += 3; tc.D++;
-      estado.fase[fora] = Math.min(1.08, estado.fase[fora] + 0.04);
-      estado.fase[casa] = Math.max(0.92, estado.fase[casa] - 0.04);
-    } else { tc.E++; tf.E++; tc.P++; tf.P++; }
-    ev.filter((e) => e.tipo === "gol").forEach((e) => {
-      estado.art[e.autor.id] = estado.art[e.autor.id] || { nome: e.autor.nome, time: e.autor.time, g: 0 };
-      estado.art[e.autor.id].g++;
-    });
+    aplicarResultado(estado, casa, fora, gc, gf, ev);
   });
   estado.rodada++;
 }

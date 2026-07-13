@@ -35,6 +35,7 @@ import {
 import { incrementarMetrica } from "./storage/metricas";
 import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz";
 import { publicarTemporada, publicarProgresso, vincularCarreira } from "./storage/publicarOnline";
+import { chaveVinculo, deveExecutarVinculoAutomatico, deveSincronizarProgresso } from "./storage/sincronizacaoRegras";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -173,8 +174,8 @@ export default function App() {
   const autoVinculadoRef = useRef(null);
   useEffect(() => {
     if (!sessao || !mundo) return;
-    const chave = `${sessao.user.id}|${mundo.meuTime}`;
-    if (autoVinculadoRef.current === chave) return;
+    const chave = chaveVinculo(sessao.user.id, mundo.meuTime);
+    if (!deveExecutarVinculoAutomatico(autoVinculadoRef.current, chave)) return;
     autoVinculadoRef.current = chave;
     const pontosAtuais = S && meuTime ? (S.tabela[meuTime]?.P ?? 0) : 0;
     vincularCarreira(mundo, pontosAtuais, nomeTec);
@@ -522,7 +523,7 @@ export default function App() {
     // rodadas, sem esperar a temporada fechar — melhor esforço, nunca trava
     // o jogo. Não força vínculo: se o técnico nunca vinculou a carreira, é
     // um no-op silencioso (ver publicarProgresso).
-    if (mundo && S.rodada % 3 === 0) publicarProgresso(mundo, S.tabela[meuTime].P, nomeTec);
+    if (mundo && deveSincronizarProgresso(S.rodada)) publicarProgresso(mundo, S.tabela[meuTime].P, nomeTec);
 
     // Tabela ao vivo das 3 séries: avança 1 rodada de CADA série paralela
     // junto com a do jogador (noop pra quem já encerrou — calendário mais

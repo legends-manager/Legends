@@ -3,7 +3,14 @@
 // continua sendo a fonte da verdade — este módulo só ESPELHA o resultado já
 // decidido localmente pro ranking público, quando o técnico está logado.
 // Nunca bloqueia nem atrasa o jogo: sem sessão, é um no-op silencioso.
+//
+// Etapa B (auditoria técnica, T-05): os antigos `catch (e) { /* melhor
+// esforço */ }` foram trocados por `logSincronizacao` — o comportamento de
+// "nunca travar o jogo" continua idêntico (toda falha ainda é engolida
+// aqui dentro), só que agora fica registrada de forma diagnosticável, sem
+// dado pessoal, em vez de desaparecer em silêncio.
 import { supabase } from "./supabaseClient";
+import { logSincronizacao } from "./logger";
 
 // Ranking por pontos (pedido do Felyp): pontos da temporada = P da tabela
 // local (3/vitória + 1/empate, mesmo cálculo que a Tabela.jsx já mostra) +
@@ -22,10 +29,11 @@ export const PONTOS_TITULO = 50;
 // carreiras — não depende mais de ninguém ter feito isso antes. Upsert sem a
 // chave nome_tecnico quando não há nome ainda, pra não apagar um nome já
 // salvo com um valor vazio.
-async function garantirPerfil(userId, nomeTecnico) {
+async function garantirPerfil(userId, nomeTecnico, operacao) {
   const payload = { id: userId };
   if (nomeTecnico) payload.nome_tecnico = nomeTecnico;
   const { error } = await supabase.from("profiles").upsert(payload, { onConflict: "id" });
+  if (error) logSincronizacao({ operacao, etapa: "garantirPerfil", temSessao: true, erro: error });
   return error;
 }
 
@@ -38,11 +46,18 @@ async function garantirPerfil(userId, nomeTecnico) {
 // a temporada fecha.
 export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
   if (!supabase) return;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return;
+  const OPERACAO = "publicarTemporada";
+  let session;
+  try {
+    ({ data: { session } } = await supabase.auth.getSession());
+  } catch (e) {
+    logSincronizacao({ operacao: OPERACAO, etapa: "getSession", temSessao: false, erro: e });
+    return;
+  }
+  if (!session) return; // sem sessão: estado esperado (deslogado), não é falha — nada a registrar
 
   try {
-    await garantirPerfil(session.user.id, nomeTecnico);
+    await garantirPerfil(session.user.id, nomeTecnico, OPERACAO);
     const { data: carreira, error: erroUpsert } = await supabase
       .from("carreiras")
       .upsert(
@@ -63,13 +78,16 @@ export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
       )
       .select()
       .single();
-    if (erroUpsert) return;
+    if (erroUpsert) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "upsertCarreira", temSessao: true, erro: erroUpsert });
+      return;
+    }
 
     // A última entrada de mundo.carreira[] é a temporada que acabou de fechar.
     const ultima = mundo.carreira[mundo.carreira.length - 1];
     if (!ultima) return;
     const pontos = (pontosTemporada || 0) + (ultima.posicao === 1 ? PONTOS_TITULO : 0);
-    await supabase.from("carreira_temporadas").upsert(
+    const { error: erroTemporada } = await supabase.from("carreira_temporadas").upsert(
       {
         carreira_id: carreira.id,
         temporada: ultima.temporada,
@@ -81,8 +99,13 @@ export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
       },
       { onConflict: "carreira_id,temporada" },
     );
+    if (erroTemporada) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "upsertCarreiraTemporada", temSessao: true, erro: erroTemporada });
+    }
   } catch (e) {
-    /* melhor esforço — o jogo local já fechou a temporada, isso é só o espelho público */
+    // melhor esforço — o jogo local já fechou a temporada, isso é só o
+    // espelho público; a falha é registrada, não propagada.
+    logSincronizacao({ operacao: OPERACAO, etapa: "inesperado", temSessao: true, erro: e });
   }
 }
 
@@ -98,11 +121,19 @@ export async function publicarTemporada(mundo, pontosTemporada, nomeTecnico) {
 // entra automaticamente").
 export async function publicarProgresso(mundo, pontosAtuais, nomeTecnico) {
   if (!supabase) return;
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return;
+  const OPERACAO = "publicarProgresso";
+  let session;
   try {
-    await garantirPerfil(session.user.id, nomeTecnico);
-    await supabase.from("carreiras").upsert(
+    ({ data: { session } } = await supabase.auth.getSession());
+  } catch (e) {
+    logSincronizacao({ operacao: OPERACAO, etapa: "getSession", temSessao: false, erro: e });
+    return;
+  }
+  if (!session) return; // sem sessão: estado esperado (deslogado), não é falha
+
+  try {
+    await garantirPerfil(session.user.id, nomeTecnico, OPERACAO);
+    const { error: erroUpsert } = await supabase.from("carreiras").upsert(
       {
         user_id: session.user.id,
         meu_time: mundo.meuTime,
@@ -116,8 +147,13 @@ export async function publicarProgresso(mundo, pontosAtuais, nomeTecnico) {
       },
       { onConflict: "user_id" },
     );
+    if (erroUpsert) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "upsertCarreira", temSessao: true, erro: erroUpsert });
+    }
   } catch (e) {
-    /* melhor esforço */
+    // melhor esforço — checkpoint intra-temporada, próxima rodada tenta de
+    // novo; a falha é registrada, não propagada.
+    logSincronizacao({ operacao: OPERACAO, etapa: "inesperado", temSessao: true, erro: e });
   }
 }
 
@@ -130,64 +166,97 @@ export async function publicarProgresso(mundo, pontosAtuais, nomeTecnico) {
 // de 3 em 3 rodadas (publicarProgresso) — senão fica "invisível" até lá.
 export async function vincularCarreira(mundo, pontosAtuais = 0, nomeTecnico) {
   if (!supabase) return { error: "Modo online não configurado" };
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { error: "Não logado" };
+  const OPERACAO = "vincularCarreira";
 
-  const erroPerfil = await garantirPerfil(session.user.id, nomeTecnico);
-  if (erroPerfil) return { error: `perfil: ${erroPerfil.message}` };
-
-  const { data: carreira, error: erroUpsert } = await supabase
-    .from("carreiras")
-    .upsert(
-      {
-        user_id: session.user.id,
-        meu_time: mundo.meuTime,
-        divisao: mundo.divisao,
-        temporada_atual: mundo.temporada,
-        hall_campeoes: mundo.hallCampeoes,
-        historico_acesso: mundo.historicoAcesso,
-        recordes: mundo.recordes || {},
-        pontos_temporada_atual: pontosAtuais,
-      },
-      { onConflict: "user_id" },
-    )
-    .select()
-    .single();
-  if (erroUpsert) return { error: erroUpsert.message };
-
-  // Só INSERE as que ainda não existem — nunca sobrescreve uma temporada já
-  // publicada (essa pode ter pontos reais de V/E/D já registrados por
-  // publicarTemporada; temporadas antigas aqui só ganham o bônus de título,
-  // porque o placar de vitória/empate daquela época não ficou salvo em
-  // lugar nenhum antes deste recurso existir).
-  if (mundo.carreira.length > 0) {
-    const { data: existentes } = await supabase
-      .from("carreira_temporadas")
-      .select("temporada")
-      .eq("carreira_id", carreira.id);
-    const jaPublicadas = new Set((existentes || []).map((e) => e.temporada));
-    const faltantes = mundo.carreira.filter((c) => !jaPublicadas.has(c.temporada));
-    if (faltantes.length > 0) {
-      const linhas = faltantes.map((c) => ({
-        carreira_id: carreira.id,
-        temporada: c.temporada,
-        serie: c.serie,
-        time: c.time,
-        posicao: c.posicao,
-        resultado: c.resultado,
-        pontos: c.posicao === 1 ? PONTOS_TITULO : 0,
-      }));
-      const { error: erroTemporadas } = await supabase.from("carreira_temporadas").insert(linhas);
-      if (erroTemporadas) return { error: erroTemporadas.message, carreira };
+  // Envolve a operação inteira: ao contrário de publicarProgresso/
+  // publicarTemporada (best-effort puro, chamadas automáticas), esta função
+  // tem chamador que espera um retorno ({carreira} ou {error}) — mas uma
+  // exceção não prevista (ex. rede caindo no meio do backfill) não pode
+  // propagar e quebrar a tela que chamou (TelaInicial/App.jsx).
+  try {
+    let session;
+    try {
+      ({ data: { session } } = await supabase.auth.getSession());
+    } catch (e) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "getSession", temSessao: false, erro: e });
+      return { error: "Não foi possível verificar a sessão" };
     }
-  }
+    if (!session) return { error: "Não logado" };
 
-  return { carreira };
+    const erroPerfil = await garantirPerfil(session.user.id, nomeTecnico, OPERACAO);
+    if (erroPerfil) return { error: `perfil: ${erroPerfil.message}` };
+
+    const { data: carreira, error: erroUpsert } = await supabase
+      .from("carreiras")
+      .upsert(
+        {
+          user_id: session.user.id,
+          meu_time: mundo.meuTime,
+          divisao: mundo.divisao,
+          temporada_atual: mundo.temporada,
+          hall_campeoes: mundo.hallCampeoes,
+          historico_acesso: mundo.historicoAcesso,
+          recordes: mundo.recordes || {},
+          pontos_temporada_atual: pontosAtuais,
+        },
+        { onConflict: "user_id" },
+      )
+      .select()
+      .single();
+    if (erroUpsert) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "upsertCarreira", temSessao: true, erro: erroUpsert });
+      return { error: erroUpsert.message };
+    }
+
+    // Só INSERE as que ainda não existem — nunca sobrescreve uma temporada já
+    // publicada (essa pode ter pontos reais de V/E/D já registrados por
+    // publicarTemporada; temporadas antigas aqui só ganham o bônus de título,
+    // porque o placar de vitória/empate daquela época não ficou salvo em
+    // lugar nenhum antes deste recurso existir).
+    if (mundo.carreira.length > 0) {
+      const { data: existentes } = await supabase
+        .from("carreira_temporadas")
+        .select("temporada")
+        .eq("carreira_id", carreira.id);
+      const jaPublicadas = new Set((existentes || []).map((e) => e.temporada));
+      const faltantes = mundo.carreira.filter((c) => !jaPublicadas.has(c.temporada));
+      if (faltantes.length > 0) {
+        const linhas = faltantes.map((c) => ({
+          carreira_id: carreira.id,
+          temporada: c.temporada,
+          serie: c.serie,
+          time: c.time,
+          posicao: c.posicao,
+          resultado: c.resultado,
+          pontos: c.posicao === 1 ? PONTOS_TITULO : 0,
+        }));
+        const { error: erroTemporadas } = await supabase.from("carreira_temporadas").insert(linhas);
+        if (erroTemporadas) {
+          logSincronizacao({ operacao: OPERACAO, etapa: "insertBackfill", temSessao: true, erro: erroTemporadas });
+          return { error: erroTemporadas.message, carreira };
+        }
+      }
+    }
+
+    return { carreira };
+  } catch (e) {
+    logSincronizacao({ operacao: OPERACAO, etapa: "inesperado", temSessao: true, erro: e });
+    return { error: "Falha inesperada ao sincronizar com o ranking" };
+  }
 }
 
 export async function apagarCarreiraOnline(userId) {
   if (!supabase) return { error: "Modo online não configurado" };
-  const { error } = await supabase.from("carreiras").delete().eq("user_id", userId);
-  if (error) return { error: error.message };
-  return {};
+  const OPERACAO = "apagarCarreiraOnline";
+  try {
+    const { error } = await supabase.from("carreiras").delete().eq("user_id", userId);
+    if (error) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "deleteCarreira", temSessao: true, erro: error });
+      return { error: error.message };
+    }
+    return {};
+  } catch (e) {
+    logSincronizacao({ operacao: OPERACAO, etapa: "inesperado", temSessao: true, erro: e });
+    return { error: "Falha inesperada ao apagar a carreira online" };
+  }
 }
