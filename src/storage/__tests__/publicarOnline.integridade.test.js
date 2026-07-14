@@ -29,7 +29,7 @@ import { totalRodadas } from "../../engine/calendario";
 import { SERIES } from "../../data/series";
 import { PONTOS_TITULO } from "../publicarOnline";
 
-function criarSupabaseFake({ codigoErroEm = null } = {}) {
+function criarSupabaseFake({ codigoErroEm = null, falharUpdateEm = null } = {}) {
   const chamadas = [];
   const client = {
     auth: { getSession: vi.fn(async () => ({ data: { session: { user: { id: "user-1" } } } })) },
@@ -51,6 +51,10 @@ function criarSupabaseFake({ codigoErroEm = null } = {}) {
         },
         update(payload) {
           chamadas.push({ tipo: "update", tabela, payload });
+          if (falharUpdateEm === tabela) {
+            const erro = { code: "08006", message: "connection failure (simulada)" };
+            return { eq: async () => ({ error: erro }) };
+          }
           return { eq: async () => ({ error: null }) };
         },
         insert() {
@@ -156,6 +160,76 @@ describe("publicarOnline — ordem segura de gravação em publicarTemporada", (
 
     const updateZerar = chamadas.find((c) => c.tabela === "carreiras" && c.tipo === "update");
     expect(updateZerar).toBeUndefined();
+  });
+
+  it("se a temporada SALVA COM SUCESSO mas o 'zerar progresso' falhar: o resultado continua salvo, sem duplicar, e uma nova tentativa recupera o estado", async () => {
+    // 1ª tentativa: a gravação da temporada funciona, mas a gravação
+    // seguinte (zerar o progresso em andamento) falha — ex. a conexão caiu
+    // bem nesse meio-tempo, um cenário distinto do anterior (que falhava
+    // JÁ na gravação da temporada).
+    const tentativa1 = criarSupabaseFake({ falharUpdateEm: "carreiras" });
+    vi.doMock("../supabaseClient", () => ({ supabase: tentativa1.client }));
+    const mod1 = await import("../publicarOnline");
+    const mundo = {
+      meuTime: "Nação NH", divisao: {}, temporada: 2, hallCampeoes: [], historicoAcesso: [], recordes: {},
+      carreira: [{ temporada: 1, serie: "C", time: "Nação NH", posicao: 1, resultado: "manteve" }],
+    };
+
+    await expect(mod1.publicarTemporada(mundo, 60, "Treinador Teste")).resolves.not.toThrow();
+
+    const upsertTemporada1 = tentativa1.chamadas.find((c) => c.tabela === "carreira_temporadas" && c.tipo === "upsert");
+    const updateZerar1 = tentativa1.chamadas.find((c) => c.tabela === "carreiras" && c.tipo === "update");
+    // O resultado da temporada permanece salvo — a falha foi só na etapa
+    // seguinte, não desfaz o que já tinha sido gravado com sucesso.
+    expect(upsertTemporada1).toBeTruthy();
+    expect(upsertTemporada1.payload.temporada).toBe(1);
+    expect(upsertTemporada1.payload.pontos).toBe(60 + PONTOS_TITULO); // posição 1 = bônus de título
+    // A tentativa de zerar aconteceu (não foi pulada) mas falhou — sem
+    // travar o app (confirmado pelo resolves.not.toThrow acima).
+    expect(updateZerar1).toBeTruthy();
+
+    // 2ª tentativa (nova sincronização — ex. próximo login ou checkpoint,
+    // exatamente como acontece de verdade via vincularCarreira/
+    // publicarProgresso): desta vez tudo funciona.
+    vi.resetModules();
+    const tentativa2 = criarSupabaseFake();
+    vi.doMock("../supabaseClient", () => ({ supabase: tentativa2.client }));
+    const mod2 = await import("../publicarOnline");
+    await mod2.publicarTemporada(mundo, 60, "Treinador Teste");
+
+    const upsertsTemporada2 = tentativa2.chamadas.filter((c) => c.tabela === "carreira_temporadas" && c.tipo === "upsert");
+    const updateZerar2 = tentativa2.chamadas.find((c) => c.tabela === "carreiras" && c.tipo === "update");
+    // Não duplica: o cliente sempre manda o MESMO payload determinístico
+    // pra mesma temporada, com o mesmo onConflict — no banco de verdade
+    // isso resolve pra uma única linha (chave carreira_id+temporada),
+    // nunca um segundo registro.
+    expect(upsertsTemporada2).toHaveLength(1);
+    expect(upsertsTemporada2[0].payload.temporada).toBe(1);
+    expect(upsertsTemporada2[0].opts).toMatchObject({ onConflict: "carreira_id,temporada" });
+    // Desta vez o progresso é zerado com sucesso — o estado se recupera.
+    expect(updateZerar2).toBeTruthy();
+    expect(updateZerar2.payload).toEqual({ pontos_temporada_atual: 0 });
+  });
+
+  it("se a PRIMEIRA gravação de publicarTemporada falhar, a segunda nunca é tentada e nenhum progresso é zerado ou sobrescrito", async () => {
+    // "Primeira gravação" = o upsert inicial em `carreiras` (que também
+    // busca/gera o id da carreira, necessário pra gravar a temporada
+    // depois). Diferente do teste acima (que falha na SEGUNDA gravação,
+    // já com a temporada salva), aqui a cadeia inteira nunca começa.
+    const { client, chamadas } = criarSupabaseFake({ codigoErroEm: "carreiras" });
+    vi.doMock("../supabaseClient", () => ({ supabase: client }));
+    const { publicarTemporada } = await import("../publicarOnline");
+    const mundo = {
+      meuTime: "Nação NH", divisao: {}, temporada: 2, hallCampeoes: [], historicoAcesso: [], recordes: {},
+      carreira: [{ temporada: 1, serie: "C", time: "Nação NH", posicao: 1, resultado: "manteve" }],
+    };
+
+    await expect(publicarTemporada(mundo, 60, "Treinador Teste")).resolves.not.toThrow();
+
+    const upsertTemporada = chamadas.find((c) => c.tabela === "carreira_temporadas");
+    const updateZerar = chamadas.find((c) => c.tabela === "carreiras" && c.tipo === "update");
+    expect(upsertTemporada).toBeUndefined(); // a gravação da temporada nunca chega a ser tentada
+    expect(updateZerar).toBeUndefined(); // nenhum progresso é zerado ou sobrescrito
   });
 });
 

@@ -505,6 +505,15 @@ pelo menos uma vez contra o Supabase real (esta etapa só testou com mocks).
 
 # Etapa C — Integridade Mínima do Ranking (PREPARAÇÃO, não aplicada)
 
+> ⚠️ **SEÇÃO SUPERADA.** Esta é a primeira versão da proposta, mantida aqui
+> só como registro histórico de como a análise evoluiu. Ela ainda descreve
+> um **teto de 20 temporadas** que foi removido depois de uma revisão
+> técnica independente — a regra final, realmente usada na migration e no
+> código, é **`temporada >= 1`, sem teto máximo** (ver seção "Etapa C —
+> Revisão Técnica Independente e Ajustes Aplicados" logo abaixo, e a seção
+> final "Etapa C — Estado Final" no fim deste documento, que é a fonte da
+> verdade). Não use os números desta seção como referência do estado atual.
+
 > Branch nova: `fix/integridade-minima-ranking`, criada a partir do commit
 > `8426cb6` (topo de `fix/auditoria-testes-sincronizacao`). Esta etapa
 > prepara a migration e o ajuste de código, mas **não aplica nada no
@@ -521,6 +530,8 @@ pelo menos uma vez contra o Supabase real (esta etapa só testou com mocks).
    - `CHECK (pontos_temporada_atual BETWEEN 0 AND 150)` em `carreiras`.
    - `CHECK (pontos BETWEEN 0 AND 150)` em `carreira_temporadas`.
    - `CHECK (temporada BETWEEN 1 AND 20)` em `carreira_temporadas`.
+     **[SUPERADO — removido o teto; a regra final é só `temporada >= 1`,
+     ver seção de revisão abaixo.]**
    - Uma função + trigger (`definir_atualizado_em_pelo_servidor`,
      `carreiras_atualizado_em_servidor`) que força `atualizado_em` a vir
      sempre do relógio do PRÓPRIO BANCO em todo INSERT/UPDATE de
@@ -546,12 +557,16 @@ pelo menos uma vez contra o Supabase real (esta etapa só testou com mocks).
    - confirma o mesmo para uma rejeição por `CHECK` de temporada em
      `publicarTemporada`, usando de propósito uma temporada 25 (acima do
      limite 20) pra documentar o risco residual descrito abaixo;
+     **[SUPERADO — esse teste e o risco que ele documentava não existem
+     mais na versão final; ver seção de revisão abaixo.]**
    - 2 testes "canário": confirmam por cálculo que o máximo de pontos
      realmente possível numa temporada (Série C, 22 rodadas, campeão
      invicto + bônus = 116) cabe na faixa 0–150, e que uma carreira de até
      20 temporadas cabe na faixa 1–20 — se a fórmula de pontuação ou o
      calendário mudarem no futuro de um jeito que estoure essas faixas,
      esses 2 testes avisam antes de alguém descobrir isso em produção.
+     **[SUPERADO — o teste de "1–20" foi removido junto com o teto; ver
+     seção de revisão abaixo.]**
 
 ## Decisão sobre os times (avaliada, NÃO implementada nesta migration)
 
@@ -587,15 +602,12 @@ git diff --check    → limpo (só aviso de fim de linha CRLF/LF, não é erro)
 
 ## Riscos restantes (mesmo depois de aplicar esta migration)
 
-- **Limite de temporada (1–20) pode um dia bloquear um jogador veterano
-  legítimo.** A Liga Viva foi desenhada pra carreira INDEFINIDA (o
-  `mundo.temporada` nunca para de incrementar). Se alguém realmente jogar
-  mais de 20 temporadas, a partir da 21ª o espelho ONLINE dessa temporada
-  específica passaria a ser rejeitado pelo banco (best-effort: o jogo
-  local continua normal, só o ranking dessa temporada específica não
-  apareceria). Não é um bug que apaga progresso, mas é uma limitação real
-  a monitorar — se o Felyp achar que 20 é baixo demais, o número é fácil
-  de aumentar numa migration futura (é só um valor no `CHECK`).
+- ~~**Limite de temporada (1–20) pode um dia bloquear um jogador veterano
+  legítimo.**~~ **[SUPERADO E CORRIGIDO]** Esse risco foi encontrado numa
+  revisão técnica independente e resolvido removendo o teto — a regra
+  final é só `temporada >= 1`, sem limite máximo. Ver seção "Etapa C —
+  Revisão Técnica Independente e Ajustes Aplicados" abaixo para o
+  raciocínio completo.
 - **Times ainda não são validados** — decisão consciente (ver tabela
   acima), mas continua sendo possível, hoje, declarar um `meu_time`
   qualquer.
@@ -642,6 +654,10 @@ dados reais existentes. Antes de aplicar de fato, revisar especialmente o
 risco do limite de 20 temporadas (é a única decisão nesta migration com
 chance real de precisar de ajuste no futuro) e decidir, com o Felyp, se
 vale a pena aumentar essa margem preventivamente antes de aplicar.
+
+**[SUPERADO]** Essa recomendação já foi seguida — o risco do teto de 20
+foi revisado e corrigido logo abaixo. Não use esta recomendação como
+status atual; ver a seção "Etapa C — Estado Final" no fim do documento.
 
 ---
 ---
@@ -740,3 +756,90 @@ ver decisão registrada acima) e o gatilho contar login como atividade
 relatório, e se aprovado, commitar na branch `fix/integridade-minima-ranking`
 e então mergear — só depois disso a pré-condição do redesign visual
 (`REDESIGN_LEGENDS_MANAGER.md`) fica satisfeita.
+
+---
+---
+
+# Etapa C — Estado Final (fonte da verdade)
+
+> Esta é a seção que resume o estado REAL e atual da Etapa C, depois de:
+> (1) a proposta inicial, (2) a revisão técnica independente do commit
+> `b6e5ebf` (que aprovou para merge, mas listou pequenas melhorias de
+> cobertura/documentação não bloqueantes), e (3) esta pequena etapa final
+> de cobertura e documentação. Se qualquer outra seção deste documento
+> contradisser o que está escrito aqui, **esta seção vence**.
+
+## Regra final de validação
+
+- **Pontos** (`carreiras.pontos_temporada_atual` e `carreira_temporadas.pontos`):
+  `CHECK (... BETWEEN 0 AND 150)`.
+- **Temporada** (`carreira_temporadas.temporada`): **só um piso, sem
+  teto** — `CHECK (temporada >= 1)`. Não existe mais nenhum limite máximo
+  de número de temporada em lugar nenhum (migration, rollback, código ou
+  teste). O teto de 20 que aparece nas seções mais antigas deste documento
+  foi removido e nunca chegou a ser commitado.
+- **Data de atividade** (`carreiras.atualizado_em`): definida sempre pelo
+  servidor (trigger `carreiras_atualizado_em_servidor`), nunca pelo
+  cliente.
+
+## Ordem obrigatória de publicação (quando for aplicar de verdade)
+
+**A migration precisa ser aplicada ANTES do código já ir pro ar — nunca
+o contrário.** Como o banco e o frontend não são publicados no mesmo
+instante exato, existe sempre um intervalo entre os dois passos, e a
+ordem importa:
+
+- **Migration primeiro, código depois → seguro.** Mesmo com o código
+  antigo ainda no ar, o gatilho de data já assume o controle assim que a
+  migration é aplicada (ele sobrescreve qualquer valor que o código antigo
+  tente mandar). As travas de pontos/temporada não rejeitam nenhum valor
+  real de hoje.
+- **Código primeiro, migration depois → tem um problema real.** O código
+  novo já parou de mandar a data pelo navegador, mas sem o gatilho o banco
+  simplesmente NÃO atualiza mais esse campo em atualizações — ele fica
+  congelado no valor antigo. Isso pode fazer um jogador ativo parecer
+  "inativo" no ranking do mês, só nessa janela.
+
+## Cuidado ao reverter (rollback)
+
+- **Reverter só a migration, mantendo o código novo no ar, CONGELA a data
+  de atividade de novo** — pelo mesmo motivo do parágrafo acima: sem
+  trigger e sem o código antigo mandando a data manualmente, ninguém
+  atualiza esse campo. Isso não é um bug do rollback (ele faz exatamente o
+  que deveria — remover as travas do banco), é uma consequência de reverter
+  só uma metade de uma mudança que tem lado banco e lado código.
+- **Um rollback completo e seguro precisa compatibilizar as duas
+  pontas**: se decidir reverter a migration, ou também reverte o código
+  (voltando a mandar a data do navegador) ou aceita conscientemente que a
+  data vai ficar congelada até uma correção nova ser aplicada. O script de
+  rollback (`..._ROLLBACK.sql`) só cuida do lado do banco — ele nunca
+  soube e não precisa saber disso, é uma decisão de quem for operar a
+  reversão.
+
+## Cobertura de testes (atualizada nesta etapa)
+
+Além dos testes já existentes, foram adicionados 2 novos cenários em
+`src/storage/__tests__/publicarOnline.integridade.test.js`, fechando as
+lacunas que a revisão técnica do commit `b6e5ebf` tinha apontado:
+
+- **Temporada salva com sucesso, mas o "zerar progresso" falha depois**:
+  confirma que o resultado da temporada continua salvo (não é desfeito
+  pela falha seguinte), que uma nova tentativa não cria um registro
+  duplicado (mesmo payload, mesmo `onConflict`), e que essa nova tentativa
+  consegue zerar o progresso corretamente — o estado se recupera sozinho.
+- **A primeira gravação de `publicarTemporada` falha** (o upsert inicial
+  em `carreiras`): confirma que a gravação da temporada nunca chega a ser
+  tentada, e que nenhum progresso é zerado ou sobrescrito.
+
+Com isso, os 5 cenários pedidos na revisão técnica (sucesso das duas
+gravações; falha da primeira; falha da segunda; nova tentativa depois de
+falha; prevenção de duplicidade) têm cada um pelo menos um teste dedicado.
+
+## Estado do commit
+
+Nenhuma migration foi aplicada no Supabase até este ponto. Nenhum push,
+merge ou deploy foi feito. A branch `fix/integridade-minima-ranking` tem 2
+commits acima da `main`: o primeiro (`b6e5ebf`) com a correção em si, e um
+segundo, criado ao final desta etapa, só com os 2 testes novos e esta
+atualização de documentação — nenhuma mudança de lógica de produção nesse
+segundo commit.
