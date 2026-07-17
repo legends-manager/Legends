@@ -151,6 +151,31 @@ export function PolishDecor({ variante }) {
           <Diagonal cor={cores.lime} opacidade={0.2} top={-20} right={30} altura={90} />
         </>
       );
+    case "copa":
+      // Tratamento de evento (REDESIGN_LEGENDS_MANAGER.md §5.10): superfície
+      // mais alta e accent mais forte que as demais telas utilitárias — a
+      // Copa é "uma partida, sem segunda chance".
+      return (
+        <>
+          <Superficie altura={130} cor={cores.navy} opacidade={0.7} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={110} />
+          <Diagonal cor={cores.lime} opacidade={0.2} top={0} right={10} altura={80} />
+        </>
+      );
+    case "ranking":
+      return (
+        <>
+          <Superficie altura={90} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={90} />
+        </>
+      );
+    case "historia":
+      return (
+        <>
+          <Superficie altura={80} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.2} top={-20} right={30} altura={90} />
+        </>
+      );
     default:
       return null;
   }

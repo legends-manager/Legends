@@ -796,16 +796,14 @@ export default function App() {
       </div>
       {mostrarNav && (
         // F1a (PLANO_MESTRE_LEGENDS_LIMEIRA.md): variante Polish agora cobre
-        // toda tela já remodelada (inicio/escalacao/mercado/tabela/
-        // artilharia); copa/ranking/historias seguem "padrao" até seus
-        // próprios reskins.
+        // todas as telas de TELAS_COM_NAV — reskin completo do F1a.
         <BottomNav
           tela={tela}
           setTela={setTela}
           irJogar={irJogar}
           temCopa={!!(S && S.copa)}
           meuTime={meuTime}
-          variante={["inicio", "escalacao", "mercado", "tabela", "artilharia"].includes(tela) ? "polish" : "padrao"}
+          variante="polish"
         />
       )}
       {quizAtual && (
