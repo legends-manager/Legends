@@ -676,7 +676,10 @@ export default function App() {
 
   // BottomNav só nas telas de consulta durante uma temporada — nunca no fluxo
   // linear (capa, partida ao vivo, intervalo, resultado, fim de temporada).
-  const TELAS_COM_NAV = ["escalacao", "mercado", "tabela", "artilharia", "copa", "ranking", "historiaCarreira", "historiaLiga"];
+  // "inicio" entra na lista (Task 05.1H): com S vivo, a capa vira a Central
+  // da Carreira (Figma 05.1) e mantém o BottomNav com "Início" ativo. Sem S
+  // (Entry/onboarding), mostrarNav já é falso por !!S — nada muda lá.
+  const TELAS_COM_NAV = ["inicio", "escalacao", "mercado", "tabela", "artilharia", "copa", "ranking", "historiaCarreira", "historiaLiga"];
   const mostrarNav = !!S && TELAS_COM_NAV.includes(tela);
 
   return (
@@ -705,11 +708,17 @@ export default function App() {
             retomarCarreiraSemSave={retomarCarreiraSemSave}
             setTela={setTela}
             sessao={sessao}
+            S={S}
+            escolhidos={escolhidos}
           />
         )}
         {tela === "ranking" && <Ranking setTela={setTela} sessao={sessao} />}
         {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
-        {tela === "historiaLiga" && mundo && <HistoriaLiga mundo={mundo} setTela={setTela} />}
+        {/* Task 05.1H.1: "Ver história da liga" volta a ser alcançável a
+            partir da Entry sem carreira (mundo=null) — HistoriaLiga.jsx
+            trata mundo ausente com um estado vazio honesto, sem fabricar
+            hall de campeões nem recordes. */}
+        {tela === "historiaLiga" && <HistoriaLiga mundo={mundo} setTela={setTela} />}
         {tela === "escalacao" && S && (
           <Escalacao
             S={S}
@@ -786,7 +795,18 @@ export default function App() {
         )}
       </div>
       {mostrarNav && (
-        <BottomNav tela={tela} setTela={setTela} irJogar={irJogar} temCopa={!!(S && S.copa)} meuTime={meuTime} />
+        // Task 05.1H.1: variante Polish só na Central da Carreira
+        // (tela === "inicio") — as demais telas de consulta (mercado,
+        // tabela, copa, ranking...) continuam com o tratamento visual
+        // atual, fora do escopo autorizado deste slice.
+        <BottomNav
+          tela={tela}
+          setTela={setTela}
+          irJogar={irJogar}
+          temCopa={!!(S && S.copa)}
+          meuTime={meuTime}
+          variante={tela === "inicio" ? "polish" : "padrao"}
+        />
       )}
       {quizAtual && (
         <QuizModal

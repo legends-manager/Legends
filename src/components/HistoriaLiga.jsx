@@ -7,7 +7,13 @@ import { carregarMetricas } from "../storage/metricas";
 import { Eyebrow, Rodape, card } from "./ui";
 
 export default function HistoriaLiga({ mundo, setTela }) {
-  const hall = [...mundo.hallCampeoes].reverse();
+  // Task 05.1H.1: alcançável a partir da Entry sem carreira (mundo=null) —
+  // nenhum hall/recorde é fabricado; a tabela mostra o mesmo estado vazio
+  // que já existia pra "nenhuma temporada concluída ainda", e os blocos de
+  // recordes simplesmente não aparecem (mesma condição que já os escondia
+  // quando o mundo existia mas ainda não tinha nenhum recorde registrado).
+  const hall = mundo ? [...mundo.hallCampeoes].reverse() : [];
+  const recordes = mundo?.recordes;
   const metricas = carregarMetricas();
 
   return (
@@ -43,30 +49,30 @@ export default function HistoriaLiga({ mundo, setTela }) {
 
       {/* Recordes históricos do mundo (dica 2) — das séries que o técnico
           disputou (as simuladas em segundo plano não têm eventos por jogador). */}
-      {(mundo.recordes?.maiorGoleada || mundo.recordes?.artilheiroTemporada) && (
+      {(recordes?.maiorGoleada || recordes?.artilheiroTemporada) && (
         <div className="mt-4">
           <Eyebrow>Recordes</Eyebrow>
           <div className="mt-2 space-y-1.5">
-            {mundo.recordes.maiorGoleada && (
+            {recordes.maiorGoleada && (
               <div className="rounded-xl px-3 py-2.5" style={card}>
                 <div className="text-sm font-bold">
-                  💥 Maior goleada: {SIGLA[mundo.recordes.maiorGoleada.casa] || mundo.recordes.maiorGoleada.casa}{" "}
-                  {mundo.recordes.maiorGoleada.gc} x {mundo.recordes.maiorGoleada.gf}{" "}
-                  {SIGLA[mundo.recordes.maiorGoleada.fora] || mundo.recordes.maiorGoleada.fora}
+                  💥 Maior goleada: {SIGLA[recordes.maiorGoleada.casa] || recordes.maiorGoleada.casa}{" "}
+                  {recordes.maiorGoleada.gc} x {recordes.maiorGoleada.gf}{" "}
+                  {SIGLA[recordes.maiorGoleada.fora] || recordes.maiorGoleada.fora}
                 </div>
                 <div className="text-xs mt-0.5" style={{ color: "#A78FC7" }}>
-                  Temporada {mundo.recordes.maiorGoleada.temporada} · Série {mundo.recordes.maiorGoleada.serie}
+                  Temporada {recordes.maiorGoleada.temporada} · Série {recordes.maiorGoleada.serie}
                 </div>
               </div>
             )}
-            {mundo.recordes.artilheiroTemporada && (
+            {recordes.artilheiroTemporada && (
               <div className="rounded-xl px-3 py-2.5" style={card}>
                 <div className="text-sm font-bold">
-                  🥇 Artilheiro recorde: {mundo.recordes.artilheiroTemporada.nome} — {mundo.recordes.artilheiroTemporada.gols} gols
+                  🥇 Artilheiro recorde: {recordes.artilheiroTemporada.nome} — {recordes.artilheiroTemporada.gols} gols
                 </div>
                 <div className="text-xs mt-0.5" style={{ color: "#A78FC7" }}>
-                  {mundo.recordes.artilheiroTemporada.time} · Temporada {mundo.recordes.artilheiroTemporada.temporada} · Série{" "}
-                  {mundo.recordes.artilheiroTemporada.serie}
+                  {recordes.artilheiroTemporada.time} · Temporada {recordes.artilheiroTemporada.temporada} · Série{" "}
+                  {recordes.artilheiroTemporada.serie}
                 </div>
               </div>
             )}
