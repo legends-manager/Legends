@@ -795,17 +795,17 @@ export default function App() {
         )}
       </div>
       {mostrarNav && (
-        // Task 05.1H.1: variante Polish só na Central da Carreira
-        // (tela === "inicio") — as demais telas de consulta (mercado,
-        // tabela, copa, ranking...) continuam com o tratamento visual
-        // atual, fora do escopo autorizado deste slice.
+        // F1a (PLANO_MESTRE_LEGENDS_LIMEIRA.md): variante Polish agora cobre
+        // toda tela já remodelada (inicio/escalacao/mercado/tabela/
+        // artilharia); copa/ranking/historias seguem "padrao" até seus
+        // próprios reskins.
         <BottomNav
           tela={tela}
           setTela={setTela}
           irJogar={irJogar}
           temCopa={!!(S && S.copa)}
           meuTime={meuTime}
-          variante={tela === "inicio" ? "polish" : "padrao"}
+          variante={["inicio", "escalacao", "mercado", "tabela", "artilharia"].includes(tela) ? "polish" : "padrao"}
         />
       )}
       {quizAtual && (
