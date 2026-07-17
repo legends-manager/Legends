@@ -21,6 +21,10 @@ export const cores = {
   textSecondary: "#AAB4BF",// text/secondary
   textMuted: "#8793A1",    // text/muted
   danger: "#FF4D4D",       // semantic/danger
+  success: "#2ECC71",      // semantic/success — distinto do lime da marca
+  gold: "#FFC400",         // SOMENTE conquista: troféu, título, campeão, 1º
+  silver: "#C0C8D0",       // 2º lugar
+  bronze: "#CD8A4B",       // 3º lugar
   navy: "#141A2E",         // accent/navy
   steel: "#39424E",        // accent/steel
 };

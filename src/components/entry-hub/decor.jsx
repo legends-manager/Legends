@@ -130,6 +130,27 @@ export function PolishDecor({ variante }) {
           <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={90} />
         </>
       );
+    case "mercado":
+      return (
+        <>
+          <Superficie altura={90} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={90} />
+        </>
+      );
+    case "tabela":
+      return (
+        <>
+          <Superficie altura={80} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={90} />
+        </>
+      );
+    case "artilharia":
+      return (
+        <>
+          <Superficie altura={80} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.2} top={-20} right={30} altura={90} />
+        </>
+      );
     default:
       return null;
   }

@@ -211,8 +211,17 @@ export default function Escalacao({
         {/* bottom-16: fica ACIMA do BottomNav fixo (App.jsx) — as duas barras
             sempre coexistem aqui (Escalação exige S, que é exatamente quando o
             BottomNav aparece), então a posição é sempre relativa a ele, não a
-            uma condição própria. */}
-        <div className="fixed bottom-16 inset-x-0 z-40" style={{ background: `linear-gradient(transparent, ${cores.bgBase} 30%)` }}>
+            uma condição própria.
+            Bug histórico documentado (AUDITORIA_VISUAL_MOBILE.md achado 1 /
+            REDESIGN_LEGENDS_MANAGER.md §5.1): a barra fixa cobria o último
+            jogador da lista porque o espaçador abaixo não incluía
+            env(safe-area-inset-bottom) — em iPhones com home indicator o
+            cálculo ficava justo demais. Corrigido: espaçador em calc() com a
+            margem de segurança do sistema somada, não mais um valor fixo. */}
+        <div
+          className="fixed bottom-16 inset-x-0 z-40"
+          style={{ background: `linear-gradient(transparent, ${cores.bgBase} 30%)`, paddingBottom: "env(safe-area-inset-bottom)" }}
+        >
           <div className="max-w-md mx-auto px-4 pb-5 pt-6 flex gap-2">
             <button
               disabled={!escValida()}
@@ -232,7 +241,7 @@ export default function Escalacao({
             </button>
           </div>
         </div>
-        <div className="h-40" />
+        <div style={{ height: "calc(10rem + env(safe-area-inset-bottom))" }} />
 
         {modalNomes && (
           <ModalNomes

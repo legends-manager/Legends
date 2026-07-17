@@ -75,7 +75,10 @@ export default function BottomNav({ tela, setTela, irJogar, temCopa, meuTime, va
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40" style={polish ? barraPolish : barraPadrao}>
-      <div className="max-w-md mx-auto flex" style={polish ? { paddingBottom: "max(0px, env(safe-area-inset-bottom))" } : undefined}>
+      {/* env(safe-area-inset-bottom) nas duas variantes: sem isso, em
+          iPhones com home indicator a barra fica colada demais no rodapé
+          (parte do achado 1 de AUDITORIA_VISUAL_MOBILE.md). */}
+      <div className="max-w-md mx-auto flex" style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}>
         {abas.map((a) => (
           <button
             key={a.id}
