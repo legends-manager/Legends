@@ -39,8 +39,9 @@ function BlocoSerie({ serieId, dados, meuTime }) {
 export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, temporada, proximaTemporadaCarreira }) {
   const { resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie } = resumo;
 
-  const compartilhar = () => {
-    const canvas = gerarCardTemporada({
+  const compartilhar = async () => {
+    // gerarCardTemporada é async (carrega a moldura oficial antes de desenhar).
+    const canvas = await gerarCardTemporada({
       meuTime, nomeTec, temporada,
       serieLabel: SERIES[minhaSerie].label,
       posicao: minhaPosicao,

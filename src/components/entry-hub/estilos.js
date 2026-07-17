@@ -1,9 +1,14 @@
-// Tokens visuais do slice Entry & Career Hub (Task 05.1H) — espelham as
-// variáveis congeladas do Figma "Polish Language v1" (seção 05.1, página 05):
-// identidade grafite + lime, sem gradiente/glow/blur, sem superfície roxa.
-// Escopo: SOMENTE os componentes de src/components/entry-hub/ usam isto —
-// as demais telas do app continuam com o tema atual (ui.jsx) até seus
-// próprios slices chegarem.
+// Tokens visuais "Polish Language v1" — grafite + lime, sem superfície roxa.
+// Nasceu no slice Entry & Career Hub (Task 05.1H) e agora é reaproveitado
+// por outros slices conforme cada um migra (jul/2026: também usado por
+// Escalação/Partida ao vivo/Intervalo/Resultado). Import direto de outras
+// pastas de components/ é esperado — o nome da pasta "entry-hub" é histórico,
+// não uma restrição de escopo.
+// Glow (jul/2026, decisão de Felyp): a trava "sem gradiente/glow/blur" foi
+// revogada — GLOW liberado, com escopo restrito a momentos de destaque
+// (hero art, CTA de confirmação de carreira, celebração), nunca em telas de
+// uso rotineiro (listas, tabelas). Gradiente/blur não foram mencionados na
+// liberação — não presumir que também valem sem confirmar.
 export const cores = {
   bgBase: "#1B1F24",       // bg/base
   bgSurface: "#242A31",    // bg/surface
@@ -37,6 +42,19 @@ export const botaoPrimario = {
   minHeight: 48,     // touch-target preferred
   fontWeight: 800,
 };
+
+// Variante com glow — reservada pro CTA de maior compromisso da jornada
+// ("Iniciar carreira" na Confirmação). Não usar em botões de rotina.
+export const botaoPrimarioGlow = {
+  ...botaoPrimario,
+  boxShadow: `0 0 28px rgba(198,255,30,0.45), 0 0 8px rgba(198,255,30,0.6)`,
+};
+
+// Glow de moldura — usado atrás de hero art (Entry) e do crest em telas de
+// celebração. Raio contido pra não virar um "brilho" genérico de fundo.
+export const glowLime = (raio = 36) => ({
+  boxShadow: `0 0 ${raio}px rgba(198,255,30,0.35)`,
+});
 
 export const botaoSecundario = {
   background: "transparent",

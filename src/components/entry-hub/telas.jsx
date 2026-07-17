@@ -10,8 +10,8 @@ import { SIGLA } from "../../data/times";
 import { totalRodadas } from "../../engine/calendario";
 import { ORCAMENTO_INICIAL } from "../../engine/mercado";
 import {
-  cores, superficie, superficie2, botaoPrimario, botaoSecundario,
-  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, crest,
+  cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
+  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, crest, glowLime,
 } from "./estilos";
 import { criarDisparoUnico } from "./onboarding";
 import { PolishDecor } from "./decor";
@@ -23,13 +23,13 @@ function EyebrowLime({ children }) {
   return <div style={eyebrowLime}>{children}</div>;
 }
 
-function BotaoPrimario({ children, onClick, disabled }) {
+function BotaoPrimario({ children, onClick, disabled, glow }) {
   return (
     <button
       onClick={onClick}
       disabled={disabled}
       className="w-full px-4 active:opacity-80 disabled:opacity-50"
-      style={botaoPrimario}
+      style={glow ? botaoPrimarioGlow : botaoPrimario}
     >
       {children}
     </button>
@@ -80,7 +80,22 @@ export function EntryNoCareer({
           escalação, mercado e a briga pelo título.
         </p>
 
-        <div className="mt-6 p-6 text-center" style={{ ...superficie, background: cores.navy }}>
+        {/* Hero art (jul/2026): asset real da marca (public/art/hero-trio.jpg
+            — mesmo crest da onça usado no pôster de campeão), com glow lime
+            contido nas bordas — presença de jogador sem simular jogo em 3D. */}
+        <div
+          className="mt-6 overflow-hidden"
+          style={{ borderRadius: 10, border: `1px solid ${cores.lime}`, ...glowLime(28) }}
+        >
+          <img
+            src="/art/hero-trio.jpg"
+            alt=""
+            className="w-full block"
+            style={{ aspectRatio: "16/10", objectFit: "cover", objectPosition: "left" }}
+          />
+        </div>
+
+        <div className="mt-3 p-4 text-center" style={{ ...superficie, background: cores.navy }}>
           <div style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic" }}>
             {serieC.times.length} CLUBES REAIS
           </div>
@@ -296,7 +311,7 @@ export function ClubConfirmation({
         </p>
 
         <div className="mt-5">
-          <BotaoPrimario onClick={dispararUmaVez} disabled={iniciando}>
+          <BotaoPrimario onClick={dispararUmaVez} disabled={iniciando} glow>
             {iniciando ? "Criando carreira…" : "Iniciar carreira"}
           </BotaoPrimario>
         </div>

@@ -102,6 +102,34 @@ export function PolishDecor({ variante }) {
           <Diagonal cor={cores.steel} opacidade={0.35} top={-20} right={30} altura={90} />
         </>
       );
+    case "escalacao":
+      return (
+        <>
+          <Superficie altura={100} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={90} />
+        </>
+      );
+    case "partida":
+      return (
+        <>
+          <Superficie altura={100} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={90} />
+        </>
+      );
+    case "intervalo":
+      return (
+        <>
+          <Superficie altura={90} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.steel} opacidade={0.35} top={-20} right={30} altura={90} />
+        </>
+      );
+    case "resultado":
+      return (
+        <>
+          <Superficie altura={90} cor={cores.navy} opacidade={0.6} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={90} />
+        </>
+      );
     default:
       return null;
   }
