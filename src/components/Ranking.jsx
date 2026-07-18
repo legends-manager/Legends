@@ -8,16 +8,111 @@
 // 1º/2º/3º em gold/silver/bronze; nome completo do clube abaixo da sigla
 // (achado 2 da auditoria mobile); aba mensal já era o padrão (REDESIGN §5.8,
 // mantido). Emojis removidos.
+// F1d (PLANO_MESTRE_LEGENDS_LIMEIRA.md §4.1, "Ranking 2.0 — leitura"): cada
+// linha ganha "começou na X · hoje na Y" (a view agora expõe `divisao`, e a
+// primeira temporada publicada dá a série de origem) e um toque abre o
+// perfil do técnico com o histórico de temporadas (`carreira_temporadas`,
+// já é leitura pública — buscado sob demanda via o novo `carreira_id` da
+// view, não em toda a lista de uma vez). Insígnias no perfil ficam pra
+// Fase 2 (dependem de `conquistas_online`, que ainda não existe — ver §4.2
+// do plano). Linhas fictícias (`carreira_id` nulo) mostram o mesmo estado
+// vazio de um técnico real sem temporada publicada — sem revelar a
+// distinção do §6.3 do spec-fase1-fundacao-online.md.
 import { useState, useEffect } from "react";
 import { supabase } from "../storage/supabaseClient";
 import LoginOnline from "./LoginOnline";
 import { apagarCarreiraOnline } from "../storage/publicarOnline";
 import { SIGLA } from "../data/times";
+import { SERIES } from "../data/series";
 import {
-  cores, superficie, superficie2, botaoSecundario, eyebrowLime,
+  cores, superficie, superficie2, botaoSecundario, botaoPrimario, eyebrowLime,
   paginaGrafite, conteudoAcimaDaDecor, crest,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
+
+const RESULTADO_LABEL = { subiu: "Subiu", desceu: "Desceu", manteve: "Permaneceu" };
+const RESULTADO_COR = { subiu: cores.success, desceu: cores.danger, manteve: cores.textSecondary };
+
+function PerfilTecnico({ linha, onFechar }) {
+  const [temporadas, setTemporadas] = useState(undefined); // undefined = carregando
+
+  useEffect(() => {
+    if (!linha.carreira_id) { setTemporadas([]); return; }
+    setTemporadas(undefined);
+    supabase
+      .from("carreira_temporadas")
+      .select("*")
+      .eq("carreira_id", linha.carreira_id)
+      .order("temporada", { ascending: true })
+      .then(({ data }) => setTemporadas(data || []));
+  }, [linha.carreira_id]);
+
+  const serieOrigem = temporadas && temporadas.length > 0 ? temporadas[0].serie : null;
+  const serieAtual = linha.divisao && linha.meu_time ? linha.divisao[linha.meu_time] : null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end justify-center"
+      style={{ background: "rgba(10,12,14,0.8)" }}
+      onClick={onFechar}
+      role="button"
+      tabIndex={0}
+    >
+      <div
+        className="w-full rounded-t-2xl p-4"
+        style={{ ...superficie, maxWidth: 448, maxHeight: "80vh", overflowY: "auto" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2">
+          {linha.meu_time && <div style={crest(true)}>{SIGLA[linha.meu_time] || linha.meu_time.slice(0, 3).toUpperCase()}</div>}
+          <div className="min-w-0">
+            <b className="block truncate">{linha.nome_tecnico || linha.apelido || "Técnico anônimo"}</b>
+            {linha.meu_time && <span className="text-xs" style={{ color: cores.textMuted }}>{linha.meu_time}</span>}
+          </div>
+        </div>
+
+        {serieOrigem && serieAtual && (
+          <div className="text-xs mt-2" style={{ color: cores.textSecondary }}>
+            {serieOrigem === serieAtual
+              ? <>Começou e segue na <b>{SERIES[serieAtual]?.label || serieAtual}</b></>
+              : <>Começou na <b>{SERIES[serieOrigem]?.label || serieOrigem}</b> · hoje na <b>{SERIES[serieAtual]?.label || serieAtual}</b></>}
+          </div>
+        )}
+
+        <div className="mt-3">
+          <span style={eyebrowLime}>Histórico de temporadas</span>
+          {temporadas === undefined && (
+            <div className="text-sm mt-2" style={{ color: cores.textSecondary }}>Carregando…</div>
+          )}
+          {temporadas && temporadas.length === 0 && (
+            <div className="text-sm mt-2" style={{ color: cores.textSecondary }}>
+              Nenhuma temporada publicada ainda.
+            </div>
+          )}
+          {temporadas && temporadas.length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {[...temporadas].reverse().map((t, i) => (
+                <div key={i} className="rounded-xl px-3 py-2 flex items-center justify-between" style={superficie2}>
+                  <div className="text-sm">
+                    <b>Temporada {t.temporada}</b>
+                    <span style={{ color: cores.textMuted }}> · {SERIES[t.serie]?.label || t.serie} · {t.posicao}º</span>
+                  </div>
+                  <span className="text-xs font-bold" style={{ color: RESULTADO_COR[t.resultado] }}>
+                    {RESULTADO_LABEL[t.resultado]}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <button onClick={onFechar} className="w-full rounded-xl py-3 font-bold mt-4" style={botaoPrimario}>
+          Fechar
+        </button>
+      </div>
+    </div>
+  );
+}
 
 const MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
 const corPodio = (i) => (i === 0 ? cores.gold : i === 1 ? cores.silver : i === 2 ? cores.bronze : cores.textSecondary);
@@ -32,6 +127,7 @@ export default function Ranking({ setTela, sessao }) {
   const [erro, setErro] = useState(null);
   const [confirmaApagar, setConfirmaApagar] = useState(false);
   const [confirmaExcluirConta, setConfirmaExcluirConta] = useState(false);
+  const [perfilAberto, setPerfilAberto] = useState(null);
 
   useEffect(() => {
     if (!supabase) return;
@@ -136,6 +232,9 @@ export default function Ranking({ setTela, sessao }) {
             {linhas.map((l, i) => (
               <div
                 key={i}
+                onClick={() => setPerfilAberto(l)}
+                role="button"
+                tabIndex={0}
                 className="rounded-xl px-3 py-2 text-sm flex items-center justify-between gap-2"
                 style={i === 0 ? { ...superficie, border: `1px solid ${cores.gold}` } : superficie}
               >
@@ -222,6 +321,7 @@ export default function Ranking({ setTela, sessao }) {
           Legends Manager · Simulação — BETA
         </p>
       </div>
+      {perfilAberto && <PerfilTecnico linha={perfilAberto} onFechar={() => setPerfilAberto(null)} />}
     </div>
   );
 }
