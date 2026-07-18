@@ -32,21 +32,23 @@ export const SIGLA = {
 // levantar a diferença pro caso B/C, que são times fictícios). Só entram
 // aqui os times com arquivo de verdade; quem não tem cai pro crachá de
 // sigla via fallback do componente Crest — nunca quebra.
+// Todos em WebP 256px (scripts/comprimir-escudos.mjs): 2,3MB → ~460KB no
+// total, dentro do teto de 200KB/asset do REDESIGN §8.
 export const CRESTS = {
   // Série C
-  "Real União": "/crests/RUN.jpeg", "Real Elite": "/crests/RLE.jpeg", "Sereno FC": "/crests/SER.jpeg",
-  "Sem Limites": "/crests/SLM.jpeg", "Canelas": "/crests/CAN.jpeg", "Marselha FC": "/crests/MAR.jpeg",
-  "Nordeste FC": "/crests/NOR.jpeg", "Racha FC": "/crests/RAC.jpeg", "Puro Osso": "/crests/PUR.jpeg",
-  "Kissassa": "/crests/KIS.jpeg", "Fortaleza": "/crests/FOR.jpeg", "Dragon Bola FC": "/crests/DRA.jpeg",
+  "Real União": "/crests/RUN.webp", "Real Elite": "/crests/RLE.webp", "Sereno FC": "/crests/SER.webp",
+  "Sem Limites": "/crests/SLM.webp", "Canelas": "/crests/CAN.webp", "Marselha FC": "/crests/MAR.webp",
+  "Nordeste FC": "/crests/NOR.webp", "Racha FC": "/crests/RAC.webp", "Puro Osso": "/crests/PUR.webp",
+  "Kissassa": "/crests/KIS.webp", "Fortaleza": "/crests/FOR.webp", "Dragon Bola FC": "/crests/DRA.webp",
   // Série B
-  "Ousadia FC": "/crests/OUS.jpeg", "A.E. Dallas": "/crests/DAL.jpeg", "Quebrada F.C": "/crests/QUE.jpeg",
-  "Villa City": "/crests/VIL.jpeg", "Tigres": "/crests/TIG.jpeg", "FORZA F.C": "/crests/FRZ.jpeg",
-  "Benfica": "/crests/BEN.png", "PH FC": "/crests/PHF.jpeg", "Lanús": "/crests/LAN.jpeg",
-  "Nação NH": "/crests/NNH.jpeg",
+  "Ousadia FC": "/crests/OUS.webp", "A.E. Dallas": "/crests/DAL.webp", "Quebrada F.C": "/crests/QUE.webp",
+  "Villa City": "/crests/VIL.webp", "Tigres": "/crests/TIG.webp", "FORZA F.C": "/crests/FRZ.webp",
+  "Benfica": "/crests/BEN.webp", "PH FC": "/crests/PHF.webp", "Lanús": "/crests/LAN.webp",
+  "Nação NH": "/crests/NNH.webp",
   // Série A (Kings League Brasil)
-  "Furia FC": "/crests/FUR.png", "G3X FC": "/crests/G3X.png", "Fluxo FC": "/crests/FLX.png",
-  "Nyvelados FC": "/crests/NYV.png", "DesimpaiN": "/crests/DES.webp", "Podpah Funkbol Clube": "/crests/POD.png",
-  "Dibrados FC": "/crests/DIB.png", "Dendele FC": "/crests/DEN.jpg", "Capim FC": "/crests/CAP.webp",
+  "Furia FC": "/crests/FUR.webp", "G3X FC": "/crests/G3X.webp", "Fluxo FC": "/crests/FLX.webp",
+  "Nyvelados FC": "/crests/NYV.webp", "DesimpaiN": "/crests/DES.webp", "Podpah Funkbol Clube": "/crests/POD.webp",
+  "Dibrados FC": "/crests/DIB.webp", "Dendele FC": "/crests/DEN.webp", "Capim FC": "/crests/CAP.webp",
   "LOUD SC": "/crests/LOU.webp",
 };
 

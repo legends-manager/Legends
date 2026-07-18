@@ -2,7 +2,9 @@
 // Tela de resultado: placar, Craque da Partida, gols e resultados da rodada.
 // ARENA.label na linha de contexto com a rodada.
 // Reskin "Polish Language v1" (jul/2026): grafite/lime, mesmo fluxo/lógica.
+import { useState } from "react";
 import { ARENA } from "../data/arena";
+import LoginOnline from "./LoginOnline";
 import { SIGLA } from "../data/times";
 import { SERIES } from "../data/series";
 import { gerarCardResultado, compartilharCard } from "../share/cards";
@@ -13,10 +15,33 @@ import {
 import { PolishDecor } from "./entry-hub/decor";
 import Crest from "./Crest";
 
-export default function Resultado({ resumo, serie, setTela }) {
+// Convite de login pós-vitória (ideia principal aprovada pelo Felyp,
+// jul/2026): a maioria da liga joga 100% offline e nunca entra no ranking
+// (só 3 contas vinculadas até jul/2026). O momento de euforia — acabou de
+// vencer — é a melhor hora pra convidar. Regras anti-chatice: só em
+// vitória, só deslogado, e se dispensar não volta por 3 dias.
+const CHAVE_CTA_LOGIN = "legends-manager:cta-login-dispensado";
+const DIAS_SILENCIO = 3;
+
+function ctaLoginDispensadoRecentemente() {
+  try {
+    const em = window.localStorage.getItem(CHAVE_CTA_LOGIN);
+    return em != null && Date.now() - Number(em) < DIAS_SILENCIO * 86400000;
+  } catch (e) { return true; }
+}
+
+export default function Resultado({ resumo, serie, setTela, sessao }) {
   const r = resumo;
   const meu = r.jogos[0];
   const gols = r.evMeu.filter((e) => e.tipo === "gol").sort((a, b) => a.min - b.min);
+  const [ctaFechado, setCtaFechado] = useState(false);
+  // `venci` vem pronto do App.jsx (que sabe qual lado é o do humano).
+  const mostrarCtaLogin = r.venci && !sessao && !ctaFechado && !ctaLoginDispensadoRecentemente();
+
+  const dispensarCta = () => {
+    try { window.localStorage.setItem(CHAVE_CTA_LOGIN, String(Date.now())); } catch (e) { /* sem storage, só fecha */ }
+    setCtaFechado(true);
+  };
 
   const compartilhar = async () => {
     // gerarCardResultado é async (carrega a moldura oficial antes de desenhar).
@@ -53,6 +78,30 @@ export default function Resultado({ resumo, serie, setTela }) {
               <div className="font-bold">
                 {r.craque.nome} <span className="text-xs font-normal" style={{ color: cores.textSecondary }}>({r.craque.time})</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {mostrarCtaLogin && (
+          <div className="rounded-xl px-4 py-3 mt-2" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="text-sm font-bold">Essa vitória merecia valer no ranking da liga!</div>
+              <button onClick={dispensarCta} className="text-xs shrink-0" style={{ color: cores.textMuted }}>
+                agora não
+              </button>
+            </div>
+            <p className="text-xs mt-1 mb-2" style={{ color: cores.textSecondary }}>
+              Entra com seu e-mail e sua carreira passa a contar no ranking de técnicos — automático, sem cadastro chato.
+            </p>
+            <LoginOnline sessao={sessao} />
+          </div>
+        )}
+
+        {r.bonusSemana && (
+          <div className="rounded-xl px-4 py-3 mt-2 text-sm" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
+            <span style={eyebrowLime}>{r.bonusSemana.titulo}</span>
+            <div className="mt-1" style={{ color: cores.textSecondary }}>
+              {r.bonusSemana.resumo} — <b style={{ color: cores.lime }}>+L$ {r.bonusSemana.valor}</b>
             </div>
           </div>
         )}

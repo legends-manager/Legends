@@ -17,8 +17,9 @@
 // pré-preenchimento do nome do técnico via profiles, hint de instalação PWA,
 // aviso de localStorage indisponível, destinos historiaCarreira/historiaLiga/
 // ranking, semântica destrutiva do "Novo jogo".
-import { useReducer, useEffect } from "react";
+import { useReducer, useEffect, useRef, useState } from "react";
 import { supabase } from "../storage/supabaseClient";
+import { exportarBackup, importarBackup } from "../storage/backup";
 import { superficie, cores } from "./entry-hub/estilos";
 import LoginOnline from "./LoginOnline";
 import {
@@ -59,6 +60,50 @@ function HintInstalar({ promptInstalar, instalarApp }) {
   return null;
 }
 
+// Backup do save (ideia aprovada jul/2026): exportar baixa um .json com o
+// save inteiro; importar restaura e recarrega o app. Fica junto do hint de
+// instalação nas telas de Entry — discreto, mas acessível sem carreira
+// carregada (que é exatamente quando alguém restaura um backup).
+function BackupSave({ mundo }) {
+  const inputRef = useRef(null);
+  const [msg, setMsg] = useState(null);
+
+  const exportar = () => {
+    const n = exportarBackup();
+    setMsg(n > 0 ? "Backup baixado — guarda esse arquivo em lugar seguro." : "Nada pra exportar ainda.");
+  };
+
+  const importar = async (e) => {
+    const arquivo = e.target.files?.[0];
+    e.target.value = "";
+    if (!arquivo) return;
+    const r = await importarBackup(arquivo);
+    if (!r.ok) { setMsg(r.erro); return; }
+    // Recarrega pra tudo (mundo, saves, conquistas) reidratar do storage.
+    window.location.reload();
+  };
+
+  return (
+    <div className="rounded-xl px-4 py-3 mt-3 text-xs" style={superficie}>
+      <div className="flex items-center justify-between gap-2">
+        <span style={{ color: cores.textMuted }}>Seu save fica só neste aparelho.</span>
+        <span className="shrink-0">
+          {mundo && (
+            <button onClick={exportar} className="font-bold mr-3" style={{ color: cores.textPrimary }}>
+              Exportar backup
+            </button>
+          )}
+          <button onClick={() => inputRef.current?.click()} className="font-bold" style={{ color: cores.textPrimary }}>
+            Importar
+          </button>
+        </span>
+      </div>
+      {msg && <div className="mt-1.5" style={{ color: cores.textSecondary }}>{msg}</div>}
+      <input ref={inputRef} type="file" accept="application/json,.json" className="hidden" onChange={importar} />
+    </div>
+  );
+}
+
 export default function TelaInicial({
   serie, setSerie, nomeTec, setNomeTec, iniciarTemporada, saveData, continuarJogo, avisoSemSave,
   mundo, novoJogo, retomarCarreiraSemSave, setTela, promptInstalar, instalarApp, sessao,
@@ -82,7 +127,12 @@ export default function TelaInicial({
   }, [sessao]); // eslint-disable-line
 
   const loginSlot = <LoginOnline sessao={sessao} />;
-  const hintSlot = <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />;
+  const hintSlot = (
+    <>
+      <HintInstalar promptInstalar={promptInstalar} instalarApp={instalarApp} />
+      <BackupSave mundo={mundo} />
+    </>
+  );
 
   // ---------- COM mundo ----------
   if (mundo) {
