@@ -4,8 +4,9 @@
 // FIFA Heroes referenciada por Felyp). Fica por cima de qualquer tela,
 // pausa a navegação até o toque em "Continuar" — a única ação possível é
 // fechar; nada de gameplay acontece aqui.
-import { conquistaPorId } from "../../storage/conquistas";
-import { cores, corTier, glowTier, botaoPrimario } from "./estilos";
+import { conquistaPorId, carregarConquistas } from "../../storage/conquistas";
+import { gerarCardInsignia, compartilharCard } from "../../share/cards";
+import { cores, corTier, glowTier, botaoPrimario, botaoSecundario } from "./estilos";
 
 const TIER_LABEL = { comum: "Comum", raro: "Raro", epico: "Épico", lendario: "Lendário" };
 
@@ -13,6 +14,17 @@ export default function ConquistaCelebracao({ conquistaId, onFechar }) {
   const c = conquistaPorId(conquistaId);
   if (!c) return null;
   const cor = corTier[c.tier];
+
+  // Compartilhar (F-ideias jul/2026): gera o card PNG e abre a folha nativa
+  // (WhatsApp incluso) — contexto (clube) vem do que foi salvo no desbloqueio.
+  const compartilhar = async (e) => {
+    e.stopPropagation();
+    const contexto = carregarConquistas()[conquistaId] || {};
+    const canvas = await gerarCardInsignia({
+      emoji: c.emoji, titulo: c.titulo, desc: c.desc, tier: c.tier, clube: contexto.clube,
+    });
+    compartilharCard(canvas, `legends-insignia-${c.id}`, "Insígnia desbloqueada — Legends Manager");
+  };
 
   return (
     <div
@@ -49,6 +61,13 @@ export default function ConquistaCelebracao({ conquistaId, onFechar }) {
           style={{ ...botaoPrimario, paddingTop: 12, paddingBottom: 12 }}
         >
           Continuar
+        </button>
+        <button
+          onClick={compartilhar}
+          className="w-full mt-2 px-4"
+          style={{ ...botaoSecundario, paddingTop: 10, paddingBottom: 10 }}
+        >
+          Compartilhar no grupo
         </button>
       </div>
     </div>

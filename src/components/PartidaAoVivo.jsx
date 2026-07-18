@@ -7,7 +7,7 @@
 // public/art/hero-pointing.jpg) + glow — não existe jogo em 3D no motor
 // (simulação Poisson), então é essa arte que carrega a sensação de "ao vivo"
 // no momento de maior emoção da tela.
-import { golsDe } from "../engine/simulador";
+import { golsDe, NARRADOR } from "../engine/simulador";
 import { SIGLA } from "../data/times";
 import { ARENA } from "../data/arena";
 import { PlacaPatrocinio } from "./ui";
@@ -74,6 +74,9 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
             </div>
           </div>
           <div className="text-center text-xs mt-3" style={{ color: cores.textMuted }}>{ARENA.label}</div>
+          <div className="text-center text-xs mt-1" style={{ color: cores.textMuted }}>
+            Narração: <b style={{ color: cores.textSecondary }}>{NARRADOR}</b>
+          </div>
           {/* Placa de estádio: o espaço de patrocínio de maior exposição do app
               (fica na tela a partida inteira, ~50 ticks de relógio). */}
           <div className="mt-3">

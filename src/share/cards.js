@@ -149,6 +149,40 @@ export async function gerarCardTemporada({ meuTime, nomeTec, temporada, serieLab
   return c;
 }
 
+// Card de insígnia desbloqueada (F-ideias jul/2026): emoji da conquista em
+// círculo com a cor do tier + título + descrição — o "tier lendário
+// circulando no grupo é propaganda grátis". Mesma moldura da onça.
+const COR_TIER_CARD = { comum: "#8793A1", raro: LIME, epico: "#E4FF54", lendario: OURO };
+const TIER_LABEL_CARD = { comum: "COMUM", raro: "RARO", epico: "ÉPICO", lendario: "LENDÁRIO" };
+
+export async function gerarCardInsignia({ emoji, titulo, desc, tier, nomeTec, clube }) {
+  const { c, ctx } = await novoCanvas();
+  const cor = COR_TIER_CARD[tier] || LIME;
+  cabecalho(ctx, "Insígnia desbloqueada");
+  scrim(ctx, 300, 1080);
+
+  // Medalhão central com a cor do tier (glow proporcional à raridade).
+  const raioGlow = tier === "lendario" ? 60 : tier === "epico" ? 40 : 18;
+  comGlow(ctx, cor, raioGlow, () => {
+    ctx.fillStyle = SURFACE;
+    ctx.beginPath(); ctx.arc(W / 2, 500, 150, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = cor; ctx.lineWidth = 10; ctx.stroke();
+  });
+  texto(ctx, emoji, W / 2, 555, { tam: 150 });
+
+  texto(ctx, titulo, W / 2, 780, { tam: 72, peso: "900", italico: true });
+  comGlow(ctx, cor, 20, () => {
+    texto(ctx, TIER_LABEL_CARD[tier] || "", W / 2, 850, { tam: 40, cor, peso: "900" });
+  });
+  texto(ctx, desc, W / 2, 930, { tam: 34, cor: CINZA_CLARO, peso: "600" });
+  if (nomeTec || clube) {
+    texto(ctx, [nomeTec && `Técnico ${nomeTec}`, clube].filter(Boolean).join(" · "), W / 2, 1010, { tam: 32, cor: CINZA_MUTED, peso: "600" });
+  }
+
+  rodapeCard(ctx);
+  return c;
+}
+
 // Compartilha o canvas como PNG: folha nativa (mobile) ou download (fallback).
 // Retorna true se o card saiu (share ou download) — quem chama mostra o erro.
 export async function compartilharCard(canvas, nomeArquivo, titulo) {

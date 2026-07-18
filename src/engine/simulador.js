@@ -18,14 +18,26 @@ export const poisson = (l) => {
 };
 export const media = (e) => e.reduce((s, j) => s + j.attr, 0) / e.length;
 
+// Narração do Felyp Phelps (pedido do Felyp, jul/2026): o narrador oficial
+// do jogo tem nome e personalidade — descontraído, do jeito que o Felyp
+// narra na vida real. As frases abaixo são a "voz" dele; o nome aparece na
+// tela de Partida ao Vivo (PartidaAoVivo.jsx).
+export const NARRADOR = "Felyp Phelps";
 export const DESC = [
   "chute colocado no canto", "bomba de fora da área", "de primeira, no ângulo",
   "aproveitou o rebote", "na saída do goleiro", "de cabeça, após cruzamento",
   "driblou o marcador e bateu cruzado", "cavadinha na medida", "toque por baixo do goleiro",
+  "meteu no ângulo — pode ir buscar!", "chapelinha no zagueiro e só empurrou",
+  "bateu de trivela, coisa linda de se ver", "do meio da rua, sem dó",
+  "deu um cheirinho pro goleiro e tocou no outro canto", "pintura! Essa vale a rodada",
+  "no estilo raiz: bico na bola e pra dentro", "ajeitou no peito e mandou uma pancada",
 ];
 export const CHANCE = [
   "arriscou de longe — raspou a trave!", "cara a cara, parou no goleiro!",
   "carimbou a trave!", "cortado quase em cima da linha!", "finalizou por cima do gol!",
+  "isolou tanto que a bola foi parar no estacionamento!", "o goleiro fez um milagre — benzeu a bola!",
+  "era só empurrar... e ele empurrou pra fora!", "bateu mal, mas o susto foi grande!",
+  "quase! A torcida já tava comemorando!", "que defesaça! Merece replay!",
 ];
 
 export function pesoEscolha(lista, pesos) {

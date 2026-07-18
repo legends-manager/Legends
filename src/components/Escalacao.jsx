@@ -6,6 +6,8 @@
 import { tendenciaTorcida } from "../engine/torcida";
 import { setinhaValor } from "../engine/mercado";
 import { confrontoPendenteDoJogador } from "../engine/copa";
+import { semanaTematica } from "../engine/semana";
+import { provocacaoDoTecnico } from "../data/tecnicos";
 import { AvatarTecnico } from "./ui";
 import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
@@ -144,7 +146,25 @@ export default function Escalacao({
           </button>
         )}
 
-        <div className="rounded-xl px-3 py-2 mt-3 text-xs flex justify-between" style={superficie}>
+        {/* Semana Temática: evento rotativo de 7 dias (engine/semana.js) —
+            mesma semana pra liga inteira, derivada da data real. */}
+        <div className="rounded-xl px-3 py-2 mt-3 text-xs" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
+          <span style={eyebrowLime}>{semanaTematica().titulo}</span>
+          <div className="mt-0.5" style={{ color: cores.textSecondary }}>{semanaTematica().desc}</div>
+        </div>
+
+        {/* Técnico convidado: provocação do técnico fictício adversário. */}
+        {(() => {
+          const p = provocacaoDoTecnico(adv, meuTime, S.rodada);
+          return p ? (
+            <div className="rounded-xl px-3 py-2 mt-2 text-xs" style={superficie}>
+              <span style={{ color: cores.textMuted }}>{p.tecnico} · técnico do {adv} ({p.estilo})</span>
+              <div className="mt-0.5 italic" style={{ color: cores.textSecondary }}>{p.frase}</div>
+            </div>
+          ) : null;
+        })()}
+
+        <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={superficie}>
           <span>Orçamento</span>
           <span className="font-bold tabular-nums" style={{ color: cores.lime }}>L$ {S.orcamento[meuTime]}</span>
         </div>

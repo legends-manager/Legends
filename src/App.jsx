@@ -35,6 +35,7 @@ import {
 } from "./storage/saveGame";
 import { incrementarMetrica } from "./storage/metricas";
 import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz";
+import { bonusDaSemana, semanaTematica } from "./engine/semana";
 import { publicarTemporada, publicarProgresso, vincularCarreira } from "./storage/publicarOnline";
 import { chaveVinculo, deveExecutarVinculoAutomatico, deveSincronizarProgresso } from "./storage/sincronizacaoRegras";
 
@@ -606,9 +607,23 @@ export default function App() {
     }
     if (S.serie === "A") conquistasDaRodada.push("serie-a");
     desbloquearComCelebracao(conquistasDaRodada, { clube: meuTime, temporada: mundo?.temporada });
+
+    // Semana Temática (engine/semana.js): bônus de L$ pela regra da semana
+    // vigente — só premiação, o motor da simulação não muda. O adversário
+    // "acima na tabela" é medido ANTES desta rodada ter sido aplicada? Não:
+    // a tabela já foi atualizada acima; usamos a posição pós-rodada mesmo,
+    // consistente com o que o jogador vê na tela de tabela em seguida.
+    const meuAdversario = souCasaMeu ? meuJogo.fora : meuJogo.casa;
+    const bonusSemana = bonusDaSemana({
+      meusGols, golsAdv,
+      venceu: meusGols > golsAdv,
+      advAcimaNaTabela: posicaoDoTime(S, meuAdversario) < posicaoDoTime(S, meuTime),
+    });
+    if (bonusSemana) S.orcamento[meuTime] += bonusSemana.valor;
+
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
-    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario });
+    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario, bonusSemana, venci: meusGols > golsAdv });
     setJogo(null);
     setTela("resultado");
 
@@ -792,7 +807,7 @@ export default function App() {
             iniciarSegundoTempo={iniciarSegundoTempo}
           />
         )}
-        {tela === "resultado" && S && resumo && <Resultado resumo={resumo} serie={S.serie} setTela={setTela} />}
+        {tela === "resultado" && S && resumo && <Resultado resumo={resumo} serie={S.serie} setTela={setTela} sessao={sessao} />}
         {tela === "mercado" && S && (
           <Mercado
             S={S}
