@@ -285,9 +285,100 @@ export function fecharJanela(S) {
   S.mercado.listados = [];
   S.mercado.ofertas = [];
   S.mercado.janela = "fechada";
+  // Mercado entre divisões: a trava de 1 estrela e as recusas valem POR
+  // janela — zeradas aqui pra próxima janela (do meio) começar limpa.
+  S.mercado.estrelasJanela = 0;
+  S.mercado.tentativasEstrela = [];
   Object.values(S.elencos).forEach((elenco) => {
     elenco.forEach((j) => { j.valorRef = j.valor; });
   });
+}
+
+// ---------------- Mercado entre divisões — "Estrelas" (Fase 2 item 7) ----------------
+// PLANO_MESTRE §4.3: jogador de qualquer série pode contratar de séries
+// ACIMA — caro mas possível. Estudo de economia (jul/2026, Monte Carlo com
+// o motor real, 300 temporadas/cenário): 1 estrela A num time médio da C
+// sobe o título dele de 8%→10% e o G4 de 29%→38%; times fortes seguem
+// campeões em ~90% dos casos — comprar ajuda, não compra o título. Aprovado.
+// O dinheiro pago SAI do jogo (as séries paralelas não têm orçamento — a
+// mesma decisão da Copa: nada de segunda economia pros outros 31 times).
+export const MULT_DIVISAO = { 1: 1.8, 2: 3.0 }; // ⚙️ distância de 1 série / 2 séries
+const LIMITE_ESTRELAS_POR_JANELA = 1; // ⚙️ trava de balanceamento do plano
+const PERSUASAO_BASE = 0.35; // ⚙️ chance pagando exatamente o pedido
+const PERSUASAO_POR_EXCEDENTE = 0.9; // ⚙️ +0.9 × (excedente/pedido)
+const PERSUASAO_BONUS_G4 = 0.15; // ⚙️ clube no G4 convence mais (posição pública)
+const PERSUASAO_TETO = 0.95; // ⚙️ nunca é garantido
+
+export function precoPedidoEstrela(jogador, distancia) {
+  return Math.round(jogador.valor * (MULT_DIVISAO[distancia] || 1));
+}
+
+// Distância entre séries na hierarquia A > B > C (quantas divisões acima).
+export function distanciaSeries(minhaSerie, serieAlvo) {
+  const ordem = ["A", "B", "C"];
+  return ordem.indexOf(minhaSerie) - ordem.indexOf(serieAlvo);
+}
+
+// Tenta contratar um jogador de uma série ACIMA (vem de S.outrasSeries).
+// Uma tentativa por jogador por janela (recusou, acabou o papo até a
+// próxima); no máximo 1 contratação de fora por janela.
+export function contratarEstrela(S, timeComprador, serieAlvo, idJogador, precoOferecido, rng = Math.random) {
+  const paralela = S.outrasSeries?.[serieAlvo];
+  if (!paralela) return { ok: false, motivo: "Essa divisão não está disponível nesta temporada." };
+  const distancia = distanciaSeries(S.serie, serieAlvo);
+  if (distancia <= 0) return { ok: false, motivo: "Só dá pra contratar de divisões acima da sua." };
+  if ((S.mercado.estrelasJanela || 0) >= LIMITE_ESTRELAS_POR_JANELA) {
+    return { ok: false, motivo: "Só 1 contratação de outra divisão por janela." };
+  }
+  if ((S.mercado.tentativasEstrela || []).includes(idJogador)) {
+    return { ok: false, motivo: "Ele já recusou nesta janela — tenta de novo na próxima." };
+  }
+
+  const timeOrigem = Object.keys(paralela.elencos).find((t) =>
+    paralela.elencos[t].some((j) => j.id === idJogador));
+  if (!timeOrigem) return { ok: false, motivo: "Jogador não encontrado." };
+  const jogador = paralela.elencos[timeOrigem].find((j) => j.id === idJogador);
+
+  const pedido = precoPedidoEstrela(jogador, distancia);
+  if (precoOferecido < pedido) {
+    return { ok: false, recusada: true, motivo: `${timeOrigem} nem senta pra conversar — o pedido é L$ ${pedido}.` };
+  }
+  if (S.orcamento[timeComprador] < precoOferecido) return { ok: false, motivo: "Orçamento insuficiente." };
+  const chkEntra = podeAdicionar(S.elencos[timeComprador]);
+  if (!chkEntra.ok) return chkEntra;
+  // O time de origem não pode ficar abaixo do mínimo jogável (7 de linha+GOL
+  // é regra do humano; pras paralelas basta não desfalcar goleiro único nem
+  // derrubar abaixo de 8 — elas seguem simuláveis).
+  if (jogador.pos === "GOL" && paralela.elencos[timeOrigem].filter((j) => j.pos === "GOL").length <= 1) {
+    return { ok: false, motivo: `${timeOrigem} não libera o único goleiro.` };
+  }
+  if (paralela.elencos[timeOrigem].length <= 8) {
+    return { ok: false, motivo: `${timeOrigem} está com elenco curto demais pra vender.` };
+  }
+
+  // Persuasão: pagar acima do pedido + estar bem na tabela (posição pública)
+  // aumenta a chance do jogador topar DESCER de divisão.
+  const excedente = (precoOferecido - pedido) / pedido;
+  const bonusPos = posicaoNaTabela(S.tabela, timeComprador) <= 4 ? PERSUASAO_BONUS_G4 : 0;
+  const chance = Math.min(PERSUASAO_TETO, PERSUASAO_BASE + PERSUASAO_POR_EXCEDENTE * excedente + bonusPos);
+  S.mercado.tentativasEstrela = [...(S.mercado.tentativasEstrela || []), idJogador];
+  if (rng() > chance) {
+    return {
+      ok: false, recusada: true,
+      motivo: `${jogador.nome} agradeceu a proposta, mas preferiu seguir na Série ${serieAlvo} — nesta janela não rola mais.`,
+    };
+  }
+
+  paralela.elencos[timeOrigem] = paralela.elencos[timeOrigem].filter((j) => j.id !== idJogador);
+  jogador.time = timeComprador;
+  S.elencos[timeComprador] = [...S.elencos[timeComprador], jogador];
+  S.orcamento[timeComprador] -= precoOferecido;
+  S.mercado.estrelasJanela = (S.mercado.estrelasJanela || 0) + 1;
+  S.mercado.historico.push({
+    jogador: jogador.nome, de: `${timeOrigem} (Série ${serieAlvo})`, para: timeComprador,
+    valor: precoOferecido, rodada: S.rodada,
+  });
+  return { ok: true, motivo: null };
 }
 
 // ---------------- Comportamento das IAs (§5) ----------------
