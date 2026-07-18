@@ -21,7 +21,7 @@ import {
   mundoInicial, timesDaSerie, calcularAcessoRebaixamento, fecharTemporada,
   atualizarRecordeGoleada, atualizarRecordeArtilheiro,
 } from "./engine/mundo";
-import { desbloquear } from "./storage/conquistas";
+import { desbloquear, carregarConquistas } from "./storage/conquistas";
 import ConquistaCelebracao from "./components/entry-hub/ConquistaCelebracao";
 import {
   iniciarCopa, avancarFaseCopa, confrontoPendenteDoJogador, eliminadoDaCopa,
@@ -36,7 +36,7 @@ import {
 import { incrementarMetrica } from "./storage/metricas";
 import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz";
 import { bonusDaSemana, semanaTematica } from "./engine/semana";
-import { publicarTemporada, publicarProgresso, vincularCarreira } from "./storage/publicarOnline";
+import { publicarTemporada, publicarProgresso, vincularCarreira, publicarConquistas } from "./storage/publicarOnline";
 import { chaveVinculo, deveExecutarVinculoAutomatico, deveSincronizarProgresso } from "./storage/sincronizacaoRegras";
 
 import TelaInicial from "./components/TelaInicial";
@@ -106,7 +106,12 @@ export default function App() {
   const desbloquearComCelebracao = (ids, contexto = {}) => {
     const lista = Array.isArray(ids) ? ids : [ids];
     const novas = lista.filter((id) => desbloquear(id, contexto));
-    if (novas.length > 0) setCelebracoesPendentes((fila) => [...fila, ...novas]);
+    if (novas.length > 0) {
+      setCelebracoesPendentes((fila) => [...fila, ...novas]);
+      // Fase 2 (insígnias online): espelha no ranking público — best-effort,
+      // sem sessão é no-op silencioso, igual publicarProgresso.
+      publicarConquistas(carregarConquistas());
+    }
   };
 
   // Efeitos sonoros reais (ElevenLabs, jul/2026 — substituem o "beep"
@@ -195,7 +200,10 @@ export default function App() {
     if (!deveExecutarVinculoAutomatico(autoVinculadoRef.current, chave)) return;
     autoVinculadoRef.current = chave;
     const pontosAtuais = S && meuTime ? (S.tabela[meuTime]?.P ?? 0) : 0;
-    vincularCarreira(mundo, pontosAtuais, nomeTec);
+    // Conquistas: backfill DEPOIS do vínculo (publicarConquistas precisa da
+    // linha de carreiras existir) — cobre quem desbloqueou offline antes
+    // de logar. Best-effort encadeado, nunca trava o jogo.
+    vincularCarreira(mundo, pontosAtuais, nomeTec).then(() => publicarConquistas(carregarConquistas()));
   }, [sessao, mundo]); // eslint-disable-line
 
   // ---------- carregar save da série ativa ----------
