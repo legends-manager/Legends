@@ -1,57 +1,67 @@
-# Prompts de GPT Image — Lote 1 (seção 6 do PLANO_MESTRE)
+# Prompts de GPT Image — Lote 1 (seção 6 do PLANO_MESTRE) · v2 "esports premium"
 
-**Como usar:** copie cada prompt (o bloco em inglês — modelos de imagem respondem melhor
-a inglês, pode colar exatamente como está) no GPT Image. Gere, escolha a melhor variação,
-e salve o arquivo na pasta indicada com o nome indicado. Me avise quando estiverem em
-`art/` que eu aplico no app — os nomes de arquivo abaixo são os que meu código vai procurar.
+**Direção de arte (v2, pedido do Felyp):** estética de liga de esports premium — a mesma
+linguagem visual da Kings League: emblemas metálicos 3D hiper-detalhados, cromo e metal
+escuro, iluminação cinematográfica dramática, fumaça, geometria angular agressiva,
+reflexos polidos. Nos prompts a estética é DESCRITA (não citamos a marca): citar
+"Kings League" no prompt faz o modelo tentar reproduzir o logo/coroa real deles dentro
+da nossa arte — problema jurídico e visual. Paleta continua a nossa: grafite `#1B1F24`,
+lime `#C6FF1E`, navy `#141A2E`, ouro `#FFC400` só no lendário.
 
-**Regra de consistência (vale pra todos):** se o resultado vier fora da paleta (grafite
-`#1B1F24`, lime `#C6FF1E`, navy `#141A2E`) ou com texto escrito dentro da arte, gere de
-novo — texto a gente põe no app, nunca na imagem.
+**Como usar:** copie cada bloco em inglês no GPT Image. Gere, escolha a melhor variação,
+salve na pasta/nome indicados. Se vier com TEXTO dentro da arte ou fora da paleta:
+gere de novo. Me avise quando estiverem em `art/` que eu aplico.
 
 ---
 
 ## 1. Insígnias por tier (4 imagens, fundo transparente)
 
 Salvar como: `art/insignias/comum.png`, `raro.png`, `epico.png`, `lendario.png`
-(1024×1024, fundo transparente — peça "transparent background" na geração).
+(1024×1024, fundo transparente).
 
-### 1a. Comum (aço, sóbria)
+### 1a. Comum (aço, sóbria mas premium)
 
 ```
-Game achievement badge icon, shield-shaped medal, brushed steel gray metal (#39424E)
-with subtle silver rim, minimal flat-shaded AAA mobile game style like Pokemon GO gym
-badges, clean vector look, soft top-down lighting, NO text, NO letters, no background,
+Premium esports league achievement emblem, angular shield-shaped badge, hyper-detailed
+3D render, brushed gunmetal and dark steel (#39424E) with polished silver beveled edges,
+subtle engraved line details, dramatic studio lighting with strong rim light, glossy
+metallic reflections, floating slightly with soft shadow, dark premium feel like a
+top-tier football esports league crest, octane render quality, NO text, NO letters,
 transparent background, centered, symmetrical
 ```
 
-### 1b. Raro (lime)
+### 1b. Raro (lime sobre cromo escuro)
 
 ```
-Game achievement badge icon, shield-shaped medal, vibrant lime green (#C6FF1E) enamel
-with dark graphite metal frame (#1B1F24), minimal flat-shaded AAA mobile game style like
-Pokemon GO gym badges, clean vector look, slight glossy highlight, NO text, NO letters,
-no background, transparent background, centered, symmetrical
-```
-
-### 1c. Épico (lime com energia)
-
-```
-Game achievement badge icon, ornate shield-shaped medal, electric lime green (#C6FF1E)
-with energy crackles and light rays bursting behind it, dark graphite metal frame with
-angular spikes, AAA mobile game style like Clash Royale rare badges, dramatic rim
-lighting, subtle glow, NO text, NO letters, no background, transparent background,
-centered, symmetrical
-```
-
-### 1d. Lendário (ouro com glow)
-
-```
-Legendary game achievement badge icon, majestic shield-shaped medal in radiant gold
-(#FFC400) with a small crown on top, intense golden glow and light rays, ornate engraved
-metal details, AAA mobile game style like Clash Royale legendary cards, dramatic
-cinematic lighting, premium feel, NO text, NO letters, no background, transparent
+Premium esports league achievement emblem, angular shield-shaped badge, hyper-detailed
+3D render, dark polished chrome frame with vibrant lime green (#C6FF1E) enamel inlays
+and a lime underglow, sharp aggressive geometry, dramatic cinematic studio lighting,
+glossy metallic reflections, subtle light streaks, dark premium feel like a top-tier
+football esports league crest, octane render quality, NO text, NO letters, transparent
 background, centered, symmetrical
+```
+
+### 1c. Épico (energia lime, estilhaços de metal)
+
+```
+Premium esports league achievement emblem, aggressive angular shield badge with sharp
+metal wings, hyper-detailed 3D render, dark chrome with electric lime green (#C6FF1E)
+energy arcs crackling across the surface, small floating metal shards and glowing
+particles around it, dramatic volumetric rim lighting, lens flare accents, subtle smoke
+haze behind, epic cinematic feel like a champion's crest reveal in a football esports
+broadcast, octane render quality, NO text, NO letters, transparent background, centered,
+symmetrical
+```
+
+### 1d. Lendário (ouro cromado, coroa, god rays)
+
+```
+Legendary premium esports league emblem, majestic angular shield badge crowned with a
+sharp geometric golden crown, hyper-detailed 3D render, radiant polished gold chrome
+(#FFC400) with intricate engraved details, intense golden god rays and floating light
+particles, subtle dark smoke haze behind, dramatic cinematic lighting like a trophy
+reveal ceremony, ultra premium championship feel, octane render quality, NO text,
+NO letters, transparent background, centered, symmetrical
 ```
 
 ---
@@ -64,23 +74,26 @@ Salvar como: `art/mascote/onca-comemorando.png` e `art/mascote/onca-confiante.pn
 ### 2a. Comemorando (braços erguidos)
 
 ```
-Full-body cartoon mascot of a jaguar (onça-pintada) soccer player celebrating with both
-arms raised in victory, confident big smile, wearing a black soccer jersey with lime
-green (#C6FF1E) jaguar-spot pattern details and a small crown crest on the chest,
-athletic pose, FIFA Heroes / Zootopia-style 3D cartoon with attitude, thick clean
-outlines, vibrant flat colors with cel shading, full body visible head to feet, NO text,
+Full-body 3D character render of a fierce anthropomorphic jaguar football athlete
+celebrating with both fists raised, intense victorious roar expression, muscular
+athletic build, wearing a sleek black modern football kit with lime green (#C6FF1E)
+jaguar-spot pattern accents and a small geometric crown crest on the chest,
+hyper-detailed fur and fabric, dramatic cinematic rim lighting in lime and white,
+premium esports league mascot style like a broadcast intro character, confident and
+powerful, subtle motion energy, octane render quality, full body head to feet, NO text,
 transparent background, centered
 ```
 
 ### 2b. Braços cruzados (confiante)
 
 ```
-Full-body cartoon mascot of a jaguar (onça-pintada) soccer player standing with arms
-crossed, confident smirk, one eyebrow raised, wearing a black soccer jersey with lime
-green (#C6FF1E) jaguar-spot pattern details and a small crown crest on the chest,
-powerful stance, FIFA Heroes / Zootopia-style 3D cartoon with attitude, thick clean
-outlines, vibrant flat colors with cel shading, full body visible head to feet, NO text,
-transparent background, centered
+Full-body 3D character render of a fierce anthropomorphic jaguar football athlete
+standing with arms crossed, confident smirk with one raised eyebrow, muscular athletic
+build, wearing a sleek black modern football kit with lime green (#C6FF1E) jaguar-spot
+pattern accents and a small geometric crown crest on the chest, hyper-detailed fur and
+fabric, dramatic cinematic rim lighting in lime and white, premium esports league mascot
+style like a broadcast intro character, powerful dominant stance, octane render quality,
+full body head to feet, NO text, transparent background, centered
 ```
 
 ---
@@ -90,24 +103,27 @@ transparent background, centered
 Salvar como: `art/fundos/celebracao-wide.png` (1792×1024, 16:9) e
 `art/fundos/celebracao-poster.png` (1024×1280, 4:5).
 
-### 3a. Wide (16:9) — mesma descrição pros dois, só muda o formato
+### 3a. Wide (16:9)
 
 ```
-Empty soccer stadium at night, blurred crowd stands in dark graphite tones (#1B1F24 and
-#141A2E navy), dramatic lime green (#C6FF1E) light rays and lens flares cutting
-diagonally across the frame, confetti particles floating, atmospheric depth of field,
-AAA mobile game celebration screen background, cinematic, NO people in focus, NO text,
-wide 16:9 format
+Premium indoor esports football arena at night, dramatic atmosphere, dark graphite and
+navy tones (#1B1F24, #141A2E), intense lime green (#C6FF1E) laser beams and spotlights
+cutting through smoke haze, LED screen glow in the blurred background, floating dust and
+confetti particles catching the light, cinematic depth of field, broadcast-quality
+celebration backdrop like a championship final intro, epic and premium, NO people in
+focus, NO text, NO readable logos, wide 16:9 format
 ```
 
 ### 3b. Pôster (4:5)
 
 ```
-Empty soccer stadium at night, blurred crowd stands in dark graphite tones (#1B1F24 and
-#141A2E navy), dramatic lime green (#C6FF1E) light rays and lens flares cutting
-diagonally across the frame, confetti particles floating, atmospheric depth of field,
-AAA mobile game celebration screen background, cinematic, NO people in focus, NO text,
-vertical 4:5 portrait format with empty space in the center for overlay content
+Premium indoor esports football arena at night, dramatic atmosphere, dark graphite and
+navy tones (#1B1F24, #141A2E), intense lime green (#C6FF1E) laser beams and spotlights
+cutting through smoke haze, LED screen glow in the blurred background, floating dust and
+confetti particles catching the light, cinematic depth of field, broadcast-quality
+celebration backdrop like a championship final intro, epic and premium, NO people in
+focus, NO text, NO readable logos, vertical 4:5 portrait format with darker empty space
+in the center for overlay content
 ```
 
 ---
@@ -121,10 +137,13 @@ transparente). **Gere um por vez com o mesmo prompt-base, mudando só a linha [P
 ### Prompt-base (substitua [PESSOA] a cada geração)
 
 ```
-Bust portrait avatar of [PESSOA], soccer coach, wearing a black tracksuit jacket with a
-thin lime green (#C6FF1E) collar stripe, friendly confident expression, FIFA Heroes-style
-3D cartoon, thick clean outlines, cel shading, soft studio lighting from the top left,
-head and shoulders only, NO text, transparent background, centered
+Premium esports player-card portrait of [PESSOA], football coach, bust framing head and
+shoulders, stylized realistic 3D render, wearing a sleek black technical jacket with a
+thin lime green (#C6FF1E) collar accent, confident intense expression looking slightly
+off-camera, dramatic cinematic studio lighting with lime rim light from behind and soft
+key light from the front, dark premium mood like a broadcast lineup card of a top
+football esports league, hyper-detailed skin and fabric, octane render quality, NO text,
+transparent background, centered
 ```
 
 ### As 9 variações de [PESSOA] (diversidade da liga real)
@@ -133,7 +152,7 @@ head and shoulders only, NO text, transparent background, centered
 2. `a middle-aged Brazilian man with gray hair and glasses`
 3. `a young Black Brazilian woman with braided hair`
 4. `a Brazilian man with a shaved head and full dark beard`
-5. `an older Brazilian man with white mustache and cap`
+5. `an older Brazilian man with white mustache and a cap`
 6. `a young Brazilian woman with a blonde ponytail`
 7. `a Black Brazilian man with short dreadlocks and a big smile`
 8. `a Brazilian man with long dark hair tied in a bun`
