@@ -27,6 +27,7 @@ import {
   iniciarCopa, avancarFaseCopa, confrontoPendenteDoJogador, eliminadoDaCopa,
   historicoDoJogador, simularJogoCopa, nomeFase, PREMIO_VITORIA_COPA, PREMIO_CAMPEAO_COPA,
 } from "./engine/copa";
+import { abrirPacotinho } from "./engine/pacotinhos";
 import { SIGLA } from "./data/times";
 import { SERIE_PADRAO, SERIES, ORDEM_SERIES, TODOS_OS_TIMES } from "./data/series";
 import {
@@ -294,6 +295,20 @@ export default function App() {
     setTela("fimDeTemporada");
   };
 
+  // Pacotinho de fim de temporada (Fase 3 item 9): sorteia na hora do
+  // clique (rng real, não determinístico) e guarda em mundo — persistente,
+  // sobrevive a um fechar/reabrir o app entre o Fim de Temporada e a
+  // próxima. Injetado no elenco só quando a PRÓXIMA temporada é gerada
+  // (proximaTemporadaCarreira/retomarCarreiraSemSave) — nunca antes.
+  const escolherPacotinho = () => {
+    if (mundo.pacotinhoPendente) return mundo.pacotinhoPendente; // já escolhido, idempotente
+    const resultado = abrirPacotinho();
+    mundo.pacotinhoPendente = resultado;
+    salvarMundo(mundo);
+    setMundo({ ...mundo });
+    return resultado;
+  };
+
   // Botão "Próxima temporada" da tela de Fim de Temporada: gera a nova
   // temporada automaticamente na série de destino (sem re-escolher time —
   // "o técnico acompanha o time", §0), com o elenco ATUAL daquela série.
@@ -307,6 +322,7 @@ export default function App() {
     const times = timesDaSerie(mundo, serieDestino);
     const nova = novaTemporada(serieDestino, times, S.orcamento, mundo);
     nova.copa = iniciarCopa(TODOS_OS_TIMES); // sorteio novo a cada temporada
+    injetarPacotinhoPendente(nova, meuTime);
     Sref.current = nova;
     setSerie(serieDestino);
     prepararEscalacao(meuTime, nova);
@@ -314,6 +330,18 @@ export default function App() {
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S: nova });
     setFimDeTemporadaResumo(null);
     setTela("mercado");
+  };
+
+  // Injeta o prêmio do pacotinho (se houver) no elenco da nova temporada e
+  // consome mundo.pacotinhoPendente — dura exatamente 1 temporada porque o
+  // motor já regenera elencos do zero a cada novaTemporada() (nada persiste
+  // pra ninguém, nem compra de mercado); não precisa de campo de "contrato".
+  const injetarPacotinhoPendente = (novaS, time) => {
+    if (!mundo.pacotinhoPendente) return;
+    const jogador = { ...mundo.pacotinhoPendente.jogador, time };
+    novaS.elencos[time] = [...novaS.elencos[time], jogador];
+    mundo.pacotinhoPendente = null;
+    salvarMundo(mundo);
   };
 
   // Caso de borda: o app foi fechado entre "Fim de Temporada" (mundo já
@@ -325,6 +353,7 @@ export default function App() {
     const times = timesDaSerie(mundo, minhaSerieAgora);
     const nova = novaTemporada(minhaSerieAgora, times, null, mundo);
     nova.copa = iniciarCopa(TODOS_OS_TIMES); // sorteio novo a cada temporada
+    injetarPacotinhoPendente(nova, mundo.meuTime);
     Sref.current = nova;
     setSerie(minhaSerieAgora);
     setMeuTime(mundo.meuTime);
@@ -858,6 +887,8 @@ export default function App() {
             avatarId={avatarId}
             temporada={mundo ? mundo.temporada - 1 : 1}
             proximaTemporadaCarreira={proximaTemporadaCarreira}
+            pacotinhoPendente={mundo?.pacotinhoPendente || null}
+            escolherPacotinho={escolherPacotinho}
           />
         )}
       </div>

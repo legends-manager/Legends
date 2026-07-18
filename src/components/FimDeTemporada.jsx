@@ -16,6 +16,7 @@ import {
   eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, glowLime,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
+import Pacotinho from "./entry-hub/Pacotinho";
 
 const RESULTADO_LABEL = { subiu: "Subiu", desceu: "Desceu", manteve: "Permaneceu" };
 const RESULTADO_COR = { subiu: cores.success, desceu: cores.danger, manteve: cores.textSecondary };
@@ -51,7 +52,10 @@ function BlocoSerie({ serieId, dados, meuTime }) {
   );
 }
 
-export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, temporada, proximaTemporadaCarreira }) {
+export default function FimDeTemporada({
+  resumo, meuTime, nomeTec, avatarId, temporada, proximaTemporadaCarreira,
+  pacotinhoPendente, escolherPacotinho,
+}) {
   const { resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie } = resumo;
   const heroSrc = HERO_ART[meuResultado];
 
@@ -114,6 +118,8 @@ export default function FimDeTemporada({ resumo, meuTime, nomeTec, avatarId, tem
             <BlocoSerie key={s} serieId={s} dados={resultado[s]} meuTime={meuTime} />
           ))}
         </div>
+
+        <Pacotinho pacotinhoPendente={pacotinhoPendente} escolherPacotinho={escolherPacotinho} />
 
         <button onClick={proximaTemporadaCarreira} className="w-full rounded-xl py-3.5 font-bold mt-4" style={botaoPrimarioGlow}>
           Próxima temporada →
