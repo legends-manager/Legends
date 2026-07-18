@@ -71,7 +71,7 @@ export const PlacaPatrocinio = ({ compacta }) => {
         alt="Patrocinador oficial"
         onError={() => setTemLogo(false)}
         className="w-full rounded-lg object-contain"
-        style={{ maxHeight: compacta ? 40 : 56, background: "#150A26", border: "1px solid rgba(139,105,190,0.35)" }}
+        style={{ maxHeight: compacta ? 40 : 56, background: "#1B1F24", border: "1px solid #39424E" }}
       />
     );
   }
@@ -79,15 +79,15 @@ export const PlacaPatrocinio = ({ compacta }) => {
     <div
       className={`rounded-lg text-center ${compacta ? "px-3 py-1.5" : "px-3 py-2.5"}`}
       style={{
-        background: "repeating-linear-gradient(-45deg, #1E1233, #1E1233 12px, #231540 12px, #231540 24px)",
-        border: "1px dashed rgba(139,105,190,0.5)",
+        background: "repeating-linear-gradient(-45deg, #1B1F24, #1B1F24 12px, #242A31 12px, #242A31 24px)",
+        border: "1px dashed #39424E",
       }}
     >
-      <div className={`font-black italic tracking-widest uppercase ${compacta ? "text-[10px]" : "text-xs"}`} style={{ color: "#A78FC7" }}>
+      <div className={`font-black italic tracking-widest uppercase ${compacta ? "text-[10px]" : "text-xs"}`} style={{ color: "#C6FF1E" }}>
         Seu logo aqui
       </div>
       {!compacta && (
-        <div className="text-[10px] mt-0.5" style={{ color: "#6E5A92" }}>
+        <div className="text-[10px] mt-0.5" style={{ color: "#8793A1" }}>
           Patrocine a Legends Liga Fut7 · fale com a organização
         </div>
       )}

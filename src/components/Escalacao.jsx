@@ -14,7 +14,7 @@ import {
 import { PolishDecor } from "./entry-hub/decor";
 import Crest from "./Crest";
 
-const corSetinha = (s) => (s === "▲" ? "#7FE0A8" : s === "▼" ? cores.danger : cores.textMuted);
+const corSetinha = (s) => (s === "▲" ? cores.success : s === "▼" ? cores.danger : cores.textMuted);
 
 const primeiroNome = (nome) => nome.trim().split(/\s+/)[0];
 
@@ -172,7 +172,7 @@ export default function Escalacao({
 
         <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={superficie}>
           <span>Escalados: <b className="tabular-nums">{nGol}</b> GOL + <b className="tabular-nums">{nLinha}</b>/6 linha</span>
-          <span style={{ color: escValida() ? "#7FE0A8" : cores.lime }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
+          <span style={{ color: escValida() ? cores.success : cores.lime }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
         </div>
 
         <Campinho escalados={escSelecionada()} />

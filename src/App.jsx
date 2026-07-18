@@ -53,6 +53,7 @@ import QuizModal from "./components/QuizModal";
 import TelaCopa from "./components/TelaCopa";
 import Ranking from "./components/Ranking";
 import BottomNav from "./components/BottomNav";
+import { cores } from "./components/entry-hub/estilos";
 import { supabase } from "./storage/supabaseClient";
 
 export default function App() {
@@ -717,7 +718,7 @@ export default function App() {
   return (
     <div
       className="min-h-screen"
-      style={{ background: "#150A26", color: "#F2EDFA", fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
+      style={{ background: cores.bgBase, color: cores.textPrimary, fontFamily: "ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif" }}
     >
       {/* key={tela} re-monta o wrapper a cada troca de tela → re-dispara a
           animação de entrada (micro-interação, index.css). pb extra quando o
@@ -827,15 +828,12 @@ export default function App() {
         )}
       </div>
       {mostrarNav && (
-        // F1a (PLANO_MESTRE_LEGENDS_LIMEIRA.md): variante Polish agora cobre
-        // todas as telas de TELAS_COM_NAV — reskin completo do F1a.
         <BottomNav
           tela={tela}
           setTela={setTela}
           irJogar={irJogar}
           temCopa={!!(S && S.copa)}
           meuTime={meuTime}
-          variante="polish"
         />
       )}
       {quizAtual && (

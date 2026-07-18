@@ -2,12 +2,12 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Fundo base do app (o gradiente da barra de escalação assume #150A26). */
+/* Fundo base do app — grafite "Polish Language v1" (bg/base). */
 html,
 body,
 #root {
   min-height: 100%;
-  background: #150a26;
+  background: #1b1f24;
 }
 
 /* Micro-interações (jul/2026): resposta tátil nos botões e entrada suave de
