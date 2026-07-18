@@ -24,10 +24,14 @@ export const SIGLA = {
 };
 
 // Escudos reais (jul/2026, decisão explícita do Felyp — reabre a trava
-// "escudos reais" do backlog do CLAUDE.md só pra Série B/C, cujas artes ele
-// enviou em art/serie b e art/serie c). Só entram aqui os times com arquivo
-// de verdade; quem não tem (Série A, por enquanto) cai pro crachá de sigla
-// via fallback do componente Crest — nunca quebra.
+// "escudos reais" do backlog do CLAUDE.md pra Série B/C (artes próprias,
+// enviadas em art/serie b e art/serie c) e, num segundo passo, pra Série A
+// (logos oficiais da Kings League Brasil, enviados em art/kings league —
+// aqui o risco de reproduzir marca registrada de organizações reais é
+// EXPLICITAMENTE do Felyp, que forneceu os arquivos ele mesmo depois de eu
+// levantar a diferença pro caso B/C, que são times fictícios). Só entram
+// aqui os times com arquivo de verdade; quem não tem cai pro crachá de
+// sigla via fallback do componente Crest — nunca quebra.
 export const CRESTS = {
   // Série C
   "Real União": "/crests/RUN.jpeg", "Real Elite": "/crests/RLE.jpeg", "Sereno FC": "/crests/SER.jpeg",
@@ -39,6 +43,11 @@ export const CRESTS = {
   "Villa City": "/crests/VIL.jpeg", "Tigres": "/crests/TIG.jpeg", "FORZA F.C": "/crests/FRZ.jpeg",
   "Benfica": "/crests/BEN.png", "PH FC": "/crests/PHF.jpeg", "Lanús": "/crests/LAN.jpeg",
   "Nação NH": "/crests/NNH.jpeg",
+  // Série A (Kings League Brasil)
+  "Furia FC": "/crests/FUR.png", "G3X FC": "/crests/G3X.png", "Fluxo FC": "/crests/FLX.png",
+  "Nyvelados FC": "/crests/NYV.png", "DesimpaiN": "/crests/DES.webp", "Podpah Funkbol Clube": "/crests/POD.png",
+  "Dibrados FC": "/crests/DIB.png", "Dendele FC": "/crests/DEN.jpg", "Capim FC": "/crests/CAP.webp",
+  "LOUD SC": "/crests/LOU.webp",
 };
 
 export const COR = {
