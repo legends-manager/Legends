@@ -13,7 +13,7 @@ import {
 import {
   creditarOrcamentos, valorizarJogadores, unionPorId,
   listarJogador, retirarListagem, comprarJogador, aceitarOferta, recusarOferta, fecharJanela, iaNegocia,
-  proporJogador,
+  proporJogador, contratarEstrela,
   posicaoDoTime,
 } from "./engine/mercado";
 import { atualizarTorcida, humorTorcida, gerarComentario } from "./engine/torcida";
@@ -405,6 +405,16 @@ export default function App() {
   const proporNoMercado = (idJogador, preco) => {
     const r = proporJogador(S, meuTime, idJogador, preco);
     if (r.ok) rerender();
+    return r;
+  };
+  // Mercado entre divisões (Fase 2 item 7): contratar estrela de série acima.
+  // Persiste também na recusa — a tentativa gastada (1 por jogador/janela)
+  // não pode evaporar num reload.
+  const contratarEstrelaNoMercado = (serieAlvo, idJogador, preco) => {
+    const r = contratarEstrela(S, meuTime, serieAlvo, idJogador, preco);
+    if (r.ok) desbloquearComCelebracao("primeira-contratacao", { clube: meuTime, temporada: mundo?.temporada });
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
+    rerender();
     return r;
   };
 
@@ -826,6 +836,7 @@ export default function App() {
             aceitarOfertaHumano={aceitarOfertaHumano}
             recusarOfertaHumano={recusarOfertaHumano}
             proporNoMercado={proporNoMercado}
+            contratarEstrelaNoMercado={contratarEstrelaNoMercado}
             fecharJanelaEIrEscalacao={fecharJanelaEIrEscalacao}
           />
         )}

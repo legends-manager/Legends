@@ -9,7 +9,7 @@
 // corrigido aqui também).
 import { useState } from "react";
 import { SIGLA } from "../data/times";
-import { PISO_VALOR, buscarJogador, setinhaValor } from "../engine/mercado";
+import { PISO_VALOR, buscarJogador, setinhaValor, distanciaSeries, precoPedidoEstrela } from "../engine/mercado";
 import { gerarManchetes } from "../engine/manchetes";
 import {
   cores, superficie, superficie2, botaoPrimario,
@@ -44,15 +44,33 @@ const InputPreco = ({ value, onChange }) => (
 export default function Mercado({
   S, meuTime, comprarNoMercado, listarNoMercado, cancelarListagem,
   aceitarOfertaHumano, recusarOfertaHumano, proporNoMercado, fecharJanelaEIrEscalacao,
+  contratarEstrelaNoMercado,
 }) {
   const [aba, setAba] = useState("comprar");
   const [erro, setErro] = useState(null);
   const [precos, setPrecos] = useState({}); // idJogador -> preço digitado (aba Vender)
   const [timeVisitado, setTimeVisitado] = useState(null); // aba Times: time cujo elenco está aberto
   const [propostas, setPropostas] = useState({}); // idJogador -> proposta digitada (aba Times)
+  const [propostasEstrela, setPropostasEstrela] = useState({}); // idJogador -> oferta digitada (aba Estrelas)
 
   const janela = S.mercado.janela;
   const tituloJanela = janela === "pre" ? "Janela de pré-temporada" : "Janela do meio de temporada (única)";
+
+  // Aba Estrelas (Fase 2 item 7): séries ACIMA da minha com estado paralelo
+  // vivo. Quem já está na A não tem de onde contratar — a aba nem aparece.
+  const seriesAcima = ["A", "B"].filter(
+    (s) => distanciaSeries(S.serie, s) > 0 && S.outrasSeries?.[s],
+  );
+  const abas = seriesAcima.length > 0 ? [...ABAS, ["estrelas", "Estrelas"]] : ABAS;
+  // Top jogadores de cada série acima, por valor — só sinal público
+  // (g/a + valor), atributo bruto continua oculto (spec-mercado.md §8).
+  const estrelasPorSerie = seriesAcima.map((s) => ({
+    serie: s,
+    distancia: distanciaSeries(S.serie, s),
+    jogadores: Object.values(S.outrasSeries[s].elencos).flat()
+      .sort((a, b) => b.valor - a.valor)
+      .slice(0, 10),
+  }));
 
   const rodar = (fn) => {
     const r = fn();
@@ -107,7 +125,7 @@ export default function Mercado({
         </div>
 
         <div className="flex gap-1 mt-3">
-          {ABAS.map(([id, label]) => (
+          {abas.map(([id, label]) => (
             <button
               key={id}
               onClick={() => { setAba(id); setErro(null); }}
@@ -280,6 +298,57 @@ export default function Mercado({
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {aba === "estrelas" && (
+          <div className="mt-3">
+            <div className="rounded-xl px-3 py-2 text-xs" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
+              <span style={eyebrowLime}>Contratar de divisões acima</span>
+              <div className="mt-1" style={{ color: cores.textSecondary }}>
+                Caro, e o jogador precisa TOPAR descer — pagar acima do pedido e estar
+                bem na tabela ajudam a convencer. Máx. 1 contratação de fora por janela.
+              </div>
+            </div>
+            {(S.mercado.estrelasJanela || 0) >= 1 && (
+              <div className="rounded-xl px-3 py-2 mt-2 text-xs" style={{ ...superficie, color: cores.textSecondary }}>
+                Você já fez sua contratação de fora nesta janela.
+              </div>
+            )}
+            {estrelasPorSerie.map(({ serie, distancia, jogadores }) => (
+              <div key={serie} className="mt-3">
+                <span style={eyebrowLime}>Série {serie}</span>
+                <div className="mt-1 space-y-1.5">
+                  {jogadores.map((j) => {
+                    const pedido = precoPedidoEstrela(j, distancia);
+                    return (
+                      <div key={j.id} className="rounded-xl px-3 py-2.5 flex items-center gap-2" style={superficie}>
+                        <Crest time={j.time} sm />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm leading-tight">{j.nome}</div>
+                          <div className="text-xs" style={{ color: cores.textSecondary }}>
+                            {j.pos} · {j.g}g {j.a}a · {j.time} · pede <b style={{ color: cores.lime }}>L$ {pedido}</b>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0">
+                          <InputPreco
+                            value={propostasEstrela[j.id] ?? pedido}
+                            onChange={(e) => setPropostasEstrela({ ...propostasEstrela, [j.id]: e.target.value })}
+                          />
+                          <button
+                            onClick={() => rodar(() => contratarEstrelaNoMercado(serie, j.id, Number(propostasEstrela[j.id]) || pedido))}
+                            className="rounded-lg px-3 py-2 text-xs font-bold"
+                            style={{ background: cores.lime, color: cores.inkOnLime }}
+                          >
+                            Propor
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
