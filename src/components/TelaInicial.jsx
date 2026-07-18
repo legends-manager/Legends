@@ -19,7 +19,7 @@
 // ranking, semântica destrutiva do "Novo jogo".
 import { useReducer, useEffect } from "react";
 import { supabase } from "../storage/supabaseClient";
-import { card } from "./ui";
+import { superficie, cores } from "./entry-hub/estilos";
 import LoginOnline from "./LoginOnline";
 import {
   PASSOS, estadoInicialOnboarding, onboardingReducer,
@@ -40,9 +40,9 @@ function HintInstalar({ promptInstalar, instalarApp }) {
   if (instalado) return null;
   if (promptInstalar) {
     return (
-      <button onClick={instalarApp} className="w-full rounded-xl px-4 py-3 mt-4 text-left active:opacity-70" style={card}>
+      <button onClick={instalarApp} className="w-full rounded-xl px-4 py-3 mt-4 text-left active:opacity-70" style={superficie}>
         <div className="text-sm font-bold">Instalar o Legends Manager</div>
-        <div className="text-xs mt-0.5" style={{ color: "#8793A1" }}>
+        <div className="text-xs mt-0.5" style={{ color: cores.textMuted }}>
           Ícone na tela inicial — abre direto, sem navegador.
         </div>
       </button>
@@ -51,7 +51,7 @@ function HintInstalar({ promptInstalar, instalarApp }) {
   const ios = /iphone|ipad|ipod/i.test(window.navigator.userAgent);
   if (ios) {
     return (
-      <div className="rounded-xl px-4 py-3 mt-4 text-xs" style={{ ...card, color: "#8793A1" }}>
+      <div className="rounded-xl px-4 py-3 mt-4 text-xs" style={{ ...superficie, color: cores.textMuted }}>
         Pra instalar no iPhone: toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>.
       </div>
     );

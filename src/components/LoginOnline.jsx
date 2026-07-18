@@ -3,9 +3,12 @@
 // — uma única porta de entrada pro modo online, em vez de tela própria.
 // `sessao` é controlada por quem usa (App.jsx tem a fonte da verdade via
 // supabase.auth.onAuthStateChange) — este componente só lê e envia o link.
+// Reskin "Polish Language v1" (F1e, auditoria da Fase 1): era o widget mais
+// visível ainda no roxo/âmbar antigo (aparece na Entry e no Ranking, ambas
+// já grafite/lime) — grafite/lime aqui também.
 import { useState } from "react";
 import { supabase } from "../storage/supabaseClient";
-import { card, amber } from "./ui";
+import { cores, superficie, botaoPrimario } from "./entry-hub/estilos";
 
 export default function LoginOnline({ sessao }) {
   const [email, setEmail] = useState("");
@@ -36,11 +39,11 @@ export default function LoginOnline({ sessao }) {
 
   if (sessao) {
     return (
-      <div className="rounded-xl px-4 py-2.5 flex items-center justify-between" style={card}>
-        <span className="text-xs">
-          🌐 Logado como <b>{sessao.user.email}</b>
+      <div className="rounded-xl px-4 py-2.5 flex items-center justify-between" style={superficie}>
+        <span className="text-xs" style={{ color: cores.textSecondary }}>
+          Logado como <b style={{ color: cores.textPrimary }}>{sessao.user.email}</b>
         </span>
-        <button onClick={sair} className="text-xs font-bold" style={{ color: "#FF5A5A" }}>
+        <button onClick={sair} className="text-xs font-bold" style={{ color: cores.danger }}>
           Sair
         </button>
       </div>
@@ -49,8 +52,8 @@ export default function LoginOnline({ sessao }) {
 
   if (enviado) {
     return (
-      <div className="rounded-xl p-3 text-xs" style={{ ...card, border: "1px solid #FFC53D" }}>
-        📩 Link enviado pra <b>{email}</b> — confere seu e-mail e clica pra entrar.
+      <div className="rounded-xl p-3 text-xs" style={{ ...superficie, border: `1px solid ${cores.lime}`, color: cores.textSecondary }}>
+        Link enviado pra <b style={{ color: cores.textPrimary }}>{email}</b> — confere seu e-mail e clica pra entrar.
       </div>
     );
   }
@@ -65,18 +68,18 @@ export default function LoginOnline({ sessao }) {
           onChange={(e) => setEmail(e.target.value)}
           placeholder="seu@email.com — entra e concorre no ranking"
           className="flex-1 rounded-xl px-3 py-2.5 outline-none text-sm"
-          style={{ ...card, color: "#F2EDFA" }}
+          style={{ ...superficie, color: cores.textPrimary }}
         />
         <button
           type="submit"
           disabled={enviando}
           className="rounded-xl px-4 py-2.5 font-bold text-sm disabled:opacity-50 shrink-0"
-          style={amber}
+          style={botaoPrimario}
         >
           {enviando ? "…" : "Entrar"}
         </button>
       </div>
-      {erro && <p className="text-xs mt-1.5" style={{ color: "#FF5A5A" }}>{erro}</p>}
+      {erro && <p className="text-xs mt-1.5" style={{ color: cores.danger }}>{erro}</p>}
     </form>
   );
 }

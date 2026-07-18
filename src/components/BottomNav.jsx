@@ -7,20 +7,12 @@
 // mercado; temporada encerrada → tabela; senão → escalação, SEM resetar a
 // escalação customizada — quem re-prepara é o irProximaRodada de sempre).
 //
-// Task 05.1H.1 (correção C): variante "polish" — tratamento visual grafite/
-// lime congelado no Figma 05.1, usado SÓ quando `tela === "inicio"` (Central
-// da Carreira). As demais telas (mercado, tabela, copa...) continuam com o
-// visual "padrao" — nenhuma redesenhada por autorização desta tarefa. Mesma
-// lógica de destinos/estado ativo nas duas variantes; só a apresentação muda.
+// Tratamento visual grafite/lime congelado no Figma 05.1 (Task 05.1H.1),
+// originalmente só em "Início" e depois estendido a TODAS as telas de
+// consulta (F1a). App.jsx sempre invoca com o mesmo visual — não há mais
+// variante alternativa (removida na auditoria F1e, morta desde então).
 import { SIGLA } from "../data/times";
 
-const barraPadrao = {
-  background: "rgba(21,10,38,0.92)",
-  backdropFilter: "blur(12px)",
-  borderTop: "1px solid rgba(139,105,190,0.35)",
-};
-
-// Grafite sólido (sem blur/gradiente/glow — regra do slice Polish).
 const barraPolish = {
   background: "#242A31", // bg/surface
   borderTop: "1px solid #39424E", // accent/steel
@@ -56,7 +48,7 @@ const Icones = {
   ),
 };
 
-export default function BottomNav({ tela, setTela, irJogar, temCopa, meuTime, variante = "padrao" }) {
+export default function BottomNav({ tela, setTela, irJogar, temCopa, meuTime }) {
   const abas = [
     { id: "inicio", rotulo: "Início", icone: "inicio", onClick: () => setTela("inicio"), ativa: tela === "inicio" },
     {
@@ -71,35 +63,27 @@ export default function BottomNav({ tela, setTela, irJogar, temCopa, meuTime, va
     { id: "ranking", rotulo: "Ranking", icone: "ranking", onClick: () => setTela("ranking"), ativa: tela === "ranking" },
   ];
 
-  const polish = variante === "polish";
-
   return (
-    <nav className="fixed bottom-0 inset-x-0 z-40" style={polish ? barraPolish : barraPadrao}>
-      {/* env(safe-area-inset-bottom) nas duas variantes: sem isso, em
-          iPhones com home indicator a barra fica colada demais no rodapé
-          (parte do achado 1 de AUDITORIA_VISUAL_MOBILE.md). */}
+    <nav className="fixed bottom-0 inset-x-0 z-40" style={barraPolish}>
+      {/* env(safe-area-inset-bottom): sem isso, em iPhones com home
+          indicator a barra fica colada demais no rodapé (achado 1 de
+          AUDITORIA_VISUAL_MOBILE.md). */}
       <div className="max-w-md mx-auto flex" style={{ paddingBottom: "max(0px, env(safe-area-inset-bottom))" }}>
         {abas.map((a) => (
           <button
             key={a.id}
             onClick={a.onClick}
-            className={polish ? "flex-1 flex flex-col items-center justify-center gap-1 active:opacity-80" : "flex-1 flex flex-col items-center gap-0.5 pt-2 pb-2.5 text-[10px] font-bold"}
-            style={
-              polish
-                ? {
-                    minHeight: 44, paddingTop: 8, paddingBottom: 8,
-                    color: a.ativa ? "#12160A" : "#AAB4BF",
-                    background: a.ativa ? "#C6FF1E" : "transparent",
-                    borderRadius: a.ativa ? 10 : 0,
-                    margin: a.ativa ? "4px 3px" : 0,
-                    fontSize: 12, fontWeight: 800,
-                  }
-                : { color: a.ativa ? "#FFC53D" : "#A78FC7" }
-            }
+            className="flex-1 flex flex-col items-center justify-center gap-1 active:opacity-80"
+            style={{
+              minHeight: 44, paddingTop: 8, paddingBottom: 8,
+              color: a.ativa ? "#12160A" : "#AAB4BF",
+              background: a.ativa ? "#C6FF1E" : "transparent",
+              borderRadius: a.ativa ? 10 : 0,
+              margin: a.ativa ? "4px 3px" : 0,
+              fontSize: 12, fontWeight: 800,
+            }}
           >
-            {polish ? Icones[a.icone](2) : <span className="text-base leading-none">{{
-              inicio: "🏠", jogar: "⚽", tabela: "📊", copa: "🏆", ranking: "🌐",
-            }[a.icone]}</span>}
+            {Icones[a.icone](2)}
             {a.rotulo}
           </button>
         ))}
