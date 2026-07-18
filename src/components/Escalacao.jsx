@@ -6,13 +6,13 @@
 import { tendenciaTorcida } from "../engine/torcida";
 import { setinhaValor } from "../engine/mercado";
 import { confrontoPendenteDoJogador } from "../engine/copa";
-import { SIGLA } from "../data/times";
 import { AvatarTecnico } from "./ui";
 import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
-  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, crest,
+  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
+import Crest from "./Crest";
 
 const corSetinha = (s) => (s === "▲" ? "#7FE0A8" : s === "▼" ? cores.danger : cores.textMuted);
 
@@ -116,7 +116,7 @@ export default function Escalacao({
       <div style={conteudoAcimaDaDecor}>
         <span style={eyebrowLime}>Rodada {S.rodada + 1} de {S.calendario.length}</span>
         <div className="flex items-center gap-2 mt-2">
-          <div style={crest()}>{SIGLA[meuTime] || meuTime.slice(0, 3).toUpperCase()}</div>
+          <Crest time={meuTime} />
           <div className="flex-1">
             <div className="font-black italic">{meuTime}</div>
             <div className="text-xs" style={{ color: cores.textSecondary }}>

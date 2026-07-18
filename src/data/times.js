@@ -23,6 +23,24 @@ export const SIGLA = {
   "Dendele FC": "DEN", "Capim FC": "CAP", "LOUD SC": "LOU",
 };
 
+// Escudos reais (jul/2026, decisão explícita do Felyp — reabre a trava
+// "escudos reais" do backlog do CLAUDE.md só pra Série B/C, cujas artes ele
+// enviou em art/serie b e art/serie c). Só entram aqui os times com arquivo
+// de verdade; quem não tem (Série A, por enquanto) cai pro crachá de sigla
+// via fallback do componente Crest — nunca quebra.
+export const CRESTS = {
+  // Série C
+  "Real União": "/crests/RUN.jpeg", "Real Elite": "/crests/RLE.jpeg", "Sereno FC": "/crests/SER.jpeg",
+  "Sem Limites": "/crests/SLM.jpeg", "Canelas": "/crests/CAN.jpeg", "Marselha FC": "/crests/MAR.jpeg",
+  "Nordeste FC": "/crests/NOR.jpeg", "Racha FC": "/crests/RAC.jpeg", "Puro Osso": "/crests/PUR.jpeg",
+  "Kissassa": "/crests/KIS.jpeg", "Fortaleza": "/crests/FOR.jpeg", "Dragon Bola FC": "/crests/DRA.jpeg",
+  // Série B
+  "Ousadia FC": "/crests/OUS.jpeg", "A.E. Dallas": "/crests/DAL.jpeg", "Quebrada F.C": "/crests/QUE.jpeg",
+  "Villa City": "/crests/VIL.jpeg", "Tigres": "/crests/TIG.jpeg", "FORZA F.C": "/crests/FRZ.jpeg",
+  "Benfica": "/crests/BEN.png", "PH FC": "/crests/PHF.jpeg", "Lanús": "/crests/LAN.jpeg",
+  "Nação NH": "/crests/NNH.jpeg",
+};
+
 export const COR = {
   // Série C
   "Real União": "bg-blue-600", "Real Elite": "bg-violet-600", "Sereno FC": "bg-sky-600",

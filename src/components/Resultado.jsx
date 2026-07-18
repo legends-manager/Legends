@@ -2,19 +2,16 @@
 // Tela de resultado: placar, Craque da Partida, gols e resultados da rodada.
 // ARENA.label na linha de contexto com a rodada.
 // Reskin "Polish Language v1" (jul/2026): grafite/lime, mesmo fluxo/lógica.
-import { SIGLA } from "../data/times";
 import { ARENA } from "../data/arena";
+import { SIGLA } from "../data/times";
 import { SERIES } from "../data/series";
 import { gerarCardResultado, compartilharCard } from "../share/cards";
 import {
   cores, superficie, botaoPrimario, botaoSecundario,
-  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, crest,
+  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
-
-function Crest({ time }) {
-  return <div style={crest()}>{SIGLA[time] || time.slice(0, 3).toUpperCase()}</div>;
-}
+import Crest from "./Crest";
 
 export default function Resultado({ resumo, serie, setTela }) {
   const r = resumo;

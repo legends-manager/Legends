@@ -11,15 +11,10 @@ import { useState } from "react";
 import { nomeFase, confrontoPendenteDoJogador, eliminadoDaCopa, historicoDoJogador } from "../engine/copa";
 import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
-  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, crest,
+  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
-
-const SIGLA3 = (t) => t.slice(0, 3).toUpperCase();
-
-function Crest({ time, sm }) {
-  return <div style={crest(sm)}>{SIGLA3(time)}</div>;
-}
+import Crest from "./Crest";
 
 export default function TelaCopa({ S, meuTime, jogarPartidaCopa, setTela }) {
   const [resultado, setResultado] = useState(null);

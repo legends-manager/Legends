@@ -50,8 +50,10 @@ Três pedidos do Felyp (jul/2026) que promovem itens da cerca do backlog pra esc
 - **Quiz de curiosidades** (`storage/quiz.js`): aparece com chance baixa (25% ⚙️) ao fim de cada rodada de liga, banco de perguntas de futebol (fatos públicos, não envolvem a Legends Liga fictícia), resposta certa credita L$20-40 (⚙️), errar/pular não penaliza. Deliberadamente raro e modesto pra não competir com a economia calibrada do Marco 2.
 
 ## Cerca do backlog (NÃO construir agora)
-Multiplayer/link-convite, ranking online de técnicos, edição de elenco in-game, escudos reais, finanças, cartões/lesões, crônicas por IA, cards com rosto, monetização. Se parecer boa ideia no meio do caminho: **parar e perguntar, não construir.**
+Multiplayer/link-convite, ranking online de técnicos, edição de elenco in-game, finanças, cartões/lesões, crônicas por IA, cards com rosto, monetização. Se parecer boa ideia no meio do caminho: **parar e perguntar, não construir.**
 (Mata-mata e olheiro/scouting saíram da cerca — ver Marco 4 acima. "Scouting" aqui significa navegar o elenco de qualquer time da própria série; **NÃO** revela atributo bruto de jogador de time alheio — isso continua fora de escopo.)
+
+**[Emenda, jul/2026]** Escudos reais saíram da cerca pra Série B e C: Felyp forneceu as artes (`art/serie b/`, `art/serie c/`) e pediu aplicação direta. Copiados pra `public/crests/` (nome = sigla) e mapeados em `data/times.js` (`CRESTS`); um componente único `components/Crest.jsx` troca todo escudo de time (com fallback pro crachá de sigla) por essa arte — quem ainda não tem asset (Série A) continua no fallback, sem quebrar. Escudos da Série A continuam fora de escopo até haver arte equivalente.
 
 ## Stack
 React + Vite. Sem backend. Deploy Vercel. PWA básica (manifest + ícones; sem service worker offline no Marco 1).
