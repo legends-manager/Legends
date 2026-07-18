@@ -23,9 +23,10 @@ import { supabase } from "../storage/supabaseClient";
 import LoginOnline from "./LoginOnline";
 import { apagarCarreiraOnline } from "../storage/publicarOnline";
 import { SERIES } from "../data/series";
+import { conquistaPorId } from "../storage/conquistas";
 import {
   cores, superficie, superficie2, botaoSecundario, botaoPrimario, eyebrowLime,
-  paginaGrafite, conteudoAcimaDaDecor,
+  paginaGrafite, conteudoAcimaDaDecor, corTier, glowTier,
 } from "./entry-hub/estilos";
 import Crest from "./Crest";
 import { PolishDecor } from "./entry-hub/decor";
@@ -33,18 +34,36 @@ import { PolishDecor } from "./entry-hub/decor";
 const RESULTADO_LABEL = { subiu: "Subiu", desceu: "Desceu", manteve: "Permaneceu" };
 const RESULTADO_COR = { subiu: cores.success, desceu: cores.danger, manteve: cores.textSecondary };
 
+// Raridade pra ordenar "as mais raras primeiro" (linha do ranking mostra 3).
+const PESO_TIER = { lendario: 3, epico: 2, raro: 1, comum: 0 };
+const maisRaras = (idsOnline) =>
+  idsOnline
+    .map((id) => conquistaPorId(id))
+    .filter(Boolean)
+    .sort((a, b) => (PESO_TIER[b.tier] ?? 0) - (PESO_TIER[a.tier] ?? 0));
+
 function PerfilTecnico({ linha, onFechar }) {
   const [temporadas, setTemporadas] = useState(undefined); // undefined = carregando
+  const [insignias, setInsignias] = useState(undefined);
 
   useEffect(() => {
-    if (!linha.carreira_id) { setTemporadas([]); return; }
+    if (!linha.carreira_id) { setTemporadas([]); setInsignias([]); return; }
     setTemporadas(undefined);
+    setInsignias(undefined);
     supabase
       .from("carreira_temporadas")
       .select("*")
       .eq("carreira_id", linha.carreira_id)
       .order("temporada", { ascending: true })
       .then(({ data }) => setTemporadas(data || []));
+    // Fase 2: insígnias públicas do técnico (conquistas_online, leitura
+    // pública). ids desconhecidos (versões futuras do app) são ignorados
+    // pelo filtro do maisRaras — nunca quebra.
+    supabase
+      .from("conquistas_online")
+      .select("conquista_id, clube, temporada")
+      .eq("carreira_id", linha.carreira_id)
+      .then(({ data }) => setInsignias(data || []));
   }, [linha.carreira_id]);
 
   const serieOrigem = temporadas && temporadas.length > 0 ? temporadas[0].serie : null;
@@ -78,6 +97,32 @@ function PerfilTecnico({ linha, onFechar }) {
               : <>Começou na <b>{SERIES[serieOrigem]?.label || serieOrigem}</b> · hoje na <b>{SERIES[serieAtual]?.label || serieAtual}</b></>}
           </div>
         )}
+
+        <div className="mt-3">
+          <span style={eyebrowLime}>Insígnias</span>
+          {insignias === undefined && (
+            <div className="text-sm mt-2" style={{ color: cores.textSecondary }}>Carregando…</div>
+          )}
+          {insignias && insignias.length === 0 && (
+            <div className="text-sm mt-2" style={{ color: cores.textSecondary }}>
+              Nenhuma insígnia publicada ainda.
+            </div>
+          )}
+          {insignias && insignias.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {maisRaras(insignias.map((i) => i.conquista_id)).map((c) => (
+                <div
+                  key={c.id}
+                  className="rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 text-xs"
+                  style={{ ...superficie2, border: `1px solid ${corTier[c.tier]}`, ...glowTier(c.tier) }}
+                >
+                  <span className="text-base leading-none">{c.emoji}</span>
+                  <span className="font-bold">{c.titulo}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         <div className="mt-3">
           <span style={eyebrowLime}>Histórico de temporadas</span>
@@ -128,6 +173,9 @@ export default function Ranking({ setTela, sessao }) {
   const [confirmaApagar, setConfirmaApagar] = useState(false);
   const [confirmaExcluirConta, setConfirmaExcluirConta] = useState(false);
   const [perfilAberto, setPerfilAberto] = useState(null);
+  // carreira_id → ids de conquistas (Fase 2): carregado numa ÚNICA query
+  // depois da lista, pra linha mostrar as 3 mais raras sem N+1.
+  const [insigniasPorCarreira, setInsigniasPorCarreira] = useState({});
 
   useEffect(() => {
     if (!supabase) return;
@@ -137,7 +185,20 @@ export default function Ranking({ setTela, sessao }) {
       .select("*")
       .order("pontos", { ascending: false })
       .limit(20)
-      .then(({ data }) => setLinhas(data || []));
+      .then(({ data }) => {
+        setLinhas(data || []);
+        const ids = (data || []).map((l) => l.carreira_id).filter(Boolean);
+        if (ids.length === 0) { setInsigniasPorCarreira({}); return; }
+        supabase
+          .from("conquistas_online")
+          .select("carreira_id, conquista_id")
+          .in("carreira_id", ids)
+          .then(({ data: cs }) => {
+            const mapa = {};
+            (cs || []).forEach((c) => { (mapa[c.carreira_id] = mapa[c.carreira_id] || []).push(c.conquista_id); });
+            setInsigniasPorCarreira(mapa);
+          });
+      });
   }, [aba]);
 
   useEffect(() => {
@@ -242,7 +303,14 @@ export default function Ranking({ setTela, sessao }) {
                   <span className="font-bold" style={{ color: corPodio(i) }}>{i + 1}º</span>
                   {l.meu_time && <Crest time={l.meu_time} sm />}
                   <span className="min-w-0">
-                    <b className="block truncate">{l.nome_tecnico || l.apelido || "Técnico anônimo"}</b>
+                    <b className="block truncate">
+                      {l.nome_tecnico || l.apelido || "Técnico anônimo"}
+                      {l.carreira_id && insigniasPorCarreira[l.carreira_id]?.length > 0 && (
+                        <span className="ml-1.5 not-italic font-normal">
+                          {maisRaras(insigniasPorCarreira[l.carreira_id]).slice(0, 3).map((c) => c.emoji).join("")}
+                        </span>
+                      )}
+                    </b>
                     {l.meu_time && (
                       <span className="block text-[10px] truncate" style={{ color: cores.textMuted }}>
                         {l.meu_time}

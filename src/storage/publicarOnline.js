@@ -269,6 +269,54 @@ export async function vincularCarreira(mundo, pontosAtuais = 0, nomeTecnico) {
   }
 }
 
+// Fase 2 item 6 (PLANO_MESTRE §4.2): espelha as insígnias LOCAIS
+// (storage/conquistas.js) em conquistas_online — best-effort puro, mesmo
+// contrato de publicarProgresso: sem sessão é no-op, falha nunca propaga.
+// Insert com ignoreDuplicates (append-only; a tabela nem tem policy de
+// update): re-publicar tudo a cada chamada é barato (≤ ~15 linhas) e
+// idempotente — cobre também o backfill de quem desbloqueou offline antes
+// de logar.
+export async function publicarConquistas(conquistasLocais) {
+  if (!supabase) return;
+  const OPERACAO = "publicarConquistas";
+  try {
+    const ids = Object.keys(conquistasLocais || {});
+    if (ids.length === 0) return;
+    let session;
+    try {
+      ({ data: { session } } = await supabase.auth.getSession());
+    } catch (e) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "getSession", temSessao: false, erro: e });
+      return;
+    }
+    if (!session) return;
+
+    const { data: carreira, error: erroCarreira } = await supabase
+      .from("carreiras").select("id").eq("user_id", session.user.id).maybeSingle();
+    if (erroCarreira) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "buscarCarreira", temSessao: true, erro: erroCarreira });
+      return;
+    }
+    if (!carreira) return; // vínculo ainda não aconteceu — o próximo checkpoint cobre
+
+    const linhas = ids.map((id) => ({
+      carreira_id: carreira.id,
+      conquista_id: id,
+      em: conquistasLocais[id]?.em || new Date().toISOString(),
+      clube: conquistasLocais[id]?.clube ?? null,
+      temporada: conquistasLocais[id]?.temporada ?? null,
+    }));
+    const { error: erroInsert } = await supabase
+      .from("conquistas_online")
+      .upsert(linhas, { onConflict: "carreira_id,conquista_id", ignoreDuplicates: true });
+    if (erroInsert) {
+      logSincronizacao({ operacao: OPERACAO, etapa: "insertConquistas", temSessao: true, erro: erroInsert });
+    }
+  } catch (e) {
+    logSincronizacao({ operacao: OPERACAO, etapa: "inesperado", temSessao: true, erro: e });
+  }
+}
+
 export async function apagarCarreiraOnline(userId) {
   if (!supabase) return { error: "Modo online não configurado" };
   const OPERACAO = "apagarCarreiraOnline";
