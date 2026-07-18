@@ -96,6 +96,22 @@ export const paginaGrafite = {
 // normal — por isso o conteúdo também precisa de position+zIndex explícitos).
 export const conteudoAcimaDaDecor = { position: "relative", zIndex: 1 };
 
+// Tratamento visual por tier de insígnia (Fase 1c do PLANO_MESTRE): a
+// borda/cor cresce em intensidade comum → lendário; glow só a partir de
+// épico (regra "glow em momentos de destaque" — comum/raro são rotina).
+export const corTier = {
+  comum: cores.steel,
+  raro: cores.lime,
+  epico: "#E4FF54", // brand/lime-hot
+  lendario: cores.gold,
+};
+
+export const glowTier = (tier) => {
+  if (tier === "epico") return { boxShadow: "0 0 20px rgba(228,255,84,0.4)" };
+  if (tier === "lendario") return { boxShadow: "0 0 32px rgba(255,196,0,0.55)" };
+  return {};
+};
+
 // Badge de sigla do clube (crest textual — sem escudos reais, decisão travada).
 export const crest = (sm) => ({
   width: sm ? 36 : 52,

@@ -2,14 +2,17 @@
 // Liga Viva (spec-liga-viva.md §6): lista as temporadas do jogador — série,
 // time, posição, subiu/desceu/permaneceu.
 // Reskin "Polish Language v1" (jul/2026, Fase 1a): grafite/lime; setas
-// success/danger em vez de emoji; grade de conquistas em superfície
-// grafite com borda gold quando desbloqueada (o emoji de cada conquista é
-// dado de conteúdo em storage/conquistas.js, fora do escopo deste reskin de
-// camada visual — ver assets-legends-mapeamento.md pra revisão futura).
+// success/danger em vez de emoji.
+// Fase 1c: galeria de insígnias com cor/glow por tier (comum→lendário);
+// bloqueadas ficam em silhueta (opacidade baixa, sem cor de tier) — desejo
+// visível reforça retenção, sem revelar o emoji de conquistas muito raras
+// antes da hora (o emoji de cada conquista é dado de conteúdo em
+// storage/conquistas.js).
 import { SERIES } from "../data/series";
 import { CONQUISTAS, carregarConquistas } from "../storage/conquistas";
 import {
   cores, superficie, botaoSecundario, eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
+  corTier, glowTier,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
 
@@ -47,18 +50,30 @@ export default function HistoriaCarreira({ mundo, setTela }) {
         </div>
 
         <div className="mt-5">
-          <span style={eyebrowLime}>Conquistas</span>
+          <div className="flex items-center justify-between">
+            <span style={eyebrowLime}>Insígnias</span>
+            <span className="text-xs tabular-nums" style={{ color: cores.textMuted }}>
+              {Object.keys(desbloqueadas).length}/{CONQUISTAS.length}
+            </span>
+          </div>
           <div className="grid grid-cols-2 gap-2 mt-2">
             {CONQUISTAS.map((c) => {
               const tem = !!desbloqueadas[c.id];
+              const cor = corTier[c.tier];
               return (
                 <div
                   key={c.id}
                   className="rounded-xl px-3 py-2.5"
-                  style={{ ...superficie, ...(tem ? { border: `1px solid ${cores.gold}` } : { opacity: 0.45 }) }}
+                  style={tem ? { ...superficie, border: `1px solid ${cor}`, ...glowTier(c.tier) } : { ...superficie, opacity: 0.4 }}
                 >
-                  <div className="text-sm font-bold">{c.emoji} {c.titulo}</div>
-                  <div className="text-xs mt-0.5" style={{ color: cores.textSecondary }}>{c.desc}</div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg leading-none">{tem ? c.emoji : "?"}</span>
+                    <span className="text-sm font-bold leading-tight">{c.titulo}</span>
+                  </div>
+                  <div className="text-xs mt-1" style={{ color: cores.textSecondary }}>{c.desc}</div>
+                  <div className="text-[10px] mt-1 font-bold uppercase tracking-wide" style={{ color: tem ? cor : cores.textMuted }}>
+                    {c.tier}
+                  </div>
                 </div>
               );
             })}

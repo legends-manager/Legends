@@ -72,28 +72,27 @@ export function EntryNoCareer({
       <PolishDecor variante="entry-sem-carreira" />
       <div style={conteudoAcimaDaDecor}>
         <EyebrowLime>Liga Fut7 · Série C</EyebrowLime>
-        <h1 className="mt-2" style={{ fontSize: 34, fontWeight: 900, fontStyle: "italic", lineHeight: 1.1 }}>
-          Legends Manager
-        </h1>
+
+        {/* Capa oficial (jul/2026): asset de marca com o logo real (onça +
+            coroa) e a marca "Legends Manager" já desenhados na imagem — por
+            isso o H1 de texto foi removido daqui, pra não duplicar o nome
+            do app duas vezes na mesma tela. */}
+        <div
+          className="mt-3 overflow-hidden"
+          style={{ borderRadius: 10, border: `1px solid ${cores.lime}`, ...glowLime(28) }}
+        >
+          <img
+            src="/art/capa-legends.jpg"
+            alt="Legends Manager"
+            className="w-full block"
+            style={{ aspectRatio: "3/2", objectFit: "cover" }}
+          />
+        </div>
+
         <p className="mt-3" style={{ color: cores.textSecondary, fontSize: 15 }}>
           Assuma um clube real da Legends Liga Fut7 e comande a temporada:
           escalação, mercado e a briga pelo título.
         </p>
-
-        {/* Hero art (jul/2026): asset real da marca (public/art/hero-trio.jpg
-            — mesmo crest da onça usado no pôster de campeão), com glow lime
-            contido nas bordas — presença de jogador sem simular jogo em 3D. */}
-        <div
-          className="mt-6 overflow-hidden"
-          style={{ borderRadius: 10, border: `1px solid ${cores.lime}`, ...glowLime(28) }}
-        >
-          <img
-            src="/art/hero-trio.jpg"
-            alt=""
-            className="w-full block"
-            style={{ aspectRatio: "16/10", objectFit: "cover", objectPosition: "left" }}
-          />
-        </div>
 
         <div className="mt-3 p-4 text-center" style={{ ...superficie, background: cores.navy }}>
           <div style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic" }}>
@@ -579,6 +578,13 @@ export function CareerHub({ mundo, nomeTec, hub, proximoJogo, setTela }) {
           </div>
           <div className="mt-1" style={{ color: cores.textMuted, fontSize: 12 }}>Orçamento</div>
         </div>
+      </div>
+
+      {/* Correção (jul/2026): antes só dava pra ver o histórico/galeria de
+          insígnias na tela de abertura, antes de S carregar — uma vez dentro
+          da temporada não tinha mais como chegar lá. */}
+      <div className="mt-3">
+        <BotaoTexto onClick={() => setTela("historiaCarreira")}>Ver histórico e insígnias</BotaoTexto>
       </div>
 
       <RodapeSlice />

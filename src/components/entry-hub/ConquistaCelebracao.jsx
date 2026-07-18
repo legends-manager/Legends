@@ -1,0 +1,60 @@
+// src/components/entry-hub/ConquistaCelebracao.jsx
+// Celebração de insígnia desbloqueada — tela cheia, não um toast (Fase 1c do
+// PLANO_MESTRE_LEGENDS_LIMEIRA.md, inspirada na tela "Subir de nível" do
+// FIFA Heroes referenciada por Felyp). Fica por cima de qualquer tela,
+// pausa a navegação até o toque em "Continuar" — a única ação possível é
+// fechar; nada de gameplay acontece aqui.
+import { conquistaPorId } from "../../storage/conquistas";
+import { cores, corTier, glowTier, botaoPrimario } from "./estilos";
+
+const TIER_LABEL = { comum: "Comum", raro: "Raro", epico: "Épico", lendario: "Lendário" };
+
+export default function ConquistaCelebracao({ conquistaId, onFechar }) {
+  const c = conquistaPorId(conquistaId);
+  if (!c) return null;
+  const cor = corTier[c.tier];
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center px-6"
+      style={{ background: "rgba(10,12,14,0.92)" }}
+      onClick={onFechar}
+      role="button"
+      tabIndex={0}
+    >
+      <div className="text-center" style={{ maxWidth: 320 }}>
+        <div style={{ ...eyebrowCentro, color: cor }}>Insígnia desbloqueada</div>
+        <div
+          className="mx-auto mt-5 flex items-center justify-center"
+          style={{
+            width: 128, height: 128, borderRadius: 999,
+            background: cores.bgSurface2, border: `3px solid ${cor}`,
+            fontSize: 56, ...glowTier(c.tier),
+          }}
+        >
+          {c.emoji}
+        </div>
+        <div className="mt-5 font-black italic" style={{ fontSize: 26, color: cores.textPrimary }}>
+          {c.titulo}
+        </div>
+        <div className="mt-1 font-bold text-xs uppercase tracking-widest" style={{ color: cor }}>
+          {TIER_LABEL[c.tier]}
+        </div>
+        <p className="mt-3 text-sm" style={{ color: cores.textSecondary }}>
+          {c.desc}
+        </p>
+        <button
+          onClick={(e) => { e.stopPropagation(); onFechar(); }}
+          className="w-full mt-7 px-4"
+          style={{ ...botaoPrimario, paddingTop: 12, paddingBottom: 12 }}
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const eyebrowCentro = {
+  fontSize: 12, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase",
+};
