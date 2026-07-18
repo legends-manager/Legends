@@ -13,15 +13,12 @@ import { ARENA } from "../data/arena";
 import { PlacaPatrocinio } from "./ui";
 import {
   cores, superficie, superficie2, eyebrowLime, paginaGrafite,
-  conteudoAcimaDaDecor, crest, glowLime,
+  conteudoAcimaDaDecor, glowLime,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
+import Crest from "./Crest";
 
 const siglaDe = (time) => SIGLA[time] || time.slice(0, 3).toUpperCase();
-
-function Crest({ time, sm }) {
-  return <div style={crest(sm)}>{siglaDe(time)}</div>;
-}
 
 export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }) {
   const j = jogo;

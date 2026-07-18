@@ -22,12 +22,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "../storage/supabaseClient";
 import LoginOnline from "./LoginOnline";
 import { apagarCarreiraOnline } from "../storage/publicarOnline";
-import { SIGLA } from "../data/times";
 import { SERIES } from "../data/series";
 import {
   cores, superficie, superficie2, botaoSecundario, botaoPrimario, eyebrowLime,
-  paginaGrafite, conteudoAcimaDaDecor, crest,
+  paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
+import Crest from "./Crest";
 import { PolishDecor } from "./entry-hub/decor";
 
 const RESULTADO_LABEL = { subiu: "Subiu", desceu: "Desceu", manteve: "Permaneceu" };
@@ -64,7 +64,7 @@ function PerfilTecnico({ linha, onFechar }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-2">
-          {linha.meu_time && <div style={crest(true)}>{SIGLA[linha.meu_time] || linha.meu_time.slice(0, 3).toUpperCase()}</div>}
+          {linha.meu_time && <Crest time={linha.meu_time} sm />}
           <div className="min-w-0">
             <b className="block truncate">{linha.nome_tecnico || linha.apelido || "Técnico anônimo"}</b>
             {linha.meu_time && <span className="text-xs" style={{ color: cores.textMuted }}>{linha.meu_time}</span>}
@@ -240,7 +240,7 @@ export default function Ranking({ setTela, sessao }) {
               >
                 <span className="flex items-center gap-2 min-w-0">
                   <span className="font-bold" style={{ color: corPodio(i) }}>{i + 1}º</span>
-                  {l.meu_time && <div style={crest(true)}>{SIGLA[l.meu_time] || l.meu_time.slice(0, 3).toUpperCase()}</div>}
+                  {l.meu_time && <Crest time={l.meu_time} sm />}
                   <span className="min-w-0">
                     <b className="block truncate">{l.nome_tecnico || l.apelido || "Técnico anônimo"}</b>
                     {l.meu_time && (

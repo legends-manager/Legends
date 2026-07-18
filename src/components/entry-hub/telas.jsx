@@ -11,10 +11,11 @@ import { totalRodadas } from "../../engine/calendario";
 import { ORCAMENTO_INICIAL } from "../../engine/mercado";
 import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
-  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, crest, glowLime,
+  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, glowLime,
 } from "./estilos";
 import { criarDisparoUnico } from "./onboarding";
 import { PolishDecor } from "./decor";
+import Crest from "../Crest";
 
 const siglaDe = (time) => SIGLA[time] || time.slice(0, 3).toUpperCase();
 
@@ -46,10 +47,6 @@ function BotaoTexto({ children, onClick, cor = cores.textPrimary }) {
       {children}
     </button>
   );
-}
-
-function Crest({ time, sm }) {
-  return <div style={crest(sm)}>{siglaDe(time)}</div>;
 }
 
 // Rodapé padrão do produto (mesmo texto do ui.jsx, na paleta do slice).

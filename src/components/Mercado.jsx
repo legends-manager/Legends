@@ -13,9 +13,10 @@ import { PISO_VALOR, buscarJogador, setinhaValor } from "../engine/mercado";
 import { gerarManchetes } from "../engine/manchetes";
 import {
   cores, superficie, superficie2, botaoPrimario,
-  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, crest,
+  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
+import Crest from "./Crest";
 
 const corSetinha = (s) => (s === "▲" ? cores.success : s === "▼" ? cores.danger : cores.textMuted);
 const Setinha = ({ jogador }) => (
@@ -134,7 +135,7 @@ export default function Mercado({
               if (!j) return null;
               return (
                 <div key={l.idJogador} className="rounded-xl px-3 py-2.5 flex items-center gap-2" style={superficie}>
-                  <div style={crest(true)}>{SIGLA[j.time] || j.time.slice(0, 3).toUpperCase()}</div>
+                  <Crest time={j.time} sm />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm leading-tight">{j.nome}</div>
                     {/* §8: sem atributo bruto de jogador de outro time — só o
@@ -236,7 +237,7 @@ export default function Mercado({
                     className="rounded-xl px-3 py-3 flex items-center gap-2 text-left active:opacity-70"
                     style={superficie}
                   >
-                    <div style={crest(true)}>{SIGLA[t] || t.slice(0, 3).toUpperCase()}</div>
+                    <Crest time={t} sm />
                     <span className="text-sm font-semibold leading-tight">{t}</span>
                   </button>
                 ))}
@@ -251,7 +252,7 @@ export default function Mercado({
                   ← Voltar aos times
                 </button>
                 <div className="flex items-center gap-2 mb-2">
-                  <div style={crest(true)}>{SIGLA[timeVisitado] || timeVisitado.slice(0, 3).toUpperCase()}</div>
+                  <Crest time={timeVisitado} sm />
                   <span className="font-bold">{timeVisitado}</span>
                 </div>
                 {S.elencos[timeVisitado].map((j) => (
