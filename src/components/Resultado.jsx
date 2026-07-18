@@ -49,10 +49,10 @@ export default function Resultado({ resumo, serie, setTela }) {
         </div>
 
         {r.craque && (
-          <div className="rounded-xl px-4 py-3 mt-2 flex items-center gap-3" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
-            <span className="text-2xl" style={{ color: cores.lime }}>★</span>
+          <div className="rounded-xl px-4 py-3 mt-2 flex items-center gap-3" style={{ ...superficie, border: `1px solid ${cores.gold}` }}>
+            <span className="text-2xl" style={{ color: cores.gold }}>★</span>
             <div>
-              <span style={eyebrowLime}>Craque da partida</span>
+              <span style={{ ...eyebrowLime, color: cores.gold }}>Craque da partida</span>
               <div className="font-bold">
                 {r.craque.nome} <span className="text-xs font-normal" style={{ color: cores.textSecondary }}>({r.craque.time})</span>
               </div>

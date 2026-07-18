@@ -176,6 +176,17 @@ export function PolishDecor({ variante }) {
           <Diagonal cor={cores.lime} opacidade={0.2} top={-20} right={30} altura={90} />
         </>
       );
+    case "fim-de-temporada":
+      // Tratamento de evento (REDESIGN §5.10, mesma disciplina da Copa): é a
+      // tela "funil" do §3.3 do PLANO_MESTRE — hero mais alto e accent mais
+      // forte que as telas utilitárias.
+      return (
+        <>
+          <Superficie altura={130} cor={cores.navy} opacidade={0.7} />
+          <Diagonal cor={cores.lime} opacidade={0.35} top={-20} right={30} altura={110} />
+          <Diagonal cor={cores.lime} opacidade={0.2} top={0} right={10} altura={80} />
+        </>
+      );
     default:
       return null;
   }
