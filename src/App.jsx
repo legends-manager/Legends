@@ -22,6 +22,7 @@ import {
   atualizarRecordeGoleada, atualizarRecordeArtilheiro,
 } from "./engine/mundo";
 import { desbloquear } from "./storage/conquistas";
+import ConquistaCelebracao from "./components/entry-hub/ConquistaCelebracao";
 import {
   iniciarCopa, avancarFaseCopa, confrontoPendenteDoJogador, eliminadoDaCopa,
   historicoDoJogador, simularJogoCopa, nomeFase, PREMIO_VITORIA_COPA, PREMIO_CAMPEAO_COPA,
@@ -82,6 +83,10 @@ export default function App() {
   const [quizAtual, setQuizAtual] = useState(null); // pergunta sorteada (quiz de curiosidades), ou null
   const [ultimaPerguntaQuiz, setUltimaPerguntaQuiz] = useState(null); // evita repetir a mesma 2x seguidas
   const [fimDeTemporadaResumo, setFimDeTemporadaResumo] = useState(null);
+  // Fila de celebração de insígnias (Fase 1c): cada desbloqueio novo entra
+  // aqui; a tela cheia mostra uma de cada vez e avança ao fechar. Fica por
+  // cima de QUALQUER tela, sem interferir na navegação por trás dela.
+  const [celebracoesPendentes, setCelebracoesPendentes] = useState([]);
   // Sessão online (Fase 1): fonte única, controlada aqui e passada pra quem
   // precisa (TelaInicial, Ranking) — undefined = carregando, null = deslogado.
   const [sessao, setSessao] = useState(undefined);
@@ -91,6 +96,16 @@ export default function App() {
   jogoRef.current = jogo;
 
   const S = Sref.current;
+
+  // Desbloqueia 1+ insígnias e enfileira a celebração de tela cheia pra cada
+  // uma que for NOVA (desbloquear() já é idempotente — só entra na fila na
+  // primeira vez). Sempre passa contexto (clube/temporada) quando disponível,
+  // por cima do que o chamador decidiu, sem mudar a assinatura de desbloquear.
+  const desbloquearComCelebracao = (ids, contexto = {}) => {
+    const lista = Array.isArray(ids) ? ids : [ids];
+    const novas = lista.filter((id) => desbloquear(id, contexto));
+    if (novas.length > 0) setCelebracoesPendentes((fila) => [...fila, ...novas]);
+  };
 
   // Efeitos sonoros reais (ElevenLabs, jul/2026 — substituem o "beep"
   // sintetizado anterior). Arquivos em public/sfx/, respeitam o botão de mudo.
@@ -237,9 +252,21 @@ export default function App() {
     const { serieDestino, resultado: meuResultado, minhaPosicao } =
       fecharTemporada(mundo, resultado, meuTime, minhaSerie);
     // Conquistas de fim de temporada (a carreira já inclui a temporada fechada).
-    if (minhaPosicao === 1) desbloquear("campeao");
-    if (meuResultado === "subiu") desbloquear("acesso");
-    if (mundo.carreira.filter((c) => c.posicao === 1).length >= 3) desbloquear("tri");
+    const novasConquistas = ["primeira-temporada"];
+    if (minhaPosicao === 1) novasConquistas.push("campeao");
+    if (meuResultado === "subiu") novasConquistas.push("acesso");
+    if (mundo.carreira.filter((c) => c.posicao === 1).length >= 3) novasConquistas.push("tri");
+    // "Da C ao Topo" (lendária de estreia, Fase 1c): a PRIMEIRA temporada da
+    // carreira foi na Série C e agora ela é campeã da Série A com o mesmo
+    // clube — mundo.meuTime nunca muda dentro de uma carreira, só a divisão.
+    const primeiraTemporada = mundo.carreira[0];
+    if (primeiraTemporada?.serie === "C" && minhaSerie === "A" && minhaPosicao === 1) {
+      novasConquistas.push("da-c-ao-topo");
+    }
+    // Artilheiro: o topo de S.art (ainda a temporada corrente) é do meu time.
+    const melhorArtilheiro = Object.values(S.art).sort((a, b) => b.g - a.g)[0];
+    if (melhorArtilheiro && melhorArtilheiro.time === meuTime) novasConquistas.push("artilheiro-temporada");
+    desbloquearComCelebracao(novasConquistas, { clube: meuTime, temporada: mundo.temporada });
     salvarMundo(mundo);
     // Ranking online (Fase 1, spec-fase1-fundacao-online.md): melhor esforço,
     // nunca bloqueia o fluxo local — sem login, é um no-op silencioso.
@@ -350,7 +377,10 @@ export default function App() {
   };
   const comprarNoMercado = (idJogador) => {
     const r = comprarJogador(S, meuTime, idJogador);
-    if (r.ok) rerender();
+    if (r.ok) {
+      desbloquearComCelebracao("primeira-contratacao", { clube: meuTime, temporada: mundo?.temporada });
+      rerender();
+    }
     return r;
   };
   const aceitarOfertaHumano = (oferta) => {
@@ -568,11 +598,13 @@ export default function App() {
     const souCasaMeu = meuJogo.casa === meuTime;
     const meusGols = souCasaMeu ? meuJogo.gc : meuJogo.gf;
     const golsAdv = souCasaMeu ? meuJogo.gf : meuJogo.gc;
+    const conquistasDaRodada = [];
     if (meusGols > golsAdv) {
-      desbloquear("primeira-vitoria");
-      if (meusGols - golsAdv >= 5) desbloquear("goleada");
+      conquistasDaRodada.push("primeira-vitoria");
+      if (meusGols - golsAdv >= 5) conquistasDaRodada.push("goleada");
     }
-    if (S.serie === "A") desbloquear("serie-a");
+    if (S.serie === "A") conquistasDaRodada.push("serie-a");
+    desbloquearComCelebracao(conquistasDaRodada, { clube: meuTime, temporada: mundo?.temporada });
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
     setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario });
@@ -624,7 +656,7 @@ export default function App() {
     const campeao = S.copa.campeao === meuTime;
     if (campeao) {
       S.orcamento[meuTime] += PREMIO_CAMPEAO_COPA;
-      desbloquear("campeao-copa");
+      desbloquearComCelebracao("campeao-copa", { clube: meuTime, temporada: mundo?.temporada });
     }
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
     rerender();
@@ -811,6 +843,14 @@ export default function App() {
           quiz={quizAtual}
           onResponder={responderQuiz}
           onFechar={() => setQuizAtual(null)}
+        />
+      )}
+      {/* Celebração de insígnia (Fase 1c): fica por cima de qualquer tela,
+          uma por vez — fechar avança a fila sem mexer na navegação de baixo. */}
+      {celebracoesPendentes.length > 0 && (
+        <ConquistaCelebracao
+          conquistaId={celebracoesPendentes[0]}
+          onFechar={() => setCelebracoesPendentes((fila) => fila.slice(1))}
         />
       )}
     </div>
