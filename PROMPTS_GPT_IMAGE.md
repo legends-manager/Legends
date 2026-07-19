@@ -160,6 +160,41 @@ transparent background, centered
 
 ---
 
+---
+
+# Lote 2 — Camisa em branco (patrocínio de uniforme)
+
+**Por que essa é diferente das outras:** todas as artes do Lote 1 são usadas do jeito que
+saem do GPT Image. Essa aqui **não pode ter cor nenhuma** — só branco e cinza neutro,
+sem nenhum tom/matiz. O motivo é técnico: eu vou recolorir essa camisa por código pra
+cada um dos 32 times, usando uma técnica chamada *multiply blend* — ela preserva dobra,
+sombra e textura do tecido, e só troca a cor por cima (é assim que apps de e-commerce de
+roupa trocam a cor do produto na hora, sem gerar uma foto nova pra cada cor). Se a
+imagem vier com qualquer tom de cor (azul, bege, o que for), a técnica quebra — por isso
+o prompt insiste tanto em "pure white and grey only".
+
+Salvar como: `art/camisa/camisa-base.png` (1024×1536, fundo transparente).
+
+```
+Ultra premium ghost mannequin product photography of a blank technical soccer jersey,
+invisible mannequin technique showing realistic 3D garment volume with no visible body,
+head, or arms cut-off, front view centered, crew neck collar with ribbed trim, set-in
+sleeves with contrast cuffs, athletic performance fabric with a subtle engineered
+geometric weave texture (fine diagonal chevron pattern), realistic fabric folds and soft
+studio shadows defining the seams and shape, absolutely pure white and neutral grey
+tones ONLY, zero color tint, monochrome like a blank 3D template ready for color
+grading, completely blank chest and sleeves with NO logos, NO text, NO numbers, NO
+crest, NO branding, NO patterns other than the fabric weave, clean high-end studio
+product photography lighting, ultra high resolution, sharp focus, symmetrical,
+transparent background
+```
+
+**Se vier errado:** se aparecer QUALQUER cor (mesmo bem clara/sutil), ou algum logo/
+número/texto fantasma que o modelo "inventou", gere de novo — não dá pra eu corrigir
+isso depois, a técnica de recolorir depende da imagem ser neutra de verdade.
+
+---
+
 ## O que EU faço quando as artes chegarem
 
 | Arte | Onde entra no app |
@@ -170,6 +205,7 @@ transparent background, centered
 | Fundo celebração wide | Atrás das celebrações de insígnia/fim de temporada |
 | Fundo celebração 4:5 | Base dos cards compartilháveis (hoje usam a moldura da onça) |
 | Avatares 1-9 | `public/avatars/` — a galeria de avatar do técnico já tem fallback pronto esperando esses arquivos |
+| Camisa base | Substitui o SVG atual em `Camisa.jsx` — recolorida por código (multiply blend) pra cada um dos 32 times, mantendo o mesmo esquema de escudo/patrocinador/fornecedor que já funciona |
 
 Nada quebra enquanto as artes não existem — todo ponto de uso tem fallback (emoji,
 crachá de iniciais, moldura atual). Pode gerar aos poucos e ir me mandando.
