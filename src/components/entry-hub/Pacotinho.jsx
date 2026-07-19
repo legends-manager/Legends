@@ -11,6 +11,10 @@ import { tocarSomTier } from "../../storage/audio";
 import { cores, superficie, superficie2, botaoPrimario, corTier, glowTier, eyebrowLime } from "./estilos";
 
 const EMOJI_RARIDADE = { comum: "📦", raro: "📦", epico: "📦", lendario: "📦" };
+// Mascote GPT Image (Fase 3): só nos tiers altos — comum/raro ficam sem,
+// pra não banalizar a arte num sorteio que sai 90% das vezes. Ouro
+// reservado ao lendário (mesma regra do resto do app).
+const MASCOTE_RARIDADE = { epico: "/mascote/comemorando-lime.webp", lendario: "/mascote/comemorando-ouro.webp" };
 
 export default function Pacotinho({ pacotinhoPendente, escolherPacotinho, mudo }) {
   const [fase, setFase] = useState(pacotinhoPendente ? "guardado" : "escolha");
@@ -65,10 +69,19 @@ export default function Pacotinho({ pacotinhoPendente, escolherPacotinho, mudo }
   if (fase === "revelado") {
     const { jogador, raridade } = resultado;
     const cor = corTier[raridade];
+    const mascote = MASCOTE_RARIDADE[raridade];
     return (
       <div className="mt-4">
         <span style={eyebrowLime}>Pacotinho da temporada</span>
         <div className="rounded-2xl p-5 mt-2 text-center" style={{ ...superficie, border: `2px solid ${cor}`, ...glowTier(raridade) }}>
+          {mascote && (
+            <div
+              className="overflow-hidden mx-auto mb-3"
+              style={{ width: 140, height: 175, borderRadius: 14, border: `2px solid ${cor}` }}
+            >
+              <img src={mascote} alt="" className="w-full h-full block" style={{ objectFit: "cover", objectPosition: "50% 15%" }} />
+            </div>
+          )}
           <div className="text-xs font-bold uppercase tracking-widest" style={{ color: cor }}>
             {RARIDADE_LABEL[raridade]}
           </div>
