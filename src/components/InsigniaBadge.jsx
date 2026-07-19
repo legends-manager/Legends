@@ -13,9 +13,18 @@ const IMG_TIER = {
   lendario: "/insignias/lendario.webp",
 };
 
-export default function InsigniaBadge({ tier, emoji, size = 64 }) {
+// Insígnias com arte PRÓPRIA (não a genérica por tier) — hoje só as do
+// patrocinador Delícias da Ana (jul/2026): a marca já vem desenhada na
+// imagem, então tem prioridade sobre IMG_TIER quando `conquistaId` bate.
+const IMG_CONQUISTA = {
+  "patrocinio-kissassa-c": "/patrocinio/normal.webp",
+  "patrocinio-kissassa-b": "/patrocinio/platina.webp",
+  "patrocinio-kissassa-a": "/patrocinio/ouro.webp",
+};
+
+export default function InsigniaBadge({ tier, emoji, size = 64, conquistaId }) {
   const [erro, setErro] = useState(false);
-  const src = IMG_TIER[tier];
+  const src = (conquistaId && IMG_CONQUISTA[conquistaId]) || IMG_TIER[tier];
   if (src && !erro) {
     return (
       <img

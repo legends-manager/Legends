@@ -26,6 +26,14 @@ export const CONQUISTAS = [
   { id: "campeao-copa", emoji: "🏆", titulo: "Campeão da Copa", desc: "Vença a copa mata-mata cruzando as 3 séries.", tier: "epico" },
   { id: "tri", emoji: "💎", titulo: "Tricampeão", desc: "Conquiste 3 títulos na carreira.", tier: "lendario" },
   { id: "da-c-ao-topo", emoji: "🐆", titulo: "Da C ao Topo", desc: "Comece na Série C e seja campeão da Série A com o mesmo clube.", tier: "lendario" },
+  // Insígnias do patrocinador (Delícias da Ana, jul/2026 — ideia do Felyp:
+  // o dono do patrocinador é dono do Kissassa). Arte própria da marca em
+  // InsigniaBadge.jsx (IMG_CONQUISTA, não a arte genérica por tier) — o
+  // `tier` aqui só decide o fallback de cor/glow se a imagem falhar e a
+  // posição no "mais raras" do Ranking.
+  { id: "patrocinio-kissassa-c", emoji: "🍰", titulo: "Campeão com o Kissassa", desc: "Seja campeão da Série C com o Kissassa — o time do nosso patrocinador.", tier: "raro" },
+  { id: "patrocinio-kissassa-b", emoji: "🍰", titulo: "Campeão com o Kissassa (Série B)", desc: "Seja campeão da Série B com o Kissassa.", tier: "epico" },
+  { id: "patrocinio-kissassa-a", emoji: "🍰", titulo: "Campeão com o Kissassa (Série A)", desc: "Seja campeão da Série A com o Kissassa — o topo da liga.", tier: "lendario" },
 ];
 
 export const conquistaPorId = (id) => CONQUISTAS.find((c) => c.id === id);

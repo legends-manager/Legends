@@ -117,7 +117,7 @@ function PerfilTecnico({ linha, onFechar }) {
                   className="rounded-xl pl-1.5 pr-2.5 py-1.5 flex items-center gap-1.5 text-xs"
                   style={{ ...superficie2, border: `1px solid ${corTier[c.tier]}` }}
                 >
-                  <InsigniaBadge tier={c.tier} emoji={c.emoji} size={22} />
+                  <InsigniaBadge tier={c.tier} emoji={c.emoji} size={22} conquistaId={c.id} />
                   <span className="font-bold">{c.titulo}</span>
                 </div>
               ))}

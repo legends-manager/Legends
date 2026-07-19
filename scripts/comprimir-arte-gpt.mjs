@@ -14,6 +14,7 @@ const ALVOS = [
   { dir: "public/mascote", largura: 768 },
   { dir: "public/fundos", largura: 1600 },
   { dir: "public/avatars", largura: 512 },
+  { dir: "public/patrocinio", largura: 512 },
 ];
 
 for (const { dir, largura } of ALVOS) {
