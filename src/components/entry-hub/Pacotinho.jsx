@@ -7,11 +7,12 @@
 // a apresentação das 3 fases: escolha → antecipação → revelação.
 import { useState } from "react";
 import { RARIDADE_LABEL } from "../../engine/pacotinhos";
+import { tocarSomTier } from "../../storage/audio";
 import { cores, superficie, superficie2, botaoPrimario, corTier, glowTier, eyebrowLime } from "./estilos";
 
 const EMOJI_RARIDADE = { comum: "📦", raro: "📦", epico: "📦", lendario: "📦" };
 
-export default function Pacotinho({ pacotinhoPendente, escolherPacotinho }) {
+export default function Pacotinho({ pacotinhoPendente, escolherPacotinho, mudo }) {
   const [fase, setFase] = useState(pacotinhoPendente ? "guardado" : "escolha");
   const [resultado, setResultado] = useState(pacotinhoPendente || null);
 
@@ -50,7 +51,7 @@ export default function Pacotinho({ pacotinhoPendente, escolherPacotinho }) {
       <div className="mt-4">
         <span style={eyebrowLime}>Pacotinho da temporada</span>
         <button
-          onClick={() => setFase("revelado")}
+          onClick={() => { tocarSomTier(resultado.raridade, mudo); setFase("revelado"); }}
           className="w-full rounded-2xl py-8 mt-2 flex flex-col items-center gap-2 active:opacity-80"
           style={{ ...superficie, border: `1px solid ${corTier[resultado.raridade]}`, ...glowTier(resultado.raridade) }}
         >

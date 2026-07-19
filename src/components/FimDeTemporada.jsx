@@ -8,8 +8,10 @@
 // moldes do "momento de celebração" do FIFA Heroes, além do grafite/lime já
 // usado no resto do app. "Permaneceu" fica sóbrio (sem hero) — não é nem
 // vitória nem derrota, não merece o mesmo destaque.
+import { useEffect } from "react";
 import { SERIES } from "../data/series";
 import { gerarCardTemporada, compartilharCard } from "../share/cards";
+import { tocarSfx } from "../storage/audio";
 import { AvatarTecnico, PlacaPatrocinio } from "./ui";
 import {
   cores, superficie, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
@@ -54,10 +56,17 @@ function BlocoSerie({ serieId, dados, meuTime }) {
 
 export default function FimDeTemporada({
   resumo, meuTime, nomeTec, avatarId, temporada, proximaTemporadaCarreira,
-  pacotinhoPendente, escolherPacotinho,
+  pacotinhoPendente, escolherPacotinho, mudo,
 }) {
   const { resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie } = resumo;
   const heroSrc = HERO_ART[meuResultado];
+
+  // Som de celebração (Fase 3 item 10): torcida real pra campeão/acesso —
+  // o momento mais alto da temporada. "Permaneceu"/"desceu" ficam em
+  // silêncio, mesma sobriedade já aplicada ao hero visual (F1b).
+  useEffect(() => {
+    if (minhaPosicao === 1 || meuResultado === "subiu") tocarSfx("/sfx/torcida-gol.mp3", mudo, 0.8);
+  }, []); // eslint-disable-line
 
   const compartilhar = async () => {
     // gerarCardTemporada é async (carrega a moldura oficial antes de desenhar).
@@ -119,7 +128,7 @@ export default function FimDeTemporada({
           ))}
         </div>
 
-        <Pacotinho pacotinhoPendente={pacotinhoPendente} escolherPacotinho={escolherPacotinho} />
+        <Pacotinho pacotinhoPendente={pacotinhoPendente} escolherPacotinho={escolherPacotinho} mudo={mudo} />
 
         <button onClick={proximaTemporadaCarreira} className="w-full rounded-xl py-3.5 font-bold mt-4" style={botaoPrimarioGlow}>
           Próxima temporada →
