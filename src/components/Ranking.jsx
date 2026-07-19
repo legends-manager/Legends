@@ -26,9 +26,10 @@ import { SERIES } from "../data/series";
 import { conquistaPorId } from "../storage/conquistas";
 import {
   cores, superficie, superficie2, botaoSecundario, botaoPrimario, eyebrowLime,
-  paginaGrafite, conteudoAcimaDaDecor, corTier, glowTier,
+  paginaGrafite, conteudoAcimaDaDecor, corTier,
 } from "./entry-hub/estilos";
 import Crest from "./Crest";
+import InsigniaBadge from "./InsigniaBadge";
 import { PolishDecor } from "./entry-hub/decor";
 
 const RESULTADO_LABEL = { subiu: "Subiu", desceu: "Desceu", manteve: "Permaneceu" };
@@ -113,10 +114,10 @@ function PerfilTecnico({ linha, onFechar }) {
               {maisRaras(insignias.map((i) => i.conquista_id)).map((c) => (
                 <div
                   key={c.id}
-                  className="rounded-xl px-2.5 py-1.5 flex items-center gap-1.5 text-xs"
-                  style={{ ...superficie2, border: `1px solid ${corTier[c.tier]}`, ...glowTier(c.tier) }}
+                  className="rounded-xl pl-1.5 pr-2.5 py-1.5 flex items-center gap-1.5 text-xs"
+                  style={{ ...superficie2, border: `1px solid ${corTier[c.tier]}` }}
                 >
-                  <span className="text-base leading-none">{c.emoji}</span>
+                  <InsigniaBadge tier={c.tier} emoji={c.emoji} size={22} />
                   <span className="font-bold">{c.titulo}</span>
                 </div>
               ))}

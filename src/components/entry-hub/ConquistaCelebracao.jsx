@@ -8,7 +8,8 @@ import { useEffect } from "react";
 import { conquistaPorId, carregarConquistas } from "../../storage/conquistas";
 import { gerarCardInsignia, compartilharCard } from "../../share/cards";
 import { tocarSomTier } from "../../storage/audio";
-import { cores, corTier, glowTier, botaoPrimario, botaoSecundario } from "./estilos";
+import InsigniaBadge from "../InsigniaBadge";
+import { cores, corTier, botaoPrimario, botaoSecundario } from "./estilos";
 
 const TIER_LABEL = { comum: "Comum", raro: "Raro", epico: "Épico", lendario: "Lendário" };
 
@@ -34,25 +35,28 @@ export default function ConquistaCelebracao({ conquistaId, onFechar, mudo }) {
     compartilharCard(canvas, `legends-insignia-${c.id}`, "Insígnia desbloqueada — Legends Manager");
   };
 
+  // Fundo de arena (Fase 3, GPT Image) só nos tiers altos — comum/raro
+  // ficam no scrim liso de sempre, energia reservada pros momentos raros.
+  const temFundo = c.tier === "epico" || c.tier === "lendario";
+
   return (
     <div
       className="fixed inset-0 z-[60] flex items-center justify-center px-6"
-      style={{ background: "rgba(10,12,14,0.92)" }}
+      style={{
+        background: temFundo
+          ? `linear-gradient(rgba(10,12,14,0.75), rgba(10,12,14,0.9)), url(/fundos/celebracao-poster.webp)`
+          : "rgba(10,12,14,0.92)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+      }}
       onClick={onFechar}
       role="button"
       tabIndex={0}
     >
       <div className="text-center" style={{ maxWidth: 320 }}>
         <div style={{ ...eyebrowCentro, color: cor }}>Insígnia desbloqueada</div>
-        <div
-          className="mx-auto mt-5 flex items-center justify-center"
-          style={{
-            width: 128, height: 128, borderRadius: 999,
-            background: cores.bgSurface2, border: `3px solid ${cor}`,
-            fontSize: 56, ...glowTier(c.tier),
-          }}
-        >
-          {c.emoji}
+        <div className="mx-auto mt-5" style={{ width: 128 }}>
+          <InsigniaBadge tier={c.tier} emoji={c.emoji} size={128} />
         </div>
         <div className="mt-5 font-black italic" style={{ fontSize: 26, color: cores.textPrimary }}>
           {c.titulo}

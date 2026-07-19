@@ -60,6 +60,11 @@ export default function FimDeTemporada({
 }) {
   const { resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie } = resumo;
   const heroSrc = HERO_ART[meuResultado];
+  // Campeão (Fase 3, mascote GPT Image): ouro é reservado SÓ pra conquista
+  // de verdade (mesma regra do resto do app) — a mascote em ouro entra
+  // exatamente aqui, o momento mais alto da temporada, sobrepondo o hero
+  // padrão de "subiu" (ser campeão já implica subir, quando não está na A).
+  const campeao = minhaPosicao === 1;
 
   // Som de celebração (Fase 3 item 10): torcida real pra campeão/acesso —
   // o momento mais alto da temporada. "Permaneceu"/"desceu" ficam em
@@ -90,7 +95,14 @@ export default function FimDeTemporada({
           className="rounded-2xl p-6 mt-2 text-center"
           style={{ ...superficie, border: `2px solid ${RESULTADO_COR[meuResultado]}` }}
         >
-          {heroSrc ? (
+          {campeao ? (
+            <div
+              className="overflow-hidden mx-auto"
+              style={{ width: 160, height: 200, borderRadius: 16, border: `3px solid ${cores.gold}`, boxShadow: "0 0 40px rgba(255,196,0,0.5)" }}
+            >
+              <img src="/mascote/comemorando-ouro.webp" alt="" className="w-full h-full block" style={{ objectFit: "cover", objectPosition: "50% 15%" }} />
+            </div>
+          ) : heroSrc ? (
             <div
               className="overflow-hidden mx-auto"
               style={{ width: 128, height: 128, borderRadius: 999, border: `3px solid ${RESULTADO_COR[meuResultado]}`, ...glowLime(32) }}

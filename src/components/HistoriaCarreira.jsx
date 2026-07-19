@@ -10,6 +10,7 @@
 // storage/conquistas.js).
 import { SERIES } from "../data/series";
 import { CONQUISTAS, carregarConquistas } from "../storage/conquistas";
+import InsigniaBadge from "./InsigniaBadge";
 import {
   cores, superficie, botaoSecundario, eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
   corTier, glowTier,
@@ -67,7 +68,11 @@ export default function HistoriaCarreira({ mundo, setTela }) {
                   style={tem ? { ...superficie, border: `1px solid ${cor}`, ...glowTier(c.tier) } : { ...superficie, opacity: 0.4 }}
                 >
                   <div className="flex items-center gap-1.5">
-                    <span className="text-lg leading-none">{tem ? c.emoji : "?"}</span>
+                    {tem ? (
+                      <InsigniaBadge tier={c.tier} emoji={c.emoji} size={28} />
+                    ) : (
+                      <span className="text-lg leading-none">?</span>
+                    )}
                     <span className="text-sm font-bold leading-tight">{c.titulo}</span>
                   </div>
                   <div className="text-xs mt-1" style={{ color: cores.textSecondary }}>{c.desc}</div>

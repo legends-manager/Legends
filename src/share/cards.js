@@ -35,6 +35,21 @@ function carregarMoldura() {
   return _molduraPromise;
 }
 
+// Loader genérico com cache (Fase 3, artes do GPT Image: insígnias/
+// mascote) — mesmo padrão do carregarMoldura, generalizado pra qualquer src.
+const _imagens = new Map();
+function carregarImagem(src) {
+  if (!_imagens.has(src)) {
+    _imagens.set(src, new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = src;
+    }));
+  }
+  return _imagens.get(src);
+}
+
 async function novoCanvas() {
   const c = document.createElement("canvas");
   c.width = W; c.height = H;
@@ -149,11 +164,16 @@ export async function gerarCardTemporada({ meuTime, nomeTec, temporada, serieLab
   return c;
 }
 
-// Card de insígnia desbloqueada (F-ideias jul/2026): emoji da conquista em
-// círculo com a cor do tier + título + descrição — o "tier lendário
-// circulando no grupo é propaganda grátis". Mesma moldura da onça.
+// Card de insígnia desbloqueada (F-ideias jul/2026): medalhão da conquista
+// (arte real do GPT Image desde jul/2026, cai pro emoji em círculo se a
+// imagem não carregar) + título + descrição — o "tier lendário circulando
+// no grupo é propaganda grátis". Mesma moldura da onça.
 const COR_TIER_CARD = { comum: "#8793A1", raro: LIME, epico: "#E4FF54", lendario: OURO };
 const TIER_LABEL_CARD = { comum: "COMUM", raro: "RARO", epico: "ÉPICO", lendario: "LENDÁRIO" };
+const IMG_TIER_CARD = {
+  comum: "/insignias/comum.webp", raro: "/insignias/raro.webp",
+  epico: "/insignias/epico.webp", lendario: "/insignias/lendario.webp",
+};
 
 export async function gerarCardInsignia({ emoji, titulo, desc, tier, nomeTec, clube }) {
   const { c, ctx } = await novoCanvas();
@@ -163,12 +183,19 @@ export async function gerarCardInsignia({ emoji, titulo, desc, tier, nomeTec, cl
 
   // Medalhão central com a cor do tier (glow proporcional à raridade).
   const raioGlow = tier === "lendario" ? 60 : tier === "epico" ? 40 : 18;
-  comGlow(ctx, cor, raioGlow, () => {
-    ctx.fillStyle = SURFACE;
-    ctx.beginPath(); ctx.arc(W / 2, 500, 150, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = cor; ctx.lineWidth = 10; ctx.stroke();
-  });
-  texto(ctx, emoji, W / 2, 555, { tam: 150 });
+  const badge = await carregarImagem(IMG_TIER_CARD[tier]);
+  if (badge) {
+    comGlow(ctx, cor, raioGlow, () => {
+      ctx.drawImage(badge, W / 2 - 170, 350, 340, 340);
+    });
+  } else {
+    comGlow(ctx, cor, raioGlow, () => {
+      ctx.fillStyle = SURFACE;
+      ctx.beginPath(); ctx.arc(W / 2, 500, 150, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = cor; ctx.lineWidth = 10; ctx.stroke();
+    });
+    texto(ctx, emoji, W / 2, 555, { tam: 150 });
+  }
 
   texto(ctx, titulo, W / 2, 780, { tam: 72, peso: "900", italico: true });
   comGlow(ctx, cor, 20, () => {
