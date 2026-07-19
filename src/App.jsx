@@ -39,6 +39,7 @@ import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz
 import { bonusDaSemana, semanaTematica } from "./engine/semana";
 import { publicarTemporada, publicarProgresso, vincularCarreira, publicarConquistas } from "./storage/publicarOnline";
 import { chaveVinculo, deveExecutarVinculoAutomatico, deveSincronizarProgresso } from "./storage/sincronizacaoRegras";
+import { tocarSfx as tocarSfxCompartilhado } from "./storage/audio";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -117,14 +118,9 @@ export default function App() {
 
   // Efeitos sonoros reais (ElevenLabs, jul/2026 — substituem o "beep"
   // sintetizado anterior). Arquivos em public/sfx/, respeitam o botão de mudo.
-  const tocarSfx = (caminho, volume = 1) => {
-    if (mudo) return;
-    try {
-      const a = new Audio(caminho);
-      a.volume = volume;
-      a.play().catch(() => {}); // autoplay bloqueado em algum navegador: silenciosamente ignora
-    } catch (e) { /* sem áudio, sem drama */ }
-  };
+  // Delega pra storage/audio.js (Fase 3 item 10) — mesmo contrato de sempre,
+  // só compartilhado com telas que não têm `mudo` em escopo local.
+  const tocarSfx = (caminho, volume = 1) => tocarSfxCompartilhado(caminho, mudo, volume);
 
   // Som de gol: torcida vibrando + vibração tátil (independente do mudo —
   // mudo silencia som, não tato). Padrão curto "gol-gol": ignorado por
@@ -889,6 +885,7 @@ export default function App() {
             proximaTemporadaCarreira={proximaTemporadaCarreira}
             pacotinhoPendente={mundo?.pacotinhoPendente || null}
             escolherPacotinho={escolherPacotinho}
+            mudo={mudo}
           />
         )}
       </div>
@@ -914,6 +911,7 @@ export default function App() {
         <ConquistaCelebracao
           conquistaId={celebracoesPendentes[0]}
           onFechar={() => setCelebracoesPendentes((fila) => fila.slice(1))}
+          mudo={mudo}
         />
       )}
     </div>
