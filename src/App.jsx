@@ -54,6 +54,7 @@ import Artilharia from "./components/Artilharia";
 import FimDeTemporada from "./components/FimDeTemporada";
 import QuizModal from "./components/QuizModal";
 import TelaCopa from "./components/TelaCopa";
+import TelaUniforme from "./components/TelaUniforme";
 import Ranking from "./components/Ranking";
 import BottomNav from "./components/BottomNav";
 import { cores } from "./components/entry-hub/estilos";
@@ -778,7 +779,7 @@ export default function App() {
   // "inicio" entra na lista (Task 05.1H): com S vivo, a capa vira a Central
   // da Carreira (Figma 05.1) e mantém o BottomNav com "Início" ativo. Sem S
   // (Entry/onboarding), mostrarNav já é falso por !!S — nada muda lá.
-  const TELAS_COM_NAV = ["inicio", "escalacao", "mercado", "tabela", "artilharia", "copa", "ranking", "historiaCarreira", "historiaLiga"];
+  const TELAS_COM_NAV = ["inicio", "escalacao", "mercado", "tabela", "artilharia", "copa", "ranking", "historiaCarreira", "historiaLiga", "uniforme"];
   const mostrarNav = !!S && TELAS_COM_NAV.includes(tela);
 
   return (
@@ -842,6 +843,7 @@ export default function App() {
         {tela === "copa" && S && S.copa && (
           <TelaCopa S={S} meuTime={meuTime} jogarPartidaCopa={jogarPartidaCopa} setTela={setTela} />
         )}
+        {tela === "uniforme" && S && <TelaUniforme meuTime={meuTime} setTela={setTela} />}
         {tela === "aoVivo" && S && (
           <PartidaAoVivo S={S} jogo={jogo} minuto={minuto} banner={banner} mudo={mudo} setMudo={setMudo} />
         )}

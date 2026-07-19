@@ -118,7 +118,9 @@ export default function Escalacao({
       <div style={conteudoAcimaDaDecor}>
         <span style={eyebrowLime}>Rodada {S.rodada + 1} de {S.calendario.length}</span>
         <div className="flex items-center gap-2 mt-2">
-          <Crest time={meuTime} />
+          <button onClick={() => setTela("uniforme")} className="active:opacity-70" aria-label="Ver uniforme">
+            <Crest time={meuTime} />
+          </button>
           <div className="flex-1">
             <div className="font-black italic">{meuTime}</div>
             <div className="text-xs" style={{ color: cores.textSecondary }}>

@@ -52,6 +52,32 @@ export const CRESTS = {
   "LOUD SC": "/crests/LOU.webp",
 };
 
+// Hex real por classe Tailwind usada em COR (paleta padrão v3) — pro SVG da
+// camisa (Marco: patrocínio de uniforme, jul/2026), que precisa de cor de
+// verdade, não classe utilitária.
+const TAILWIND_HEX = {
+  "bg-blue-600": "#2563eb", "bg-blue-700": "#1d4ed8",
+  "bg-violet-600": "#7c3aed", "bg-violet-700": "#6d28d9",
+  "bg-sky-600": "#0284c7", "bg-sky-700": "#0369a1",
+  "bg-red-600": "#dc2626", "bg-red-700": "#b91c1c",
+  "bg-orange-600": "#ea580c", "bg-orange-700": "#c2410c",
+  "bg-cyan-600": "#0891b2", "bg-cyan-700": "#0e7490",
+  "bg-rose-600": "#e11d48", "bg-rose-700": "#be123c",
+  "bg-emerald-600": "#059669", "bg-emerald-700": "#047857",
+  "bg-slate-500": "#64748b", "bg-slate-700": "#334155",
+  "bg-fuchsia-600": "#c026d3", "bg-fuchsia-700": "#a21caf",
+  "bg-indigo-600": "#4f46e5", "bg-indigo-700": "#4338ca",
+  "bg-amber-600": "#d97706", "bg-amber-700": "#b45309",
+  "bg-stone-500": "#78716c",
+  "bg-teal-600": "#0d9488",
+  "bg-yellow-600": "#ca8a04",
+  "bg-lime-600": "#65a30d",
+  "bg-purple-600": "#9333ea",
+  "bg-pink-600": "#db2777",
+  "bg-gray-600": "#4b5563",
+  "bg-green-600": "#16a34a",
+};
+
 export const COR = {
   // Série C
   "Real União": "bg-blue-600", "Real Elite": "bg-violet-600", "Sereno FC": "bg-sky-600",
@@ -69,3 +95,8 @@ export const COR = {
   "Dibrados FC": "bg-emerald-700", "Dendele FC": "bg-fuchsia-700", "Capim FC": "bg-indigo-700",
   "LOUD SC": "bg-slate-700",
 };
+
+// Cor hex de verdade por time, derivada de COR — pro SVG da camisa.
+export const COR_HEX = Object.fromEntries(
+  Object.entries(COR).map(([time, classe]) => [time, TAILWIND_HEX[classe] || "#39424E"]),
+);
