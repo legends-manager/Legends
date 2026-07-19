@@ -22,6 +22,12 @@ describe("conquistas — tiers e contexto (Fase 1c)", () => {
     expect(c.tier).toBe("lendario");
   });
 
+  it("inclui as 3 insígnias do patrocinador (Kissassa por série, tier crescente)", () => {
+    expect(conquistaPorId("patrocinio-kissassa-c").tier).toBe("raro");
+    expect(conquistaPorId("patrocinio-kissassa-b").tier).toBe("epico");
+    expect(conquistaPorId("patrocinio-kissassa-a").tier).toBe("lendario");
+  });
+
   it("conquistaPorId encontra qualquer id existente e não quebra em id inexistente", () => {
     expect(conquistaPorId("primeira-vitoria").titulo).toBe("Primeira vitória");
     expect(conquistaPorId("nao-existe")).toBeUndefined();

@@ -69,7 +69,7 @@ export default function HistoriaCarreira({ mundo, setTela }) {
                 >
                   <div className="flex items-center gap-1.5">
                     {tem ? (
-                      <InsigniaBadge tier={c.tier} emoji={c.emoji} size={28} />
+                      <InsigniaBadge tier={c.tier} emoji={c.emoji} size={28} conquistaId={c.id} />
                     ) : (
                       <span className="text-lg leading-none">?</span>
                     )}

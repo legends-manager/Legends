@@ -273,6 +273,14 @@ export default function App() {
     // Artilheiro: o topo de S.art (ainda a temporada corrente) é do meu time.
     const melhorArtilheiro = Object.values(S.art).sort((a, b) => b.g - a.g)[0];
     if (melhorArtilheiro && melhorArtilheiro.time === meuTime) novasConquistas.push("artilheiro-temporada");
+    // Insígnias do patrocinador (Delícias da Ana, jul/2026): campeão com o
+    // Kissassa — o time do dono do patrocinador — em cada série. minhaSerie
+    // é a série QUE ACABOU DE FECHAR (a mesma usada acima pra "da-c-ao-topo").
+    if (minhaPosicao === 1 && meuTime === "Kissassa") {
+      if (minhaSerie === "C") novasConquistas.push("patrocinio-kissassa-c");
+      if (minhaSerie === "B") novasConquistas.push("patrocinio-kissassa-b");
+      if (minhaSerie === "A") novasConquistas.push("patrocinio-kissassa-a");
+    }
     desbloquearComCelebracao(novasConquistas, { clube: meuTime, temporada: mundo.temporada });
     salvarMundo(mundo);
     // Ranking online (Fase 1, spec-fase1-fundacao-online.md): melhor esforço,

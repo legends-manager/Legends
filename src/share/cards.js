@@ -174,8 +174,16 @@ const IMG_TIER_CARD = {
   comum: "/insignias/comum.webp", raro: "/insignias/raro.webp",
   epico: "/insignias/epico.webp", lendario: "/insignias/lendario.webp",
 };
+// Insígnias do patrocinador Delícias da Ana (jul/2026) têm arte própria,
+// com a marca desenhada na imagem — prioridade sobre a arte genérica por
+// tier (mesmo critério do InsigniaBadge.jsx).
+const IMG_CONQUISTA_CARD = {
+  "patrocinio-kissassa-c": "/patrocinio/normal.webp",
+  "patrocinio-kissassa-b": "/patrocinio/platina.webp",
+  "patrocinio-kissassa-a": "/patrocinio/ouro.webp",
+};
 
-export async function gerarCardInsignia({ emoji, titulo, desc, tier, nomeTec, clube }) {
+export async function gerarCardInsignia({ emoji, titulo, desc, tier, nomeTec, clube, conquistaId }) {
   const { c, ctx } = await novoCanvas();
   const cor = COR_TIER_CARD[tier] || LIME;
   cabecalho(ctx, "Insígnia desbloqueada");
@@ -183,7 +191,7 @@ export async function gerarCardInsignia({ emoji, titulo, desc, tier, nomeTec, cl
 
   // Medalhão central com a cor do tier (glow proporcional à raridade).
   const raioGlow = tier === "lendario" ? 60 : tier === "epico" ? 40 : 18;
-  const badge = await carregarImagem(IMG_TIER_CARD[tier]);
+  const badge = await carregarImagem(IMG_CONQUISTA_CARD[conquistaId] || IMG_TIER_CARD[tier]);
   if (badge) {
     comGlow(ctx, cor, raioGlow, () => {
       ctx.drawImage(badge, W / 2 - 170, 350, 340, 340);

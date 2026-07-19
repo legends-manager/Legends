@@ -30,7 +30,7 @@ export default function ConquistaCelebracao({ conquistaId, onFechar, mudo }) {
     e.stopPropagation();
     const contexto = carregarConquistas()[conquistaId] || {};
     const canvas = await gerarCardInsignia({
-      emoji: c.emoji, titulo: c.titulo, desc: c.desc, tier: c.tier, clube: contexto.clube,
+      emoji: c.emoji, titulo: c.titulo, desc: c.desc, tier: c.tier, clube: contexto.clube, conquistaId: c.id,
     });
     compartilharCard(canvas, `legends-insignia-${c.id}`, "Insígnia desbloqueada — Legends Manager");
   };
@@ -56,7 +56,7 @@ export default function ConquistaCelebracao({ conquistaId, onFechar, mudo }) {
       <div className="text-center" style={{ maxWidth: 320 }}>
         <div style={{ ...eyebrowCentro, color: cor }}>Insígnia desbloqueada</div>
         <div className="mx-auto mt-5" style={{ width: 128 }}>
-          <InsigniaBadge tier={c.tier} emoji={c.emoji} size={128} />
+          <InsigniaBadge tier={c.tier} emoji={c.emoji} size={128} conquistaId={c.id} />
         </div>
         <div className="mt-5 font-black italic" style={{ fontSize: 26, color: cores.textPrimary }}>
           {c.titulo}
