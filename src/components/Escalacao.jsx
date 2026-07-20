@@ -192,9 +192,17 @@ export default function Escalacao({
         {(() => {
           const p = provocacaoDoTecnico(adv, meuTime, S.rodada);
           return p ? (
-            <div className="rounded-xl px-3 py-2 mt-2 text-xs" style={superficie}>
-              <span style={{ color: cores.textMuted }}>{p.tecnico} · técnico do {adv} ({p.estilo})</span>
-              <div className="mt-0.5 italic" style={{ color: cores.textSecondary }}>{p.frase}</div>
+            <div className="rounded-xl px-3 py-2 mt-2 text-xs flex items-center gap-2" style={superficie}>
+              <img
+                src="/mascote/confiante-lime.webp"
+                alt=""
+                className="mascote-idle shrink-0"
+                style={{ width: 34, height: 34, borderRadius: 999, objectFit: "cover", objectPosition: "50% 12%" }}
+              />
+              <div className="min-w-0">
+                <span style={{ color: cores.textMuted }}>{p.tecnico} · técnico do {adv} ({p.estilo})</span>
+                <div className="mt-0.5 italic" style={{ color: cores.textSecondary }}>{p.frase}</div>
+              </div>
             </div>
           ) : null;
         })()}

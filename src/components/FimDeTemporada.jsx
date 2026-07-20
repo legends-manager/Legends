@@ -97,7 +97,7 @@ export default function FimDeTemporada({
         >
           {campeao ? (
             <div
-              className="overflow-hidden mx-auto"
+              className="overflow-hidden mx-auto mascote-comemorando"
               style={{ width: 160, height: 200, borderRadius: 16, border: `3px solid ${cores.gold}`, boxShadow: "0 0 40px rgba(255,196,0,0.5)" }}
             >
               <img src="/mascote/comemorando-ouro.webp" alt="" className="w-full h-full block" style={{ objectFit: "cover", objectPosition: "50% 15%" }} />
