@@ -16,8 +16,8 @@ const BASE_SRC = "/camisa/camisa-base.webp";
 // pra essa imagem específica; se a base mudar, ajustar aqui também.
 const LAYOUT = {
   crest: { x: 205, y: 205, w: 60 },
-  fornecedor: { x: 415, y: 215, w: 46 },
-  master: { x: 258, y: 300, w: 130, h: 100 },
+  fornecedor: { x: 412, y: 218, w: 50 },
+  master: { x: 265, y: 305, w: 112, h: 86 },
 };
 
 let _basePromise = null;
@@ -39,6 +39,53 @@ function carregarImg(src) {
     img.onerror = () => resolve(null);
     img.src = src;
   });
+}
+
+// As artes de escudo/patrocinador vêm com fundo preto OPACO (não transparente
+// de verdade — hasAlpha: false), então desenhá-las cruas na camisa parece um
+// adesivo quadrado colado por cima. Aqui elas viram um "patch" de verdade:
+// recorte (círculo pro escudo, cantos arredondados pros patrocinadores) +
+// aro claro fino, igual bordado/emblema costurado numa camisa de verdade.
+function desenharPatch(ctx, img, x, y, w, h, { circulo = false, raio = 10 } = {}) {
+  ctx.save();
+  ctx.shadowColor = "rgba(0,0,0,0.3)";
+  ctx.shadowBlur = 5;
+  ctx.shadowOffsetY = 1.5;
+  ctx.beginPath();
+  if (circulo) {
+    const r = Math.min(w, h) / 2;
+    ctx.arc(x + w / 2, y + h / 2, r, 0, Math.PI * 2);
+  } else {
+    ctx.roundRect(x, y, w, h, raio);
+  }
+  ctx.fillStyle = "#fff";
+  ctx.fill();
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath();
+  if (circulo) {
+    const r = Math.min(w, h) / 2;
+    ctx.arc(x + w / 2, y + h / 2, r, 0, Math.PI * 2);
+  } else {
+    ctx.roundRect(x, y, w, h, raio);
+  }
+  ctx.clip();
+  ctx.drawImage(img, x, y, w, h);
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,0.9)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (circulo) {
+    const r = Math.min(w, h) / 2 - 1;
+    ctx.arc(x + w / 2, y + h / 2, r, 0, Math.PI * 2);
+  } else {
+    ctx.roundRect(x + 1, y + 1, w - 2, h - 2, raio);
+  }
+  ctx.stroke();
+  ctx.restore();
 }
 
 export default function Camisa({ time, largura = 260 }) {
@@ -82,27 +129,16 @@ export default function Camisa({ time, largura = 260 }) {
 
       if (crestImg) {
         const { x, y, w } = LAYOUT.crest;
-        const h = w * (crestImg.height / crestImg.width);
-        ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.45)";
-        ctx.shadowBlur = 4;
-        ctx.drawImage(crestImg, x, y, w, h);
-        ctx.restore();
+        desenharPatch(ctx, crestImg, x, y, w, w, { circulo: true });
       }
       if (fornecedorImg) {
         const { x, y, w } = LAYOUT.fornecedor;
         const h = w * (fornecedorImg.height / fornecedorImg.width);
-        ctx.globalAlpha = 0.95;
-        ctx.drawImage(fornecedorImg, x, y, w, h);
-        ctx.globalAlpha = 1;
+        desenharPatch(ctx, fornecedorImg, x, y, w, h, { raio: 6 });
       }
       if (masterImg) {
         const { x, y, w, h } = LAYOUT.master;
-        ctx.save();
-        ctx.shadowColor = "rgba(0,0,0,0.45)";
-        ctx.shadowBlur = 5;
-        ctx.drawImage(masterImg, x, y, w, h);
-        ctx.restore();
+        desenharPatch(ctx, masterImg, x, y, w, h, { raio: 12 });
       }
       setPronto(true);
     })();
