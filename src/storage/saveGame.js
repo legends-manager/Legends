@@ -94,6 +94,9 @@ export function salvarJogo({ nomeTecnico, timeEscolhido, avatarId, S }) {
     outrasSeries: S.outrasSeries,
     // Copa cruzando as 3 séries: chaves + fase atual + campeão (se já saiu).
     copa: S.copa,
+    // Formação tática por time (data/formacoes.js) — pedido do Felyp,
+    // jul/2026: precisa persistir pra não voltar pro padrão a cada reload.
+    formacao: S.formacao || {},
     ultimaAtualizacao: new Date().toISOString(),
   };
   try {
@@ -201,6 +204,10 @@ export function reconstruirS(save, mundo = null) {
     // novo (não tem como recuperar a chave original) — só afeta quem já
     // tinha uma temporada em andamento antes desta feature existir.
     copa: save.copa || iniciarCopa(TODOS_OS_TIMES),
+    // Formação tática por time (data/formacoes.js): save antigo sem o campo
+    // nasce vazio — engine/simulador.js `melhores()` já trata ausência como
+    // FORMACAO_PADRAO, então nada quebra.
+    formacao: save.formacao || {},
   };
 }
 

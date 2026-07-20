@@ -7,6 +7,7 @@ import { SERIES, SERIE_PADRAO, ELENCOS_GLOBAIS, ORDEM_SERIES } from "../data/ser
 import { ORCAMENTO_INICIAL, mercadoInicial } from "./mercado";
 import { torcidaInicial } from "./torcida";
 import { timesDaSerie } from "./mundo";
+import { FORMACOES, FORMACAO_PADRAO } from "../data/formacoes";
 
 // ---------------- utilidades ----------------
 export const ri = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
@@ -119,6 +120,7 @@ export function novaTemporada(serieId = SERIE_PADRAO, times = null, orcamentoAnt
     serie: serieId, elencos, mult, fase, tabela, art: {},
     calendario: gerarCalendario(timesDaTemporada), rodada: 0, orcamento, mercado,
     torcida, torcidaRef, formaRecente, comentariosTorcida: [], outrasSeries,
+    formacao: {}, // formação tática por time (data/formacoes.js) — vazio = FORMACAO_PADRAO
   };
 }
 
@@ -195,10 +197,32 @@ export function sincronizarSerieParalela(estado, ateRodada) {
 }
 
 // ---------------- escalações ----------------
-export const melhores = (elenco) => {
+// `formacaoId` define quantos de cada posição (DEF/MEI/ATA) entram nos 6 de
+// linha (data/formacoes.js). Times reais têm elenco de tamanho variável
+// (11–18) e a distribuição por posição não é garantida — se faltar gente
+// numa posição pra cumprir a formação, sobra vaga que é preenchida com o
+// melhor jogador disponível de qualquer outra posição, pra nunca escalar
+// menos de 6 de linha por causa de um elenco desbalanceado.
+export const melhores = (elenco, formacaoId = FORMACAO_PADRAO) => {
+  const forma = FORMACOES[formacaoId] || FORMACOES[FORMACAO_PADRAO];
   const gks = elenco.filter((j) => j.pos === "GOL").sort((a, b) => b.attr - a.attr);
-  const linha = elenco.filter((j) => j.pos !== "GOL").sort((a, b) => b.attr - a.attr);
-  return [gks[0], ...linha.slice(0, 6)];
+  const porPos = { DEF: [], MEI: [], ATA: [] };
+  elenco.filter((j) => j.pos !== "GOL").forEach((j) => { if (porPos[j.pos]) porPos[j.pos].push(j); });
+  Object.values(porPos).forEach((lista) => lista.sort((a, b) => b.attr - a.attr));
+
+  const titulares = [];
+  const usados = new Set();
+  ["DEF", "MEI", "ATA"].forEach((pos) => {
+    const qtd = forma[pos] || 0;
+    porPos[pos].slice(0, qtd).forEach((j) => { titulares.push(j); usados.add(j.id); });
+  });
+  if (titulares.length < 6) {
+    const resto = elenco
+      .filter((j) => j.pos !== "GOL" && !usados.has(j.id))
+      .sort((a, b) => b.attr - a.attr);
+    titulares.push(...resto.slice(0, 6 - titulares.length));
+  }
+  return [gks[0], ...titulares.slice(0, 6)];
 };
 
 export const escalacaoIA = (elenco) => {

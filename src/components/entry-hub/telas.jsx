@@ -5,7 +5,7 @@
 // TelaInicial/App (callbacks existentes); nenhum acesso a storage, rede ou
 // motor além de leituras de dados já carregados.
 import { useState, useMemo } from "react";
-import { SERIES, ORDEM_SERIES } from "../../data/series";
+import { SERIES, ORDEM_SERIES, TODOS_OS_TIMES } from "../../data/series";
 import { SIGLA } from "../../data/times";
 import { totalRodadas } from "../../engine/calendario";
 import { ORCAMENTO_INICIAL } from "../../engine/mercado";
@@ -93,10 +93,10 @@ export function EntryNoCareer({
 
         <div className="mt-3 p-4 text-center" style={{ ...superficie, background: cores.navy }}>
           <div style={{ fontSize: 18, fontWeight: 900, fontStyle: "italic" }}>
-            {serieC.times.length} CLUBES REAIS
+            {TODOS_OS_TIMES.length} CLUBES REAIS
           </div>
           <div className="mt-1" style={{ color: cores.textSecondary, fontSize: 13 }}>
-            {rodadas} rodadas · pontos corridos · ida e volta
+            Séries A, B e C · {rodadas} rodadas na Série C · pontos corridos, ida e volta
           </div>
         </div>
 

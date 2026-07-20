@@ -8,6 +8,7 @@ import { setinhaValor } from "../engine/mercado";
 import { confrontoPendenteDoJogador } from "../engine/copa";
 import { semanaTematica } from "../engine/semana";
 import { provocacaoDoTecnico } from "../data/tecnicos";
+import { ORDEM_FORMACOES } from "../data/formacoes";
 import { AvatarTecnico } from "./ui";
 import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
@@ -74,6 +75,37 @@ function Campinho({ escalados }) {
   );
 }
 
+// Seletor de formação (pedido do Felyp, jul/2026): troca o shape DEF/MEI/ATA
+// dos 6 de linha. A escolha já reaplica os melhores nomes pra essa formação
+// (App.jsx: escolherFormacao) e fica salva automaticamente — sem botão
+// separado de "salvar", igual ao resto do jogo (save automático).
+function FormacaoSeletor({ formacaoAtual, escolherFormacao }) {
+  return (
+    <div className="mt-3">
+      <span style={eyebrowLime}>Formação</span>
+      <div className="mt-1 grid grid-cols-3 gap-1.5">
+        {ORDEM_FORMACOES.map((id) => {
+          const ativa = id === formacaoAtual;
+          return (
+            <button
+              key={id}
+              onClick={() => escolherFormacao(id)}
+              className="rounded-lg py-2 text-xs font-bold active:opacity-70"
+              style={{
+                ...superficie2,
+                border: `1px solid ${ativa ? cores.lime : cores.steel}`,
+                color: ativa ? cores.lime : cores.textPrimary,
+              }}
+            >
+              {id}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)" }}>
@@ -100,6 +132,7 @@ function ModalNomes({ meuTime, textoNomes, setTextoNomes, onCancel, onSave }) {
 
 export default function Escalacao({
   S, meuTime, nomeTec, avatarId, escolhidos, toggleJogador, escSelecionada, escValida,
+  formacaoAtual, escolherFormacao,
   jogarAoVivo, rodadaRapida, confronto, setTela,
   modalNomes, setModalNomes, textoNomes, setTextoNomes, salvarNomes,
 }) {
@@ -198,6 +231,8 @@ export default function Escalacao({
         </div>
 
         <Campinho escalados={escSelecionada()} />
+
+        <FormacaoSeletor formacaoAtual={formacaoAtual} escolherFormacao={escolherFormacao} />
 
         {grupos.map((gp) => (
           <div key={gp} className="mt-4">

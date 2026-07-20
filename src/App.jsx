@@ -30,6 +30,7 @@ import {
 import { abrirPacotinho } from "./engine/pacotinhos";
 import { SIGLA } from "./data/times";
 import { SERIE_PADRAO, SERIES, ORDEM_SERIES, TODOS_OS_TIMES } from "./data/series";
+import { FORMACOES, FORMACAO_PADRAO } from "./data/formacoes";
 import {
   carregarSave, reconstruirS, salvarJogo, localStorageDisponivel, limparSave,
   carregarMundo, salvarMundo, migrarParaMundoSeNecessario, limparMundo,
@@ -453,7 +454,20 @@ export default function App() {
   };
 
   const prepararEscalacao = (time, S2) => {
-    setEscolhidos(melhores(S2.elencos[time]).map((j) => j.id));
+    setEscolhidos(melhores(S2.elencos[time], S2.formacao?.[time]).map((j) => j.id));
+  };
+
+  // Formação tática (pedido do Felyp, jul/2026): troca o shape DEF/MEI/ATA
+  // dos 6 de linha e já reaplica "melhores" pra essa formação, preenchendo
+  // a escalação de novo. Persiste em S.formacao (por time) e salva na hora
+  // — mesmo padrão automático do resto do jogo (decisão travada 13), sem
+  // precisar de um botão "Salvar" à parte.
+  const escolherFormacao = (id) => {
+    if (!S.formacao) S.formacao = {};
+    S.formacao[meuTime] = id;
+    setEscolhidos(melhores(S.elencos[meuTime], id).map((j) => j.id));
+    salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
+    rerender();
   };
 
   // Chamado pelo botão "Próxima rodada" da Tabela: se a janela do meio acabou
@@ -496,7 +510,20 @@ export default function App() {
     if (j.pos === "GOL") {
       const semGks = escolhidos.filter((id) => !(S.elencos[meuTime].find((x) => x.id === id).pos === "GOL"));
       setEscolhidos([...semGks, j.id]);
-    } else if (e.filter((x) => x.pos !== "GOL").length < 6) {
+      return;
+    }
+    const linha = e.filter((x) => x.pos !== "GOL");
+    if (linha.length >= 6) return;
+    // Respeita o teto por posição da formação escolhida (data/formacoes.js),
+    // mas nunca trava a escalação: se o elenco não tiver gente suficiente
+    // numa posição pra cumprir a formação e ainda sobrar vaga de linha,
+    // libera escalar de qualquer posição mesmo assim.
+    const forma = FORMACOES[S.formacao?.[meuTime]] || FORMACOES[FORMACAO_PADRAO];
+    const naPosicao = linha.filter((x) => x.pos === j.pos).length;
+    const semVagaOficialEmNenhumaPosicao = ["DEF", "MEI", "ATA"].every(
+      (pos) => linha.filter((x) => x.pos === pos).length >= (forma[pos] || 0)
+    );
+    if (naPosicao < (forma[j.pos] || 0) || semVagaOficialEmNenhumaPosicao) {
       setEscolhidos([...escolhidos, j.id]);
     }
   };
@@ -829,6 +856,8 @@ export default function App() {
             toggleJogador={toggleJogador}
             escSelecionada={escSelecionada}
             escValida={escValida}
+            formacaoAtual={S.formacao?.[meuTime] || FORMACAO_PADRAO}
+            escolherFormacao={escolherFormacao}
             jogarAoVivo={jogarAoVivo}
             rodadaRapida={rodadaRapida}
             confronto={confronto}
