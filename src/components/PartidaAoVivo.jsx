@@ -17,34 +17,9 @@ import {
   conteudoAcimaDaDecor, glowLime,
 } from "./entry-hub/estilos";
 import Crest from "./Crest";
+import Cenario from "./Cenario";
 
 const siglaDe = (time) => SIGLA[time] || time.slice(0, 3).toUpperCase();
-
-// Camada de cenário: arquibancada noturna fixa atrás de tudo (parallax de
-// viewport: o conteúdo rola por cima dela), escurecida por scrim pra AA de
-// contraste (REDESIGN §5.6) + vinheta radial pra focar o olho no placar.
-function CenarioArena() {
-  return (
-    <div className="fixed inset-0 z-0" aria-hidden>
-      <div
-        className="absolute inset-0"
-        style={{
-          backgroundImage: "url(/fundos/celebracao-wide.webp)",
-          backgroundSize: "cover",
-          backgroundPosition: "center 30%",
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{ background: "linear-gradient(rgba(16,19,23,0.82), rgba(16,19,23,0.9) 55%, rgba(16,19,23,0.97))" }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{ background: "radial-gradient(ellipse 90% 60% at 50% 32%, transparent, rgba(10,12,14,0.55))" }}
-      />
-    </div>
-  );
-}
 
 export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo, perigo, shake }) {
   const j = jogo;
@@ -55,7 +30,7 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo, 
 
   return (
     <div className="pt-10" style={{ ...paginaGrafite, background: "transparent" }}>
-      <CenarioArena />
+      <Cenario src="/fundos/celebracao-wide.webp" posicao="center 30%" />
       <div style={conteudoAcimaDaDecor}>
         {/* Faixa de gol: cartão com presença de jogador + glow lime — o
             "momento alto" da tela. */}

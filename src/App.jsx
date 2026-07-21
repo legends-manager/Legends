@@ -56,6 +56,7 @@ import FimDeTemporada from "./components/FimDeTemporada";
 import QuizModal from "./components/QuizModal";
 import TelaCopa from "./components/TelaCopa";
 import TelaUniforme from "./components/TelaUniforme";
+import TelaVs from "./components/TelaVs";
 import Ranking from "./components/Ranking";
 import BottomNav from "./components/BottomNav";
 import { cores } from "./components/entry-hub/estilos";
@@ -570,6 +571,13 @@ export default function App() {
     };
   };
 
+  // Tela VS pré-jogo (C2.1): "Jogar ao vivo" na Escalação para aqui, não
+  // direto na partida — cria o momento de matchup antes do resultado
+  // existir. `jogarAoVivo` (abaixo) é o que a VS de fato dispara ao tocar
+  // "Entrar em campo". "Rápida" (rodadaRapida) continua pulando isso —
+  // simulação sem assistir não precisa de cerimônia.
+  const irParaVs = () => setTela("vs");
+
   const jogarAoVivo = () => {
     const j = montarJogo();
     anunciados.current = 0;
@@ -910,7 +918,7 @@ export default function App() {
             escValida={escValida}
             formacaoAtual={S.formacao?.[meuTime] || FORMACAO_PADRAO}
             escolherFormacao={escolherFormacao}
-            jogarAoVivo={jogarAoVivo}
+            jogarAoVivo={irParaVs}
             rodadaRapida={rodadaRapida}
             confronto={confronto}
             setTela={setTela}
@@ -920,6 +928,9 @@ export default function App() {
             setTextoNomes={setTextoNomes}
             salvarNomes={salvarNomes}
           />
+        )}
+        {tela === "vs" && S && (
+          <TelaVs S={S} meuTime={meuTime} confronto={confronto} iniciarPartida={jogarAoVivo} setTela={setTela} />
         )}
         {tela === "copa" && S && S.copa && (
           <TelaCopa S={S} meuTime={meuTime} jogarPartidaCopa={jogarPartidaCopa} setTela={setTela} />
