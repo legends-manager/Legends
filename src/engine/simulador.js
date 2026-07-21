@@ -240,10 +240,21 @@ export const escalacaoIA = (elenco) => {
 };
 
 // ---------------- simulação de uma metade ----------------
-export function simMetade(S, casa, fora, escCasa, escFora, metade) {
+// `mods` (C2.2, PLANO_GAMEFEEL_AAA §4-B): modulação opcional por time —
+// { [time]: { ataque, defesa } } — usada pela decisão tática de intervalo.
+// Ausente/vazio = comportamento idêntico ao de antes (nenhum jogo antigo
+// muda). `defesa` do adversário multiplica o MEU lambda (defesa boa dele =
+// eu crio menos contra ele) — só faz sentido combinado com o `ataque` do
+// próprio time no cálculo do lambda dele.
+export function simMetade(S, casa, fora, escCasa, escFora, metade, mods = {}) {
   const ini = metade === 1 ? 1 : 26, fim = metade === 1 ? 25 : 50;
   const ev = [];
-  const lam = (t, esc, mando) => 1.7 * S.mult[t] * S.fase[t] * (media(esc) / 64) * (mando ? 1.05 : 1);
+  const lam = (t, esc, mando) => {
+    const adv = t === casa ? fora : casa;
+    const ataqueMod = mods[t]?.ataque ?? 1;
+    const defesaAdvMod = mods[adv]?.defesa ?? 1;
+    return 1.7 * S.mult[t] * S.fase[t] * (media(esc) / 64) * (mando ? 1.05 : 1) * ataqueMod * defesaAdvMod;
+  };
   [{ t: casa, esc: escCasa, mando: true }, { t: fora, esc: escFora, mando: false }].forEach((l) => {
     const g = poisson(lam(l.t, l.esc, l.mando));
     for (let i = 0; i < g; i++) {

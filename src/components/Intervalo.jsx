@@ -4,14 +4,49 @@
 // Reskin "Polish Language v1" (jul/2026): grafite/lime, mesmo fluxo/lógica.
 import { golsDe } from "../engine/simulador";
 import { SIGLA } from "../data/times";
+import { TATICAS, ORDEM_TATICAS } from "../data/taticas";
 import {
   cores, superficie, superficie2, botaoPrimario,
   eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
 import Cenario from "./Cenario";
 
+// Decisão tática de intervalo (C2.2, PLANO_GAMEFEEL_AAA §4-B): primeira
+// agência do jogador DENTRO da partida, além da escalação. Mesmo padrão
+// visual do FormacaoSeletor (Escalacao.jsx) — grid de botões, ativo em lime,
+// e mostra o efeito escolhido embaixo pra decisão ter peso percebido.
+function TaticaSeletor({ tatica, escolherTatica }) {
+  const t = TATICAS[tatica] || TATICAS.equilibrado;
+  return (
+    <div className="mt-4">
+      <span style={eyebrowLime}>2º tempo — instrução tática</span>
+      <div className="mt-1 grid grid-cols-3 gap-1.5">
+        {ORDEM_TATICAS.map((id) => {
+          const ativa = id === tatica;
+          return (
+            <button
+              key={id}
+              onClick={() => escolherTatica(id)}
+              className="rounded-lg py-2 px-1 text-xs font-bold active:opacity-70 leading-tight"
+              style={{
+                ...superficie2,
+                border: `1px solid ${ativa ? cores.lime : cores.steel}`,
+                color: ativa ? cores.lime : cores.textPrimary,
+              }}
+            >
+              {TATICAS[id].label}
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-xs mt-1.5" style={{ color: cores.textSecondary }}>{t.desc}</div>
+    </div>
+  );
+}
+
 export default function Intervalo({
   S, meuTime, jogo, setJogo, selOut, setSelOut, selIn, setSelIn, iniciarSegundoTempo,
+  tatica, escolherTatica,
 }) {
   const j = jogo;
   const emCampo = j.minhaEsc2;
@@ -75,6 +110,8 @@ export default function Intervalo({
             </div>
           </div>
         </div>
+
+        <TaticaSeletor tatica={tatica} escolherTatica={escolherTatica} />
 
         <div className="flex gap-2 mt-4">
           <button
