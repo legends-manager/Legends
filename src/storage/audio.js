@@ -49,9 +49,25 @@ export function tocarDing(mudo) {
   } catch (e) { /* sem áudio, sem drama */ }
 }
 
+// Haptics (C1.5, PLANO_GAMEFEEL_AAA §3.4): vibração tátil onde suportado
+// (Android/Chrome; iOS ignora em silêncio — fallback natural). Decisão de
+// projeto já estabelecida no gol (App.jsx beep): mudo silencia SOM, não
+// tato — vibração é canal separado, então não recebe `mudo`.
+// Padrões: 15 = tick de toggle; [30,50,80] = celebração épico/lendário.
+export function vibrar(padrao) {
+  try {
+    if (navigator.vibrate) navigator.vibrate(padrao);
+  } catch (e) { /* sem vibração, sem drama */ }
+}
+
 // Som por raridade/tier (insígnias e pacotinhos, Fase 3 item 10): comum/raro
-// = ding sintético; épico/lendário = torcida real gravada.
+// = ding sintético; épico/lendário = torcida real gravada + vibração de
+// celebração — quanto mais raro o momento, mais físico o feedback.
 export function tocarSomTier(tier, mudo) {
-  if (tier === "epico" || tier === "lendario") tocarSfx("/sfx/torcida-gol.mp3", mudo, 0.8);
-  else tocarDing(mudo);
+  if (tier === "epico" || tier === "lendario") {
+    tocarSfx("/sfx/torcida-gol.mp3", mudo, 0.8);
+    vibrar([30, 50, 80]);
+  } else {
+    tocarDing(mudo);
+  }
 }

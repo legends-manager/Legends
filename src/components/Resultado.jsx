@@ -30,13 +30,36 @@ function ctaLoginDispensadoRecentemente() {
   } catch (e) { return true; }
 }
 
-export default function Resultado({ resumo, serie, setTela, sessao }) {
+export default function Resultado({ resumo, serie, setTela, sessao, irProximaRodada }) {
   const r = resumo;
   const meu = r.jogos[0];
   const gols = r.evMeu.filter((e) => e.tipo === "gol").sort((a, b) => a.min - b.min);
   const [ctaFechado, setCtaFechado] = useState(false);
   // `venci` vem pronto do App.jsx (que sabe qual lado é o do humano).
   const mostrarCtaLogin = r.venci && !sessao && !ctaFechado && !ctaLoginDispensadoRecentemente();
+
+  // Vitória ≠ derrota (C1.3, PLANO_GAMEFEEL_AAA §1): as duas emoções mais
+  // opostas do jogo não podem ser a mesma tela. Vitória = lime + glow;
+  // derrota = danger sóbrio (sem glow — energia é pra celebração); empate =
+  // neutro. Muda moldura e rótulo, não o layout (leitura continua idêntica).
+  const tom = r.venci
+    ? { rotulo: "VITÓRIA", cor: cores.lime, borda: cores.lime, glow: { boxShadow: "0 0 28px rgba(198,255,30,0.3)" } }
+    : r.empate
+      ? { rotulo: "EMPATE", cor: cores.textSecondary, borda: cores.steel, glow: {} }
+      : { rotulo: "DERROTA", cor: cores.danger, borda: cores.danger, glow: {} };
+
+  // Gancho "mais uma rodada" (C1.4): narrativa de 1 linha derivada da tabela.
+  const p = r.proxima;
+  const gapLider = p ? p.pontosLider - p.meusPontos : 0;
+  const fraseProxima = !p
+    ? null
+    : p.minhaPos === 1
+      ? "Você é o líder — agora é defender a ponta."
+      : p.advPos === 1
+        ? "O líder te espera. Jogo grande."
+        : gapLider <= 3
+          ? "Vitória te coloca na briga direta pela ponta."
+          : `Você está a ${gapLider} pontos do líder.`;
 
   const dispensarCta = () => {
     try { window.localStorage.setItem(CHAVE_CTA_LOGIN, String(Date.now())); } catch (e) { /* sem storage, só fecha */ }
@@ -60,24 +83,37 @@ export default function Resultado({ resumo, serie, setTela, sessao }) {
       <PolishDecor variante="resultado" />
       <div style={conteudoAcimaDaDecor}>
         <span style={eyebrowLime}>Fim de jogo · Rodada {r.rodada}</span>
-        <div className="rounded-2xl p-4 mt-2 text-center" style={superficie}>
-          <div className="flex items-center justify-center gap-3">
+        <div
+          className="rounded-2xl p-5 mt-2 text-center"
+          style={{ ...superficie, border: `2px solid ${tom.borda}`, ...tom.glow }}
+        >
+          <div className="font-black italic text-sm uppercase tracking-widest" style={{ color: tom.cor }}>
+            {tom.rotulo}
+          </div>
+          <div className="flex items-center justify-center gap-3 mt-3">
             <Crest time={meu.casa} />
-            <span className="text-4xl font-black italic tabular-nums">{meu.gc} : {meu.gf}</span>
+            <span className="font-black italic tabular-nums" style={{ fontSize: 44, lineHeight: 1 }}>{meu.gc} : {meu.gf}</span>
             <Crest time={meu.fora} />
           </div>
           <div className="text-sm font-semibold mt-2">{meu.casa} x {meu.fora}</div>
           <div className="text-xs mt-1" style={{ color: cores.textMuted }}>{ARENA.label}</div>
         </div>
 
+        {/* Craque da Partida como momento gold de verdade (F1b do
+            PLANO_MESTRE, finalmente): estrela grande, moldura gold com glow —
+            é conquista, então gold é permitido pela regra da paleta. */}
         {r.craque && (
-          <div className="rounded-xl px-4 py-3 mt-2 flex items-center gap-3" style={{ ...superficie, border: `1px solid ${cores.gold}` }}>
-            <span className="text-2xl" style={{ color: cores.gold }}>★</span>
+          <div
+            className="rounded-xl px-4 py-4 mt-2 flex items-center gap-3"
+            style={{ ...superficie, border: `1px solid ${cores.gold}`, boxShadow: "0 0 24px rgba(255,196,0,0.35)" }}
+          >
+            <span style={{ color: cores.gold, fontSize: 34, lineHeight: 1 }}>★</span>
             <div>
               <span style={{ ...eyebrowLime, color: cores.gold }}>Craque da partida</span>
-              <div className="font-bold">
-                {r.craque.nome} <span className="text-xs font-normal" style={{ color: cores.textSecondary }}>({r.craque.time})</span>
+              <div className="font-black italic text-lg leading-tight">
+                {r.craque.nome}
               </div>
+              <div className="text-xs" style={{ color: cores.textSecondary }}>{r.craque.time}</div>
             </div>
           </div>
         )}
@@ -109,7 +145,7 @@ export default function Resultado({ resumo, serie, setTela, sessao }) {
         {gols.length > 0 && (
           <div className="mt-3">
             <span style={eyebrowLime}>Gols</span>
-            <div className="mt-1 space-y-1">
+            <div className="mt-1 space-y-1 lista-stagger">
               {gols.map((e, i) => (
                 <div key={i} className="rounded-xl px-3 py-2 text-sm" style={superficie}>
                   <span className="tabular-nums text-xs mr-2" style={{ color: cores.textMuted }}>{e.min}&#39;</span>
@@ -141,9 +177,39 @@ export default function Resultado({ resumo, serie, setTela, sessao }) {
           </div>
         </div>
 
-        <button onClick={() => setTela("tabela")} className="w-full rounded-xl py-3.5 font-bold mt-4" style={botaoPrimario}>
-          Ver tabela
-        </button>
+        {/* Gancho "mais uma rodada" (C1.4): o CTA primário aponta pra próxima
+            história. Sem próxima rodada (temporada acabou), volta ao fluxo
+            antigo — "Ver tabela" reassume o posto de primário. */}
+        {p && (
+          <div className="rounded-xl px-4 py-3 mt-4" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
+            <span style={eyebrowLime}>Próxima rodada</span>
+            <div className="flex items-center gap-2 mt-2">
+              <Crest time={p.adversario} sm />
+              <div className="min-w-0">
+                <div className="font-bold text-sm leading-tight">
+                  vs {p.adversario} <span className="font-normal" style={{ color: cores.textMuted }}>({p.advPos}º)</span>
+                </div>
+                <div className="text-xs" style={{ color: cores.textSecondary }}>
+                  {p.souCasa ? "mandante" : "visitante"} · {fraseProxima}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        {p ? (
+          <>
+            <button onClick={irProximaRodada} className="w-full rounded-xl py-3.5 font-bold mt-3" style={botaoPrimario}>
+              Próxima rodada
+            </button>
+            <button onClick={() => setTela("tabela")} className="w-full rounded-xl py-3 font-bold mt-2 text-sm" style={botaoSecundario}>
+              Ver tabela
+            </button>
+          </>
+        ) : (
+          <button onClick={() => setTela("tabela")} className="w-full rounded-xl py-3.5 font-bold mt-4" style={botaoPrimario}>
+            Ver tabela
+          </button>
+        )}
         <button onClick={compartilhar} className="w-full rounded-xl py-3 font-bold mt-2 text-sm" style={botaoSecundario}>
           Compartilhar resultado
         </button>

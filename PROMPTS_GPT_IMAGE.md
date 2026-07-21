@@ -195,6 +195,61 @@ isso depois, a técnica de recolorir depende da imagem ser neutra de verdade.
 
 ---
 
+# Lote 3 — Cenários (composição de cena, PLANO_GAMEFEEL_AAA.md §6-B)
+
+**Por que este lote existe:** hoje toda tela é fundo grafite chapado + cards. A emenda
+§6-B transforma as telas-palco em LUGARES (vestiário, túnel, palco de evento) com fundo
++ scrim + UI por cima. Estes 3 fundos são cenário puro: **sem pessoas, sem texto, sem
+logo**, escuros o bastante pra UI branca/lime ler por cima com scrim leve. A
+arquibancada da Partida NÃO precisa de asset novo (celebracao-wide já resolve).
+
+Todos: 1792×1024 (wide), salvar em `art/gpt image/` com os nomes indicados.
+Se vier com pessoa reconhecível, texto ou cores fora da paleta: gere de novo.
+
+## 3a. Vestiário (fundo da Escalação e do Intervalo)
+
+Salvar como: `art/gpt image/fundo-vestiario.png`
+
+```
+Moody empty football locker room at night, dark graphite and navy tones (#1B1F24,
+#141A2E), rows of dark steel lockers slightly out of focus, a single blank black
+football jersey hanging in soft shadow, cold lime green (#C6FF1E) accent light strip
+glowing along the ceiling edge, subtle haze, cinematic depth of field, dramatic
+low-key lighting like a pre-match documentary scene, premium esports broadcast
+atmosphere, NO people, NO text, NO logos, NO numbers, wide 16:9 format, dark enough
+for white UI text overlay
+```
+
+## 3b. Túnel de entrada (fundo da tela VS pré-jogo)
+
+Salvar como: `art/gpt image/fundo-tunel.png`
+
+```
+Stadium players tunnel at night seen from inside, dark concrete walls in graphite and
+navy tones (#1B1F24, #141A2E), perspective leading to a bright opening where the
+floodlit pitch glows in the distance, intense lime green (#C6FF1E) light spilling from
+the field entrance, light haze and floating dust particles, strong one-point
+perspective, cinematic dramatic lighting like a champions league entrance moment,
+premium esports broadcast atmosphere, NO people, NO text, NO logos, wide 16:9 format,
+dark enough for white UI text overlay
+```
+
+## 3c. Palco de mata-mata (fundo da tela da Copa)
+
+Salvar como: `art/gpt image/fundo-palco-copa.png`
+
+```
+Dramatic dark event stage for a knockout football tournament draw, deep graphite and
+navy tones (#1B1F24, #141A2E), crossing lime green (#C6FF1E) spotlight beams cutting
+through smoke haze from above, polished dark floor with subtle reflections, faint
+silhouette of an empty arena in the background, cinematic volumetric lighting,
+tension and anticipation mood like a cup final broadcast opening, premium esports
+atmosphere, NO people, NO text, NO logos, NO trophy, wide 16:9 format, dark enough
+for white UI text overlay
+```
+
+---
+
 ## O que EU faço quando as artes chegarem
 
 | Arte | Onde entra no app |
@@ -206,6 +261,9 @@ isso depois, a técnica de recolorir depende da imagem ser neutra de verdade.
 | Fundo celebração 4:5 | Base dos cards compartilháveis (hoje usam a moldura da onça) |
 | Avatares 1-9 | `public/avatars/` — a galeria de avatar do técnico já tem fallback pronto esperando esses arquivos |
 | Camisa base | Substitui o SVG atual em `Camisa.jsx` — recolorida por código (multiply blend) pra cada um dos 32 times, mantendo o mesmo esquema de escudo/patrocinador/fornecedor que já funciona |
+| Fundo vestiário | Cenário da Escalação + Intervalo (C2.7 do PLANO_GAMEFEEL_AAA.md) com scrim + vinheta |
+| Fundo túnel | Cenário da tela VS pré-jogo (C2.1) |
+| Fundo palco copa | Cenário da TelaCopa (C2.7), no lugar do grafite chapado |
 
 Nada quebra enquanto as artes não existem — todo ponto de uso tem fallback (emoji,
 crachá de iniciais, moldura atual). Pode gerar aos poucos e ir me mandando.
