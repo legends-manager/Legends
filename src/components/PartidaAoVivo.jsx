@@ -26,7 +26,13 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo, 
   if (!j) return null;
   const evs = [...j.ev1, ...(j.ev2 || [])];
   const gc = golsDe(evs, j.casa, minuto), gf = golsDe(evs, j.fora, minuto);
-  const visiveis = evs.filter((e) => e.min <= minuto).sort((a, b) => b.min - a.min);
+  // "lance-decisivo" pendente (C3.2) ainda não tem autor/desc — só ganha
+  // isso quando App.jsx resolve o toque (LanceDecisivo.jsx), e nesse
+  // momento o tipo já virou "gol" ou "chance". Enquanto pendente, o próprio
+  // overlay do lance cobre a tela — não tem o que narrar aqui ainda.
+  const visiveis = evs
+    .filter((e) => e.min <= minuto && e.tipo !== "lance-decisivo")
+    .sort((a, b) => b.min - a.min);
 
   return (
     <div className="pt-10" style={{ ...paginaGrafite, background: "transparent" }}>

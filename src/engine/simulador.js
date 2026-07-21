@@ -246,14 +246,28 @@ export const escalacaoIA = (elenco) => {
 // muda). `defesa` do adversário multiplica o MEU lambda (defesa boa dele =
 // eu crio menos contra ele) — só faz sentido combinado com o `ataque` do
 // próprio time no cálculo do lambda dele.
-export function simMetade(S, casa, fora, escCasa, escFora, metade, mods = {}) {
-  const ini = metade === 1 ? 1 : 26, fim = metade === 1 ? 25 : 50;
+// `faixaOverride` ([ini, fim], C3.2 — Lance Decisivo): simula só um TRECHO
+// da metade em vez dela inteira. Poisson é aditivo em subintervalos — o
+// lambda escala pela FRAÇÃO de duração do trecho (fim-ini+1)/25, então
+// dividir uma metade em pedaços e somar os eventos preserva o total
+// esperado de gols do jogo inteiro (sem faixaOverride, fração=1, ZERO
+// mudança de comportamento — é assim que o resto do motor, que nunca passa
+// esse parâmetro, fica intocado). `mods[time].reducaoAbsoluta` (mesmo
+// contexto): carve-out absoluto de lambda pro valor esperado do QTE — a
+// regra "anti-inflação" do plano de game feel: o gol do lance decisivo é
+// TRANSFERIDO do Poisson comum, não somado por cima.
+export function simMetade(S, casa, fora, escCasa, escFora, metade, mods = {}, faixaOverride = null) {
+  const [iniPadrao, fimPadrao] = metade === 1 ? [1, 25] : [26, 50];
+  const [ini, fim] = faixaOverride || [iniPadrao, fimPadrao];
+  const fracaoDuracao = (fim - ini + 1) / 25;
   const ev = [];
   const lam = (t, esc, mando) => {
     const adv = t === casa ? fora : casa;
     const ataqueMod = mods[t]?.ataque ?? 1;
     const defesaAdvMod = mods[adv]?.defesa ?? 1;
-    return 1.7 * S.mult[t] * S.fase[t] * (media(esc) / 64) * (mando ? 1.05 : 1) * ataqueMod * defesaAdvMod;
+    const base = 1.7 * S.mult[t] * S.fase[t] * (media(esc) / 64) * (mando ? 1.05 : 1) * ataqueMod * defesaAdvMod * fracaoDuracao;
+    const reducaoAbsoluta = mods[t]?.reducaoAbsoluta ?? 0;
+    return Math.max(0, base - reducaoAbsoluta);
   };
   [{ t: casa, esc: escCasa, mando: true }, { t: fora, esc: escFora, mando: false }].forEach((l) => {
     const g = poisson(lam(l.t, l.esc, l.mando));
