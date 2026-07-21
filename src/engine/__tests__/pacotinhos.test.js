@@ -52,6 +52,14 @@ describe("pacotinhos — abrirPacotinho", () => {
     expect(jogador.valorRef).toBe(jogador.valor);
   });
 
+  it("lendaId (C2.3, Álbum de Lendas) vem preenchido com o id ORIGINAL só na raridade lendário", () => {
+    const { lendaId, jogador } = abrirPacotinho(() => 0.999);
+    expect(LENDAS.some((l) => l.id === lendaId)).toBe(true);
+    expect(jogador.id).toContain(lendaId);
+    const comum = abrirPacotinho(() => 0.1);
+    expect(comum.lendaId).toBeUndefined();
+  });
+
   it("todo id de RARIDADE tem rótulo em português", () => {
     RARIDADES.forEach((r) => expect(RARIDADE_LABEL[r.id]).toBeTruthy());
   });

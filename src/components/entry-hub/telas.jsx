@@ -325,6 +325,7 @@ export function ClubConfirmation({
 export function EntryExistingCareer({
   mundo, nomeTec, saveData, continuarJogo, retomarCarreiraSemSave,
   verHistoricoCarreira, verHistoriaLiga, onNovoJogo, loginSlot, hintSlot, verRanking,
+  verAlbumLendas,
 }) {
   const minhaSerie = mundo.divisao[mundo.meuTime];
   const serie = SERIES[minhaSerie];
@@ -393,6 +394,7 @@ export function EntryExistingCareer({
 
         <div className="mt-3">
           <BotaoTexto onClick={verHistoricoCarreira}>Ver histórico da carreira</BotaoTexto>
+          <BotaoTexto onClick={verAlbumLendas}>Álbum de Lendas</BotaoTexto>
           <BotaoTexto onClick={verHistoriaLiga}>Ver história da liga</BotaoTexto>
           <BotaoTexto onClick={verRanking}>Ranking online</BotaoTexto>
           <BotaoTexto onClick={() => setConfirmaNovoJogo(true)} cor={cores.textMuted}>
@@ -582,6 +584,7 @@ export function CareerHub({ mundo, nomeTec, hub, proximoJogo, setTela }) {
           da temporada não tinha mais como chegar lá. */}
       <div className="mt-3">
         <BotaoTexto onClick={() => setTela("historiaCarreira")}>Ver histórico e insígnias</BotaoTexto>
+        <BotaoTexto onClick={() => setTela("albumLendas")}>Álbum de Lendas</BotaoTexto>
       </div>
 
       <RodapeSlice />

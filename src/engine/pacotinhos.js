@@ -72,6 +72,10 @@ function gerarProspecto(raridadeId, rng) {
 
 // Abre 1 pacotinho: sorteia raridade e gera o jogador (ou puxa uma lenda,
 // se `lendarioForcado` não vier null — usado só em teste/depuração).
+// `lendaId` (C2.3, PLANO_GAMEFEEL_AAA §5): id ORIGINAL da lenda em
+// data/lendas.js, só presente pra raridade "lendario" — permite ao chamador
+// registrar a coleção (Álbum de Lendas) sem precisar fazer parsing do id
+// sintético do jogador (que carrega o timestamp de quando foi puxado).
 export function abrirPacotinho(rng = Math.random) {
   const raridade = sortearRaridade(rng);
   if (raridade === "lendario") {
@@ -79,6 +83,7 @@ export function abrirPacotinho(rng = Math.random) {
     const valor = valorInicial(lenda.attr);
     return {
       raridade,
+      lendaId: lenda.id,
       jogador: { ...lenda, id: `pacotinho-lendario-${lenda.id}-${Date.now()}`, valor, valorRef: valor, g: 0, a: 0, origem: "pacotinho-lendario" },
     };
   }
