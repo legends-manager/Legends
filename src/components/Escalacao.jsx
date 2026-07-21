@@ -36,9 +36,13 @@ function Campinho({ escalados }) {
     <div
       className="relative rounded-2xl overflow-hidden mt-3"
       style={{
-        height: 300,
+        // Herói da cena (C2.6, PLANO_GAMEFEEL_AAA §6-B regra 4): a prancheta
+        // É a tela, não um card perdido no meio da pilha — por isso maior e
+        // no topo da hierarquia, com sombra de profundidade.
+        height: 380,
         background: "linear-gradient(#1E7A3C, #16612E)",
         border: `1px solid ${cores.steel}`,
+        boxShadow: "0 14px 34px rgba(0,0,0,0.4)",
       }}
     >
       <div className="absolute inset-0" style={{ background: "repeating-linear-gradient(0deg, transparent, transparent 37px, rgba(255,255,255,0.05) 37px, rgba(255,255,255,0.05) 75px)" }} />
@@ -170,6 +174,19 @@ export default function Escalacao({
           </button>
         </div>
 
+        {/* PRANCHETA (C2.6): o campinho é o herói da cena — vem logo depois
+            do cabeçalho, grande, com a formação e o status colados nele. A
+            burocracia (copa/semana/provocação/orçamento/torcida) desce pra
+            depois da prancheta, mais compacta. */}
+        <Campinho escalados={escSelecionada()} />
+
+        <FormacaoSeletor formacaoAtual={formacaoAtual} escolherFormacao={escolherFormacao} />
+
+        <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={superficie}>
+          <span>Escalados: <b className="tabular-nums">{nGol}</b> GOL + <b className="tabular-nums">{nLinha}</b>/6 linha</span>
+          <span style={{ color: escValida() ? cores.success : cores.lime }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
+        </div>
+
         {S.copa && (
           <button
             onClick={() => setTela("copa")}
@@ -181,9 +198,27 @@ export default function Escalacao({
           </button>
         )}
 
+        {/* Contexto do clube numa linha só (duas células): reduz a pilha de
+            cards de peso idêntico — §6-B, regra 4 (escala e hierarquia). */}
+        <div className="grid grid-cols-2 gap-2 mt-2">
+          <div className="rounded-xl px-3 py-2 text-xs" style={superficie}>
+            <div style={{ color: cores.textMuted }}>Orçamento</div>
+            <div className="font-bold tabular-nums mt-0.5" style={{ color: cores.lime }}>L$ {S.orcamento[meuTime]}</div>
+          </div>
+          <div className="rounded-xl px-3 py-2 text-xs" style={superficie}>
+            <div style={{ color: cores.textMuted }}>Torcida</div>
+            <div className="font-bold tabular-nums mt-0.5">
+              {S.torcida[meuTime]}{" "}
+              <span style={{ color: corSetinha(tendenciaTorcida(S.torcida, S.torcidaRef, meuTime)) }}>
+                {tendenciaTorcida(S.torcida, S.torcidaRef, meuTime)}
+              </span>
+            </div>
+          </div>
+        </div>
+
         {/* Semana Temática: evento rotativo de 7 dias (engine/semana.js) —
             mesma semana pra liga inteira, derivada da data real. */}
-        <div className="rounded-xl px-3 py-2 mt-3 text-xs" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
+        <div className="rounded-xl px-3 py-2 mt-2 text-xs" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
           <span style={eyebrowLime}>{semanaTematica().titulo}</span>
           <div className="mt-0.5" style={{ color: cores.textSecondary }}>{semanaTematica().desc}</div>
         </div>
@@ -207,21 +242,6 @@ export default function Escalacao({
           ) : null;
         })()}
 
-        <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={superficie}>
-          <span>Orçamento</span>
-          <span className="font-bold tabular-nums" style={{ color: cores.lime }}>L$ {S.orcamento[meuTime]}</span>
-        </div>
-
-        <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={superficie}>
-          <span>Torcida</span>
-          <span className="font-bold tabular-nums">
-            {S.torcida[meuTime]} torcedores{" "}
-            <span style={{ color: corSetinha(tendenciaTorcida(S.torcida, S.torcidaRef, meuTime)) }}>
-              {tendenciaTorcida(S.torcida, S.torcidaRef, meuTime)}
-            </span>
-          </span>
-        </div>
-
         {S.comentariosTorcida.length > 0 && (
           <div className="rounded-xl px-3 py-2 mt-2 text-xs" style={superficie}>
             <span style={eyebrowLime}>Torcida comenta</span>
@@ -232,15 +252,6 @@ export default function Escalacao({
             </div>
           </div>
         )}
-
-        <div className="rounded-xl px-3 py-2 mt-2 text-xs flex justify-between" style={superficie}>
-          <span>Escalados: <b className="tabular-nums">{nGol}</b> GOL + <b className="tabular-nums">{nLinha}</b>/6 linha</span>
-          <span style={{ color: escValida() ? cores.success : cores.lime }}>{escValida() ? "pronto" : "ajuste a escalação"}</span>
-        </div>
-
-        <Campinho escalados={escSelecionada()} />
-
-        <FormacaoSeletor formacaoAtual={formacaoAtual} escolherFormacao={escolherFormacao} />
 
         {grupos.map((gp) => (
           <div key={gp} className="mt-4">

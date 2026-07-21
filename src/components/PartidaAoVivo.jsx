@@ -2,11 +2,12 @@
 // Partida ao vivo: relógio minuto a minuto, faixa de gol compacta no topo,
 // eventos narrados e placares dos outros jogos. ARENA.label discreto sob o placar.
 //
-// Reskin "Polish Language v1" (jul/2026): grafite/lime, glow liberado por
-// Felyp. Faixa de gol ganhou presença de jogador (asset real da marca,
-// public/art/hero-pointing.jpg) + glow — não existe jogo em 3D no motor
-// (simulação Poisson), então é essa arte que carrega a sensação de "ao vivo"
-// no momento de maior emoção da tela.
+// Cenografia de Arena (PLANO_GAMEFEEL_AAA §6-B, C2.6): esta tela é um LUGAR —
+// a arquibancada da Arena Novo Horizonte à noite (fundo celebracao-wide.webp
+// com scrim + vinheta), com o placar como "placar de estádio" (score bug de
+// transmissão: navy, luz descendo do topo, logo oficial da liga num chip
+// branco como marca de broadcast). Antecipação de gol (perigo) pulsa a borda
+// do placar; gol do meu time dá um soco (shake) no card — nunca na tela toda.
 import { golsDe, NARRADOR } from "../engine/simulador";
 import { SIGLA } from "../data/times";
 import { ARENA } from "../data/arena";
@@ -15,12 +16,37 @@ import {
   cores, superficie, superficie2, eyebrowLime, paginaGrafite,
   conteudoAcimaDaDecor, glowLime,
 } from "./entry-hub/estilos";
-import { PolishDecor } from "./entry-hub/decor";
 import Crest from "./Crest";
 
 const siglaDe = (time) => SIGLA[time] || time.slice(0, 3).toUpperCase();
 
-export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }) {
+// Camada de cenário: arquibancada noturna fixa atrás de tudo (parallax de
+// viewport: o conteúdo rola por cima dela), escurecida por scrim pra AA de
+// contraste (REDESIGN §5.6) + vinheta radial pra focar o olho no placar.
+function CenarioArena() {
+  return (
+    <div className="fixed inset-0 z-0" aria-hidden>
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage: "url(/fundos/celebracao-wide.webp)",
+          backgroundSize: "cover",
+          backgroundPosition: "center 30%",
+        }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: "linear-gradient(rgba(16,19,23,0.82), rgba(16,19,23,0.9) 55%, rgba(16,19,23,0.97))" }}
+      />
+      <div
+        className="absolute inset-0"
+        style={{ background: "radial-gradient(ellipse 90% 60% at 50% 32%, transparent, rgba(10,12,14,0.55))" }}
+      />
+    </div>
+  );
+}
+
+export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo, perigo, shake }) {
   const j = jogo;
   if (!j) return null;
   const evs = [...j.ev1, ...(j.ev2 || [])];
@@ -28,11 +54,11 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
   const visiveis = evs.filter((e) => e.min <= minuto).sort((a, b) => b.min - a.min);
 
   return (
-    <div className="pt-10" style={paginaGrafite}>
-      <PolishDecor variante="partida" />
+    <div className="pt-10" style={{ ...paginaGrafite, background: "transparent" }}>
+      <CenarioArena />
       <div style={conteudoAcimaDaDecor}>
-        {/* Faixa de gol: substitui o banner amber plano por um cartão com
-            presença de jogador + glow lime — o "momento alto" da tela. */}
+        {/* Faixa de gol: cartão com presença de jogador + glow lime — o
+            "momento alto" da tela. */}
         {banner && (
           <div className="fixed top-0 inset-x-0 z-50">
             <div
@@ -52,25 +78,53 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
           </div>
         )}
 
-        <div className="rounded-2xl p-4" style={superficie}>
+        {/* Placar de estádio (score bug de transmissão) — o herói da cena.
+            Perigo iminente pulsa a borda (antecipação); gol do meu time soca
+            o card (placar-shake). */}
+        <div
+          className={`rounded-2xl p-4 relative overflow-hidden${shake ? " placar-shake" : ""}${perigo ? " perigo-pulse" : ""}`}
+          style={{
+            background: cores.navy,
+            border: `1px solid ${perigo ? cores.lime : cores.steel}`,
+            color: cores.textPrimary,
+            boxShadow: "0 12px 32px rgba(0,0,0,0.45)",
+          }}
+        >
+          {/* Luz de estádio descendo do topo do placar */}
+          <div
+            className="absolute inset-x-0 top-0 h-16 pointer-events-none"
+            style={{ background: "linear-gradient(rgba(198,255,30,0.12), transparent)" }}
+            aria-hidden
+          />
           <div className="flex items-center justify-between">
-            <span style={eyebrowLime}>Rodada {S.rodada + 1}</span>
+            <span className="flex items-center gap-2">
+              {/* Chip de broadcast: logo oficial da Legends Liga Fut7 (arte
+                  real da liga, fundo claro — vira chip como em score bug de
+                  TV, sem precisar recortar). */}
+              <img
+                src="/brand/liga-legends.webp"
+                alt="Legends Liga Fut7"
+                className="rounded-md block"
+                style={{ width: 26, height: 26, objectFit: "cover" }}
+              />
+              <span style={eyebrowLime}>Rodada {S.rodada + 1}</span>
+            </span>
             <span className="text-xs font-bold flex items-center gap-1.5" style={{ color: cores.danger }}>
               <span className="w-2 h-2 rounded-full inline-block animate-pulse" style={{ background: cores.danger }} />AO VIVO
             </span>
           </div>
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex flex-col items-center gap-1 w-20">
-              <Crest time={j.casa} sm /><span className="text-xs font-bold">{siglaDe(j.casa)}</span>
+          <div className="flex items-center justify-between mt-4">
+            <div className="flex flex-col items-center gap-1.5 w-20">
+              <Crest time={j.casa} /><span className="text-xs font-bold">{siglaDe(j.casa)}</span>
             </div>
             <div className="text-center">
-              <div className="text-5xl font-black italic tabular-nums tracking-tight" style={{ color: cores.textPrimary }}>
+              <div className="font-black italic tabular-nums tracking-tight" style={{ color: cores.textPrimary, fontSize: 56, lineHeight: 1 }}>
                 {gc}<span style={{ color: cores.textMuted }}> : </span>{gf}
               </div>
-              <div className="text-sm font-bold tabular-nums mt-1" style={{ color: cores.lime }}>{Math.min(minuto, 50)}&#39;</div>
+              <div className="text-sm font-bold tabular-nums mt-2" style={{ color: cores.lime }}>{Math.min(minuto, 50)}&#39;</div>
             </div>
-            <div className="flex flex-col items-center gap-1 w-20">
-              <Crest time={j.fora} sm /><span className="text-xs font-bold">{siglaDe(j.fora)}</span>
+            <div className="flex flex-col items-center gap-1.5 w-20">
+              <Crest time={j.fora} /><span className="text-xs font-bold">{siglaDe(j.fora)}</span>
             </div>
           </div>
           <div className="text-center text-xs mt-3" style={{ color: cores.textMuted }}>{ARENA.label}</div>
@@ -95,8 +149,10 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
         </div>
 
         <div className="mt-2 space-y-1.5">
-          {visiveis.map((e, i) => (
-            <div key={i} className="rounded-xl px-3 py-2 text-sm flex gap-2" style={superficie}>
+          {/* key estável por evento (não por índice): quando um evento novo
+              entra no topo, só ELE anima — os antigos não re-montam. */}
+          {visiveis.map((e) => (
+            <div key={`${e.min}-${e.tipo}-${e.autor?.nome}-${e.time || ""}`} className="rounded-xl px-3 py-2 text-sm flex gap-2 evento-entra" style={superficie}>
               <span className="tabular-nums text-xs w-8 shrink-0 pt-0.5" style={{ color: cores.textMuted }}>{e.min}&#39;</span>
               {e.tipo === "gol" ? (
                 <span>
@@ -116,13 +172,28 @@ export default function PartidaAoVivo({ S, jogo, minuto, banner, mudo, setMudo }
         <div className="mt-4">
           <span style={eyebrowLime}>Outros jogos da rodada</span>
           <div className="mt-1 space-y-1">
-            {j.outros.map((o, i) => (
-              <div key={i} className="rounded-xl px-3 py-2 text-sm flex items-center justify-between" style={superficie}>
-                <span className="font-semibold">{siglaDe(o.casa)}</span>
-                <span className="font-black italic tabular-nums">{golsDe(o.ev, o.casa, minuto)} : {golsDe(o.ev, o.fora, minuto)}</span>
-                <span className="font-semibold">{siglaDe(o.fora)}</span>
-              </div>
-            ))}
+            {j.outros.map((o, i) => {
+              // Flash de gol (C1.6): quando um placar paralelo muda, a linha
+              // acende por ~2 ticks — a rodada inteira parece viva.
+              const golAgora = o.ev.some((e) => e.tipo === "gol" && (e.min === minuto || e.min === minuto - 1));
+              return (
+                <div
+                  key={i}
+                  className="rounded-xl px-3 py-2 text-sm flex items-center justify-between"
+                  style={{
+                    ...superficie,
+                    ...(golAgora ? { border: `1px solid ${cores.lime}`, background: cores.bgSurface2 } : {}),
+                    transition: "border-color 0.3s, background 0.3s",
+                  }}
+                >
+                  <span className="font-semibold">{siglaDe(o.casa)}</span>
+                  <span className="font-black italic tabular-nums" style={golAgora ? { color: cores.lime } : {}}>
+                    {golsDe(o.ev, o.casa, minuto)} : {golsDe(o.ev, o.fora, minuto)}
+                  </span>
+                  <span className="font-semibold">{siglaDe(o.fora)}</span>
+                </div>
+              );
+            })}
           </div>
         </div>
         <p className="text-center mt-6" style={{ color: cores.textMuted, fontSize: 12 }}>

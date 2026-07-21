@@ -33,6 +33,66 @@ button:active {
   animation: telaEntra 0.22s ease-out;
 }
 
+/* ============================================================
+   Motion tokens (PLANO_GAMEFEEL_AAA §3.1) — linguagem de movimento única:
+   tap rápido, base seca, celebração com overshoot. Overshoot SÓ em
+   celebração; telas operacionais usam ease-out seco.
+   ============================================================ */
+:root {
+  --dur-tap: 120ms;
+  --dur-base: 220ms;
+  --dur-celebra: 600ms;
+  --ease-saida: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-celebra: cubic-bezier(0.34, 1.56, 0.64, 1); /* overshoot da mascote */
+}
+
+/* Partida ao vivo (C1.1/C1.6): antecipação e payoff do gol.
+   perigo-pulse = a borda do placar pulsa lime ~500ms ANTES do gol (o motor
+   já sabe o futuro); placar-shake = soco curto no card no gol do MEU time —
+   nunca na tela inteira. */
+@keyframes perigoPulse {
+  0%, 100% { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 rgba(198, 255, 30, 0); }
+  50% { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 26px rgba(198, 255, 30, 0.55); }
+}
+.perigo-pulse {
+  animation: perigoPulse 0.5s ease-in-out infinite;
+}
+@keyframes placarShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-4px) scale(1.015); }
+  40% { transform: translateX(4px) scale(1.015); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.placar-shake {
+  animation: placarShake 0.45s var(--ease-saida);
+}
+
+/* Evento novo da narração entra deslizando (só o novo — key estável). */
+@keyframes eventoEntra {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.evento-entra {
+  animation: eventoEntra var(--dur-base) var(--ease-saida);
+}
+
+/* Stagger de lista (C1.2): irmãos entram em cascata de 40ms (máx. 8 — do 9º
+   em diante aparece instantâneo, lista longa não pode "pingar" pra sempre). */
+.lista-stagger > * {
+  opacity: 0;
+  animation: eventoEntra var(--dur-base) var(--ease-saida) forwards;
+}
+.lista-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.lista-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.lista-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.lista-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.lista-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.lista-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.lista-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.lista-stagger > *:nth-child(8) { animation-delay: 280ms; }
+.lista-stagger > *:nth-child(n + 9) { animation: none; opacity: 1; }
+
 /* Mascote animada (Fase 3 item 10, pedido do Felyp): a onça estava só
    estática na celebração de campeão. Sem asset de vídeo/sprite, "animada"
    aqui é CSS — entra com uma pulada (overshoot) e depois balança suave em
@@ -62,8 +122,15 @@ button:active {
   button,
   .tela-entra,
   .mascote-comemorando,
-  .mascote-idle {
+  .mascote-idle,
+  .perigo-pulse,
+  .placar-shake,
+  .evento-entra,
+  .lista-stagger > * {
     transition: none;
     animation: none;
+  }
+  .lista-stagger > * {
+    opacity: 1;
   }
 }

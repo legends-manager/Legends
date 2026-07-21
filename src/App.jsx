@@ -40,7 +40,7 @@ import { sorteiaSeAparece, sortearPergunta, sortearPremio } from "./storage/quiz
 import { bonusDaSemana, semanaTematica } from "./engine/semana";
 import { publicarTemporada, publicarProgresso, vincularCarreira, publicarConquistas } from "./storage/publicarOnline";
 import { chaveVinculo, deveExecutarVinculoAutomatico, deveSincronizarProgresso } from "./storage/sincronizacaoRegras";
-import { tocarSfx as tocarSfxCompartilhado } from "./storage/audio";
+import { tocarSfx as tocarSfxCompartilhado, vibrar } from "./storage/audio";
 
 import TelaInicial from "./components/TelaInicial";
 import HistoriaCarreira from "./components/HistoriaCarreira";
@@ -76,6 +76,13 @@ export default function App() {
   const [minuto, setMinuto] = useState(0);
   const [rodando, setRodando] = useState(false);
   const [banner, setBanner] = useState(null);
+  // Antecipação→payoff (PLANO_GAMEFEEL_AAA §3.2, "regra dos 400ms"): o motor
+  // já conhece todos os eventos da partida desde montarJogo() — 2 ticks antes
+  // de um gol, `perigo` liga (placar pulsa + som de chute) e o gol chega como
+  // clímax anunciado, não como surpresa seca. `shake` dá o soco no placar.
+  const [perigo, setPerigo] = useState(null); // time do gol iminente (ou null)
+  const [shake, setShake] = useState(false);
+  const perigoRef = useRef(null);
   const [mudo, setMudo] = useState(false);
   const [resumo, setResumo] = useState(null);
   const [selOut, setSelOut] = useState(null);
@@ -463,6 +470,7 @@ export default function App() {
   // — mesmo padrão automático do resto do jogo (decisão travada 13), sem
   // precisar de um botão "Salvar" à parte.
   const escolherFormacao = (id) => {
+    vibrar(15); // mesmo tick tátil do toggle de jogador
     if (!S.formacao) S.formacao = {};
     S.formacao[meuTime] = id;
     setEscolhidos(melhores(S.elencos[meuTime], id).map((j) => j.id));
@@ -505,6 +513,7 @@ export default function App() {
   };
 
   const toggleJogador = (j) => {
+    vibrar(15); // tick tátil (C1.5) — escalar/tirar jogador responde no dedo
     if (escolhidos.includes(j.id)) { setEscolhidos(escolhidos.filter((id) => id !== j.id)); return; }
     const e = escSelecionada();
     if (j.pos === "GOL") {
@@ -565,6 +574,8 @@ export default function App() {
     const j = montarJogo();
     anunciados.current = 0;
     anunciadosChance.current = 0;
+    perigoRef.current = null;
+    setPerigo(null);
     setJogo(j); setMinuto(0); setRodando(true); setTela("aoVivo");
     apito();
   };
@@ -574,6 +585,8 @@ export default function App() {
     const escCasa = j.souCasa ? j.minhaEsc2 : j.advEsc;
     const escFora = j.souCasa ? j.advEsc : j.minhaEsc2;
     const ev2 = simMetade(S, j.casa, j.fora, escCasa, escFora, 2);
+    perigoRef.current = null;
+    setPerigo(null);
     setJogo({ ...j, ev2, meiaFase: "2T" });
     setSelOut(null); setSelIn(null);
     setRodando(true); setTela("aoVivo");
@@ -700,9 +713,28 @@ export default function App() {
     });
     if (bonusSemana) S.orcamento[meuTime] += bonusSemana.valor;
 
+    // Gancho "mais uma rodada" (PLANO_GAMEFEEL_AAA §5): o Resultado termina
+    // apontando pra próxima história, não num beco — narrativa derivada da
+    // tabela pós-rodada (S.rodada já foi incrementado acima).
+    let proxima = null;
+    if (S.rodada < S.calendario.length) {
+      const jProx = S.calendario[S.rodada].find((x) => x.casa === meuTime || x.fora === meuTime);
+      if (jProx) {
+        const advProx = jProx.casa === meuTime ? jProx.fora : jProx.casa;
+        proxima = {
+          adversario: advProx,
+          souCasa: jProx.casa === meuTime,
+          minhaPos: posicaoDoTime(S, meuTime),
+          advPos: posicaoDoTime(S, advProx),
+          meusPontos: S.tabela[meuTime].P,
+          pontosLider: Math.max(...Object.values(S.tabela).map((t) => t.P)),
+        };
+      }
+    }
+
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
-    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario, bonusSemana, venci: meusGols > golsAdv });
+    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario, bonusSemana, venci: meusGols > golsAdv, empate: meusGols === golsAdv, proxima });
     setJogo(null);
     setTela("resultado");
 
@@ -774,17 +806,35 @@ export default function App() {
 
   useEffect(() => {
     if (tela !== "aoVivo" || !jogo) return;
-    const evs = [...jogo.ev1, ...(jogo.ev2 || [])]
+    const evsTodos = [...jogo.ev1, ...(jogo.ev2 || [])];
+
+    // Antecipação (regra dos 400ms): 2 ticks (~500ms) antes de um gol, liga o
+    // estado de perigo — o placar pulsa e o chute soa ANTES do payoff.
+    const golAVir = evsTodos.find((e) => e.tipo === "gol" && e.min === minuto + 2);
+    if (golAVir && perigoRef.current !== golAVir) {
+      perigoRef.current = golAVir;
+      setPerigo(golAVir.time);
+      chute();
+    }
+
+    const evs = evsTodos
       .filter((e) => e.tipo === "gol" && e.min <= minuto)
       .sort((a, b) => a.min - b.min);
     if (evs.length > anunciados.current) {
       const e = evs[evs.length - 1];
       setBanner(`⚽ GOL DO ${SIGLA[e.time]} — ${e.autor.nome}`);
       beep();
+      setPerigo(null);
+      // Soco no placar (C1.6): shake só no gol do MEU time — o do adversário
+      // dói de outro jeito (banner e som já cobrem).
+      if (e.time === meuTime) {
+        setShake(true);
+        setTimeout(() => setShake(false), 450);
+      }
       anunciados.current = evs.length;
       setTimeout(() => setBanner(null), 1600);
     }
-    const evsChance = [...jogo.ev1, ...(jogo.ev2 || [])]
+    const evsChance = evsTodos
       .filter((e) => e.tipo === "chance" && e.min <= minuto)
       .sort((a, b) => a.min - b.min);
     if (evsChance.length > anunciadosChance.current) {
@@ -793,10 +843,12 @@ export default function App() {
     }
     if (minuto >= 25 && jogo.meiaFase === "1T") {
       setRodando(false);
+      apito(); // fim do 1º tempo — âncora ritual da partida
       setTela("intervalo");
     }
     if (minuto >= 50 && jogo.meiaFase === "2T") {
       setRodando(false);
+      apito(); // apito final
       finalizarRodada(jogo);
     }
   }, [minuto, tela]); // eslint-disable-line
@@ -874,7 +926,7 @@ export default function App() {
         )}
         {tela === "uniforme" && S && <TelaUniforme meuTime={meuTime} setTela={setTela} />}
         {tela === "aoVivo" && S && (
-          <PartidaAoVivo S={S} jogo={jogo} minuto={minuto} banner={banner} mudo={mudo} setMudo={setMudo} />
+          <PartidaAoVivo S={S} jogo={jogo} minuto={minuto} banner={banner} mudo={mudo} setMudo={setMudo} perigo={perigo} shake={shake} />
         )}
         {tela === "intervalo" && S && jogo && (
           <Intervalo
@@ -889,7 +941,9 @@ export default function App() {
             iniciarSegundoTempo={iniciarSegundoTempo}
           />
         )}
-        {tela === "resultado" && S && resumo && <Resultado resumo={resumo} serie={S.serie} setTela={setTela} sessao={sessao} />}
+        {tela === "resultado" && S && resumo && (
+          <Resultado resumo={resumo} serie={S.serie} setTela={setTela} sessao={sessao} irProximaRodada={irProximaRodada} />
+        )}
         {tela === "mercado" && S && (
           <Mercado
             S={S}
