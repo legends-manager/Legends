@@ -31,6 +31,7 @@ import { abrirPacotinho } from "./engine/pacotinhos";
 import { SIGLA } from "./data/times";
 import { SERIE_PADRAO, SERIES, ORDEM_SERIES, TODOS_OS_TIMES } from "./data/series";
 import { FORMACOES, FORMACAO_PADRAO } from "./data/formacoes";
+import { TATICAS, TATICA_PADRAO } from "./data/taticas";
 import {
   carregarSave, reconstruirS, salvarJogo, localStorageDisponivel, limparSave,
   carregarMundo, salvarMundo, migrarParaMundoSeNecessario, limparMundo,
@@ -88,6 +89,9 @@ export default function App() {
   const [resumo, setResumo] = useState(null);
   const [selOut, setSelOut] = useState(null);
   const [selIn, setSelIn] = useState(null);
+  // Decisão tática de intervalo (C2.2): escolha de um toque, reseta a cada
+  // partida nova (jogarAoVivo) — nunca herda da rodada anterior.
+  const [tatica, setTatica] = useState(TATICA_PADRAO);
   const [modalNomes, setModalNomes] = useState(false);
   const [textoNomes, setTextoNomes] = useState("");
   const [saveData, setSaveData] = useState(null); // save encontrado na abertura
@@ -584,6 +588,7 @@ export default function App() {
     anunciadosChance.current = 0;
     perigoRef.current = null;
     setPerigo(null);
+    setTatica(TATICA_PADRAO); // reseta a cada partida nova — nunca herda da rodada anterior
     setJogo(j); setMinuto(0); setRodando(true); setTela("aoVivo");
     apito();
   };
@@ -592,7 +597,11 @@ export default function App() {
     const j = jogoRef.current;
     const escCasa = j.souCasa ? j.minhaEsc2 : j.advEsc;
     const escFora = j.souCasa ? j.advEsc : j.minhaEsc2;
-    const ev2 = simMetade(S, j.casa, j.fora, escCasa, escFora, 2);
+    // Decisão tática de intervalo (C2.2): efeito pequeno e transparente,
+    // só no time do jogador — "equilibrado" (padrão) é matematicamente
+    // idêntico a não ter escolhido nada.
+    const mods = { [meuTime]: TATICAS[tatica] || TATICAS[TATICA_PADRAO] };
+    const ev2 = simMetade(S, j.casa, j.fora, escCasa, escFora, 2, mods);
     perigoRef.current = null;
     setPerigo(null);
     setJogo({ ...j, ev2, meiaFase: "2T" });
@@ -950,6 +959,8 @@ export default function App() {
             selIn={selIn}
             setSelIn={setSelIn}
             iniciarSegundoTempo={iniciarSegundoTempo}
+            tatica={tatica}
+            escolherTatica={(id) => { vibrar(15); setTatica(id); }}
           />
         )}
         {tela === "resultado" && S && resumo && (
