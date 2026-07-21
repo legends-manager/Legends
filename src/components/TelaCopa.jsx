@@ -13,8 +13,8 @@ import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
   eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
-import { PolishDecor } from "./entry-hub/decor";
 import Crest from "./Crest";
+import Cenario from "./Cenario";
 
 export default function TelaCopa({ S, meuTime, jogarPartidaCopa, setTela }) {
   const [resultado, setResultado] = useState(null);
@@ -28,8 +28,8 @@ export default function TelaCopa({ S, meuTime, jogarPartidaCopa, setTela }) {
   const jogar = () => setResultado(jogarPartidaCopa());
 
   return (
-    <div className="pt-10" style={paginaGrafite}>
-      <PolishDecor variante="copa" />
+    <div className="pt-10" style={{ ...paginaGrafite, background: "transparent" }}>
+      <Cenario src="/fundos/palco-copa.webp" />
       <div style={conteudoAcimaDaDecor}>
         <span style={eyebrowLime}>Copa cruzando as 3 séries</span>
         <h1 className="mt-1" style={{ fontSize: 28, fontWeight: 900, fontStyle: "italic" }}>{nomeFase(copa.fase)}</h1>

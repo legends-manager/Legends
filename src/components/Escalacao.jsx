@@ -14,8 +14,8 @@ import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
   eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
-import { PolishDecor } from "./entry-hub/decor";
 import Crest from "./Crest";
+import Cenario from "./Cenario";
 
 const corSetinha = (s) => (s === "▲" ? cores.success : s === "▼" ? cores.danger : cores.textMuted);
 
@@ -150,8 +150,8 @@ export default function Escalacao({
   const pendenteCopa = S.copa ? confrontoPendenteDoJogador(S.copa, meuTime) : null;
 
   return (
-    <div className="pt-10" style={paginaGrafite}>
-      <PolishDecor variante="escalacao" />
+    <div className="pt-10" style={{ ...paginaGrafite, background: "transparent" }}>
+      <Cenario src="/fundos/vestiario.webp" />
       <div style={conteudoAcimaDaDecor}>
         <span style={eyebrowLime}>Rodada {S.rodada + 1} de {S.calendario.length}</span>
         <div className="flex items-center gap-2 mt-2">

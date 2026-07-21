@@ -8,7 +8,7 @@ import {
   cores, superficie, superficie2, botaoPrimario,
   eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
 } from "./entry-hub/estilos";
-import { PolishDecor } from "./entry-hub/decor";
+import Cenario from "./Cenario";
 
 export default function Intervalo({
   S, meuTime, jogo, setJogo, selOut, setSelOut, selIn, setSelIn, iniciarSegundoTempo,
@@ -27,8 +27,11 @@ export default function Intervalo({
   const gc = golsDe(j.ev1, j.casa), gf = golsDe(j.ev1, j.fora);
 
   return (
-    <div className="pt-10" style={paginaGrafite}>
-      <PolishDecor variante="intervalo" />
+    <div className="pt-10" style={{ ...paginaGrafite, background: "transparent" }}>
+      {/* Mesmo vestiário da Escalação (C2.7): o jogador nunca saiu do lugar,
+          só trocou a prancheta pelo intervalo — coerência de cena entre as
+          duas telas mais próximas no fluxo. */}
+      <Cenario src="/fundos/vestiario.webp" />
       <div style={conteudoAcimaDaDecor}>
         <span style={eyebrowLime}>Intervalo · Rodada {S.rodada + 1}</span>
         <div className="rounded-2xl p-4 mt-2 text-center" style={superficie}>
