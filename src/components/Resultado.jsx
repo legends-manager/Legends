@@ -14,6 +14,7 @@ import {
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
 import Crest from "./Crest";
+import { IconTrofeu } from "./icons";
 
 // Convite de login pós-vitória (ideia principal aprovada pelo Felyp,
 // jul/2026): a maioria da liga joga 100% offline e nunca entra no ranking
@@ -130,6 +131,22 @@ export default function Resultado({ resumo, serie, setTela, sessao, irProximaRod
               Entra com seu e-mail e sua carreira passa a contar no ranking de técnicos — automático, sem cadastro chato.
             </p>
             <LoginOnline sessao={sessao} />
+          </div>
+        )}
+
+        {/* Recorde da carreira (C2.5, PLANO_GAMEFEEL_AAA §5): App.jsx só
+            marca isso quando o PRÓPRIO jogo do jogador bateu o recorde de
+            goleada da liga — nunca o de outro time da rodada. */}
+        {r.novoRecordeGoleada && (
+          <div
+            className="rounded-xl px-4 py-3 mt-2 flex items-center gap-3"
+            style={{ ...superficie, border: `1px solid ${cores.gold}`, boxShadow: "0 0 24px rgba(255,196,0,0.35)" }}
+          >
+            <span style={{ color: cores.gold }}><IconTrofeu size={26} strokeWidth={1.8} /></span>
+            <div>
+              <span style={{ ...eyebrowLime, color: cores.gold }}>Novo recorde da sua carreira</span>
+              <div className="font-black italic text-sm mt-0.5">Maior goleada da liga!</div>
+            </div>
           </div>
         )}
 

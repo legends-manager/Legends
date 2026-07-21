@@ -138,6 +138,23 @@ export default function FimDeTemporada({
           </div>
         </div>
 
+        {/* Recorde de artilheiro (C2.5): App.jsx só marca isso quando o
+            NOVO artilheiro recorde histórico da liga é do PRÓPRIO time do
+            jogador — nunca de outro time que também disputou a série. */}
+        {resumo.novoRecordeArtilheiro && (
+          <div
+            className="rounded-2xl p-4 mt-3 text-center"
+            style={{ ...superficie, border: `1px solid ${cores.gold}`, boxShadow: "0 0 24px rgba(255,196,0,0.35)" }}
+          >
+            <span style={{ color: cores.gold, display: "inline-block" }}><IconTrofeu size={22} strokeWidth={1.8} /></span>
+            <div className="font-black italic mt-1" style={{ color: cores.gold }}>Novo recorde da sua carreira</div>
+            <div className="text-sm mt-0.5" style={{ color: cores.textSecondary }}>
+              {resumo.novoRecordeArtilheiro.nome} é agora o maior artilheiro de temporada já visto na liga —{" "}
+              {resumo.novoRecordeArtilheiro.gols} gols
+            </div>
+          </div>
+        )}
+
         <div className="mt-4">
           <span style={eyebrowLime}>Resultado das três séries</span>
           {["A", "B", "C"].map((s) => (

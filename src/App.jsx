@@ -269,8 +269,16 @@ export default function App() {
     });
     const resultado = calcularAcessoRebaixamento(tabelasPorSerie);
     // Recorde de artilheiro usa a temporada ainda corrente (fecharTemporada
-    // incrementa o contador logo abaixo).
+    // incrementa o contador logo abaixo). Celebração (C2.5) só quando o NOVO
+    // recorde histórico é de um artilheiro do PRÓPRIO time do jogador —
+    // senão é só um recorde da liga que ele nem participou de bater.
+    const antesArtilheiro = mundo.recordes?.artilheiroTemporada;
     atualizarRecordeArtilheiro(mundo, S.art, mundo.temporada, minhaSerie);
+    const depoisArtilheiro = mundo.recordes?.artilheiroTemporada;
+    const novoRecordeArtilheiro =
+      depoisArtilheiro && depoisArtilheiro !== antesArtilheiro && depoisArtilheiro.time === meuTime
+        ? depoisArtilheiro
+        : null;
     const { serieDestino, resultado: meuResultado, minhaPosicao } =
       fecharTemporada(mundo, resultado, meuTime, minhaSerie);
     // Conquistas de fim de temporada (a carreira já inclui a temporada fechada).
@@ -310,7 +318,7 @@ export default function App() {
     setSaveData(null);
     incrementarMetrica("temporadasConcluidas"); // mídia kit (métrica local)
     setMundo({ ...mundo });
-    setFimDeTemporadaResumo({ resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie });
+    setFimDeTemporadaResumo({ resultado, serieDestino, meuResultado, minhaPosicao, minhaSerie, novoRecordeArtilheiro });
     setTela("fimDeTemporada");
   };
 
@@ -708,9 +716,17 @@ export default function App() {
     incrementarMetrica("partidasJogadas"); // mídia kit (métrica local)
 
     // Recordes do mundo + conquistas (dica 2) — apresentação pura, nada volta
-    // pro motor. Goleada recorde olha TODOS os jogos da rodada da série.
+    // pro motor. Goleada recorde olha TODOS os jogos da rodada da série —
+    // só vira celebração "da sua carreira" (C2.5) quando é o PRÓPRIO jogo
+    // do humano que bateu o recorde (jogos[0]), não o de outro time da rodada.
+    let novoRecordeGoleada = null;
     if (mundo) {
+      const antes = mundo.recordes?.maiorGoleada;
       atualizarRecordeGoleada(mundo, jogos, mundo.temporada, S.serie);
+      const depois = mundo.recordes?.maiorGoleada;
+      if (depois && depois !== antes && depois.casa === jogos[0].casa && depois.fora === jogos[0].fora) {
+        novoRecordeGoleada = depois;
+      }
       salvarMundo(mundo);
     }
     const meuJogo = jogos[0];
@@ -759,7 +775,7 @@ export default function App() {
 
     // Auto-save ao fim de cada rodada (build-spec §8) — nunca depende do usuário.
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
-    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario, bonusSemana, venci: meusGols > golsAdv, empate: meusGols === golsAdv, proxima });
+    setResumo({ jogos, evMeu, craque, rodada: S.rodada, casa: j.casa, fora: j.fora, comentarioTorcida: comentario, bonusSemana, venci: meusGols > golsAdv, empate: meusGols === golsAdv, proxima, novoRecordeGoleada });
     setJogo(null);
     setTela("resultado");
 

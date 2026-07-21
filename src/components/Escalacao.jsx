@@ -12,14 +12,25 @@ import { ORDEM_FORMACOES } from "../data/formacoes";
 import { AvatarTecnico } from "./ui";
 import {
   cores, superficie, superficie2, botaoPrimario, botaoPrimarioGlow, botaoSecundario,
-  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor,
+  eyebrowLime, paginaGrafite, conteudoAcimaDaDecor, corTier,
 } from "./entry-hub/estilos";
 import Crest from "./Crest";
 import Cenario from "./Cenario";
+import { IconBola, IconEstavel, IconRaio, IconConfete } from "./icons";
 
 const corSetinha = (s) => (s === "▲" ? cores.success : s === "▼" ? cores.danger : cores.textMuted);
 
 const primeiroNome = (nome) => nome.trim().split(/\s+/)[0];
+
+// Selo por tipo de Semana Temática (C2.5, engine/semana.js SEMANAS): dá
+// identidade visual ao evento — antes era um card de texto idêntico aos
+// outros, sem nada que dissesse "isso é diferente esta semana".
+const SELO_SEMANA = {
+  artilheiro: { Icone: IconBola, cor: cores.lime },
+  muralha: { Icone: IconEstavel, cor: cores.textSecondary },
+  zebra: { Icone: IconRaio, cor: cores.gold },
+  festa: { Icone: IconConfete, cor: corTier.epico },
+};
 
 // Campinho: mostra a escalação selecionada em campo (GOL embaixo, DEF/MEI/ATA
 // subindo) pra facilitar a visualização enquanto monta o time. Só leitura —
@@ -217,11 +228,47 @@ export default function Escalacao({
         </div>
 
         {/* Semana Temática: evento rotativo de 7 dias (engine/semana.js) —
-            mesma semana pra liga inteira, derivada da data real. */}
-        <div className="rounded-xl px-3 py-2 mt-2 text-xs" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
-          <span style={eyebrowLime}>{semanaTematica().titulo}</span>
-          <div className="mt-0.5" style={{ color: cores.textSecondary }}>{semanaTematica().desc}</div>
-        </div>
+            mesma semana pra liga inteira, derivada da data real. Selo por
+            tipo (C2.5) dá identidade visual/de cor ao evento. */}
+        {(() => {
+          const semana = semanaTematica();
+          const selo = SELO_SEMANA[semana.id] || SELO_SEMANA.artilheiro;
+          return (
+            <div className="rounded-xl px-3 py-2 mt-2 text-xs flex items-center gap-2.5" style={{ ...superficie, border: `1px solid ${selo.cor}` }}>
+              <span className="shrink-0" style={{ color: selo.cor }}>
+                <selo.Icone size={20} strokeWidth={1.7} />
+              </span>
+              <div className="min-w-0">
+                <span style={{ ...eyebrowLime, color: selo.cor }}>{semana.titulo}</span>
+                <div className="mt-0.5" style={{ color: cores.textSecondary }}>{semana.desc}</div>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* Forma recente (C2.5, "streak visível"): últimos 3 resultados,
+            derivado de S.formaRecente — SÓ mostra, nunca penaliza (regra
+            anti-FOMO do PLANO_GAMEFEEL_AAA §2). Some se ainda não jogou. */}
+        {S.formaRecente[meuTime]?.length > 0 && (
+          <div className="rounded-xl px-3 py-2 mt-2 text-xs flex items-center justify-between" style={superficie}>
+            <span>Forma recente</span>
+            <span className="flex gap-1">
+              {S.formaRecente[meuTime].map((r, i) => (
+                <span
+                  key={i}
+                  className="w-5 h-5 rounded-full flex items-center justify-center font-black"
+                  style={{
+                    fontSize: 10,
+                    background: r === "V" ? cores.success : r === "D" ? cores.danger : cores.steel,
+                    color: r === "E" ? cores.textPrimary : "#0A0C0E",
+                  }}
+                >
+                  {r}
+                </span>
+              ))}
+            </span>
+          </div>
+        )}
 
         {/* Técnico convidado: provocação do técnico fictício adversário. */}
         {(() => {
