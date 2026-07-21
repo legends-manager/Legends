@@ -3,7 +3,7 @@
 // pontuação do motor (3 pontos por vitória, 1 por empate, sem gols
 // aleatórios envolvidos — Poisson não entra aqui) de forma determinística.
 import { describe, it, expect } from "vitest";
-import { aplicarResultado } from "../simulador";
+import { aplicarResultado, simMetade, golsDe } from "../simulador";
 
 function estadoVazio(casa, fora) {
   return {
@@ -72,5 +72,79 @@ describe("aplicarResultado — regra de pontuação (Fut7, Legends Manager)", ()
     ];
     aplicarResultado(estado, "Nação NH", "Real União", 2, 0, ev);
     expect(estado.art["j1"].g).toBe(2);
+  });
+});
+
+// Regressão de calibração pro Lance Decisivo (C3.2, PLANO_GAMEFEEL_AAA §4-C
+// — "exige teste de regressão de média de gols antes de ligar"). O motor
+// precisa continuar gerando a mesma média de gols/time (~3-4, decisão
+// travada 12 do CLAUDE.md) mesmo quando o 2º tempo é simulado em dois
+// pedaços (26-39 + 40-50) com um carve-out de lambda pro QTE — a regra
+// "anti-inflação" do plano.
+function elencoFicticio(n = 7) {
+  const posicoes = ["GOL", "DEF", "DEF", "MEI", "MEI", "ATA", "ATA"];
+  return Array.from({ length: n }, (_, i) => ({ id: `j${i}`, nome: `Jogador ${i}`, pos: posicoes[i % posicoes.length], attr: 65 }));
+}
+function estadoSimulacao(casa, fora) {
+  return { mult: { [casa]: 1, [fora]: 1 }, fase: { [casa]: 1, [fora]: 1 } };
+}
+
+describe("simMetade — faixaOverride/reducaoAbsoluta (regressão de calibração do Lance Decisivo)", () => {
+  it("faixaOverride ausente = comportamento idêntico ao de antes (fração de duração = 1)", () => {
+    // Sanity check do refactor: sem os parâmetros novos, nada muda pra
+    // quem já chama simMetade sem eles (todo o resto do motor).
+    const S = estadoSimulacao("A", "B");
+    const escA = elencoFicticio(), escB = elencoFicticio();
+    const N = 3000;
+    let totalPadrao = 0, totalExplicito = 0;
+    for (let i = 0; i < N; i++) totalPadrao += golsDe(simMetade(S, "A", "B", escA, escB, 2), "A", 50);
+    for (let i = 0; i < N; i++) totalExplicito += golsDe(simMetade(S, "A", "B", escA, escB, 2, {}, [26, 50]), "A", 50);
+    const mediaPadrao = totalPadrao / N, mediaExplicito = totalExplicito / N;
+    expect(Math.abs(mediaPadrao - mediaExplicito)).toBeLessThan(0.15);
+  });
+
+  it("dividir a metade em 2 pedaços (sem redução) preserva o total esperado de gols (Poisson é aditivo)", () => {
+    const S = estadoSimulacao("A", "B");
+    const escA = elencoFicticio(), escB = elencoFicticio();
+    const N = 4000;
+    let totalInteiro = 0, totalDividido = 0;
+    for (let i = 0; i < N; i++) {
+      totalInteiro += golsDe(simMetade(S, "A", "B", escA, escB, 2), "A", 50);
+    }
+    for (let i = 0; i < N; i++) {
+      const parte1 = simMetade(S, "A", "B", escA, escB, 2, {}, [26, 39]);
+      const parte2 = simMetade(S, "A", "B", escA, escB, 2, {}, [40, 50]);
+      totalDividido += golsDe([...parte1, ...parte2], "A", 50);
+    }
+    const mediaInteiro = totalInteiro / N, mediaDividido = totalDividido / N;
+    // Tolerância generosa (±0.15 gol) — são duas amostras Monte Carlo
+    // independentes da mesma distribuição, não o mesmo cálculo determinístico.
+    expect(Math.abs(mediaInteiro - mediaDividido)).toBeLessThan(0.15);
+  });
+
+  it("reducaoAbsoluta carve-out reduz a média de gols do time em ~exatamente o valor retirado", () => {
+    const S = estadoSimulacao("A", "B");
+    const escA = elencoFicticio(), escB = elencoFicticio();
+    const N = 4000;
+    const CARVE_OUT = 0.5; // valor esperado assumido do Lance Decisivo (⚙️)
+    let semReducao = 0, comReducao = 0;
+    for (let i = 0; i < N; i++) {
+      semReducao += golsDe(simMetade(S, "A", "B", escA, escB, 2, {}, [40, 50]), "A", 50);
+      comReducao += golsDe(simMetade(S, "A", "B", escA, escB, 2, { A: { reducaoAbsoluta: CARVE_OUT } }, [40, 50]), "A", 50);
+    }
+    const diferenca = semReducao / N - comReducao / N;
+    // A regra anti-inflação promete: o que sai do Poisson (diferenca) mais o
+    // valor esperado do QTE (CARVE_OUT, creditado à parte pela UI quando o
+    // jogador acerta) devolve a média original — ou seja, `diferenca` deve
+    // bater com CARVE_OUT dentro de uma tolerância Monte Carlo.
+    expect(Math.abs(diferenca - CARVE_OUT)).toBeLessThan(0.15);
+  });
+
+  it("reducaoAbsoluta nunca deixa o lambda negativo (times fracos não ficam com Poisson negativo)", () => {
+    const S = { mult: { A: 0.5, B: 1 }, fase: { A: 0.92, B: 1 } }; // A bem fraco
+    const escA = elencoFicticio().map((j) => ({ ...j, attr: 45 })), escB = elencoFicticio();
+    // reducaoAbsoluta gigante — maior que qualquer lambda plausível pro time fraco.
+    const evs = simMetade(S, "A", "B", escA, escB, 2, { A: { reducaoAbsoluta: 99 } }, [40, 50]);
+    expect(golsDe(evs, "A", 50)).toBe(0); // Math.max(0, ...) segura a base
   });
 });

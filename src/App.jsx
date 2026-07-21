@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from "react";
 // telas em components/. Save/PWA entram nos Passos 2 e 3.
 // =====================================================================
 import {
-  novaTemporada, melhores, escalacaoIA, simMetade, golsDe,
+  novaTemporada, melhores, escalacaoIA, simMetade, golsDe, ri, pesoEscolha,
   avancarRodadaSimples, sincronizarSerieParalela,
 } from "./engine/simulador";
 import {
@@ -60,6 +60,7 @@ import TelaCopa from "./components/TelaCopa";
 import TelaUniforme from "./components/TelaUniforme";
 import TelaVs from "./components/TelaVs";
 import AlbumLendas from "./components/AlbumLendas";
+import LanceDecisivo from "./components/LanceDecisivo";
 import Ranking from "./components/Ranking";
 import BottomNav from "./components/BottomNav";
 import { cores } from "./components/entry-hub/estilos";
@@ -98,6 +99,10 @@ export default function App() {
   // ENQUANTO a UI de cobrança está rodando — só existe entre o tempo normal
   // empatar e o jogador terminar as 5 cobranças (finalizarPenaltisCopa).
   const [penaltisCopa, setPenaltisCopa] = useState(null);
+  // Lance Decisivo (C3.2): o evento "lance-decisivo" pendente, só quando o
+  // relógio da Partida ao Vivo chega no minuto exato dele (efeito do
+  // relógio, abaixo) — pausa o jogo e abre o mini-game.
+  const [lanceDecisivoAtivo, setLanceDecisivoAtivo] = useState(null);
   const [modalNomes, setModalNomes] = useState(false);
   const [textoNomes, setTextoNomes] = useState("");
   const [saveData, setSaveData] = useState(null); // save encontrado na abertura
@@ -610,9 +615,16 @@ export default function App() {
     perigoRef.current = null;
     setPerigo(null);
     setTatica(TATICA_PADRAO); // reseta a cada partida nova — nunca herda da rodada anterior
+    setLanceDecisivoAtivo(null);
     setJogo(j); setMinuto(0); setRodando(true); setTela("aoVivo");
     apito();
   };
+
+  // Lance Decisivo (C3.2): valores calibrados e cobertos por regressão em
+  // engine/__tests__/simulador.test.js — mudar aqui pede rodar os testes
+  // de novo (a média de gols/time precisa continuar ~3-4, decisão 12).
+  const PROB_LANCE_DECISIVO = 0.35; // ⚙️ chance de rolar quando elegível — nem toda partida
+  const VALOR_ESPERADO_QTE = 0.5; // ⚙️ carve-out de lambda (regra anti-inflação)
 
   const iniciarSegundoTempo = () => {
     const j = jogoRef.current;
@@ -622,13 +634,70 @@ export default function App() {
     // só no time do jogador — "equilibrado" (padrão) é matematicamente
     // idêntico a não ter escolhido nada.
     const mods = { [meuTime]: TATICAS[tatica] || TATICAS[TATICA_PADRAO] };
-    const ev2 = simMetade(S, j.casa, j.fora, escCasa, escFora, 2, mods);
+
+    // Lance Decisivo (C3.2): simula 26-39' primeiro pra saber o placar
+    // nesse ponto — só então decide se o lance rola (empatado ou perdendo
+    // por 1) e simula 40-50' com o lambda do jogador já reduzido se for o
+    // caso. O gol do QTE é TRANSFERIDO do Poisson, não somado por cima.
+    const ev2parte1 = simMetade(S, j.casa, j.fora, escCasa, escFora, 2, mods, [26, 39]);
+    const golsMeu39 = golsDe([...j.ev1, ...ev2parte1], meuTime, 39);
+    const golsAdv39 = golsDe([...j.ev1, ...ev2parte1], j.adv, 39);
+    const diferenca = golsMeu39 - golsAdv39;
+
+    let modsParte2 = mods;
+    let eventoLance = null;
+    if (diferenca >= -1 && diferenca <= 0 && Math.random() < PROB_LANCE_DECISIVO) {
+      modsParte2 = { ...mods, [meuTime]: { ...(mods[meuTime] || {}), reducaoAbsoluta: VALOR_ESPERADO_QTE } };
+      eventoLance = { min: ri(40, 48), tipo: "lance-decisivo", time: meuTime, resolvido: false };
+    }
+
+    const ev2parte2 = simMetade(S, j.casa, j.fora, escCasa, escFora, 2, modsParte2, [40, 50]);
+    const ev2 = [...ev2parte1, ...ev2parte2];
+    if (eventoLance) ev2.push(eventoLance);
+    ev2.sort((a, b) => a.min - b.min);
+
     perigoRef.current = null;
     setPerigo(null);
     setJogo({ ...j, ev2, meiaFase: "2T" });
     setSelOut(null); setSelIn(null);
     setRodando(true); setTela("aoVivo");
     apito();
+  };
+
+  // Resolve o Lance Decisivo quando o jogador termina o toque — converte o
+  // evento pendente num "gol" de verdade (autor sorteado, mesmo critério de
+  // peso do resto do motor) ou numa "chance" perdida, ressincroniza os
+  // contadores de anúncio (pra não disparar a faixa de gol de novo no
+  // próximo tick do relógio — esse evento já foi revelado aqui, fora do
+  // fluxo normal simulador→tick) e retoma o relógio.
+  const resolverLanceDecisivo = (acertou) => {
+    const j = jogoRef.current;
+    const evento = j.ev2.find((e) => e.tipo === "lance-decisivo" && !e.resolvido);
+    if (!evento) { setLanceDecisivoAtivo(null); setRodando(true); return; }
+    const candidatos = j.minhaEsc2.filter((x) => x.pos !== "GOL");
+    const autor = pesoEscolha(candidatos, { ATA: 3, MEI: 1.6, DEF: 0.5 });
+    evento.resolvido = true;
+    evento.autor = autor;
+    if (acertou) {
+      evento.tipo = "gol";
+      evento.assist = null;
+      evento.desc = "no lance mais decisivo da partida, sob pressão total";
+      setBanner(`⚽ GOL DO ${SIGLA[meuTime]} — ${autor.nome}`);
+      beep();
+      setShake(true);
+      setTimeout(() => setShake(false), 450);
+      setTimeout(() => setBanner(null), 1600);
+    } else {
+      evento.tipo = "chance";
+      evento.desc = "teve a chance mais decisiva da partida — e desperdiçou, sob pressão!";
+      chute();
+    }
+    const evsTodos = [...j.ev1, ...j.ev2];
+    anunciados.current = evsTodos.filter((e) => e.tipo === "gol" && e.min <= minuto).length;
+    anunciadosChance.current = evsTodos.filter((e) => e.tipo === "chance" && e.min <= minuto).length;
+    setJogo({ ...j });
+    setLanceDecisivoAtivo(null);
+    setRodando(true);
   };
 
   const rodadaRapida = () => {
@@ -889,6 +958,17 @@ export default function App() {
     if (tela !== "aoVivo" || !jogo) return;
     const evsTodos = [...jogo.ev1, ...(jogo.ev2 || [])];
 
+    // Lance Decisivo (C3.2): pausa o relógio e abre o mini-game quando o
+    // minuto chega — resolverLanceDecisivo() (chamado pela UI) resume tudo.
+    // Sai cedo: não processa mais nada neste tick (evita disparar qualquer
+    // outra coisa — antecipação, fim de tempo — no mesmo instante).
+    const lance = evsTodos.find((e) => e.tipo === "lance-decisivo" && !e.resolvido && e.min === minuto);
+    if (lance) {
+      setRodando(false);
+      setLanceDecisivoAtivo(lance);
+      return;
+    }
+
     // Antecipação (regra dos 400ms): 2 ticks (~500ms) antes de um gol, liga o
     // estado de perigo — o placar pulsa e o chute soa ANTES do payoff.
     const golAVir = evsTodos.find((e) => e.tipo === "gol" && e.min === minuto + 2);
@@ -1019,6 +1099,9 @@ export default function App() {
         {tela === "uniforme" && S && <TelaUniforme meuTime={meuTime} setTela={setTela} />}
         {tela === "aoVivo" && S && (
           <PartidaAoVivo S={S} jogo={jogo} minuto={minuto} banner={banner} mudo={mudo} setMudo={setMudo} perigo={perigo} shake={shake} />
+        )}
+        {tela === "aoVivo" && lanceDecisivoAtivo && (
+          <LanceDecisivo minuto={lanceDecisivoAtivo.min} meuTime={meuTime} onResolver={resolverLanceDecisivo} />
         )}
         {tela === "intervalo" && S && jogo && (
           <Intervalo
