@@ -23,6 +23,11 @@ export function mundoInicial(meuTime) {
     // Recordes históricos do mundo (dica 2): só das séries que o jogador
     // disputa (as simuladas em segundo plano não geram eventos por jogador).
     recordes: {},
+    // Álbum de Lendas (C2.3, PLANO_GAMEFEEL_AAA §5): ids de data/lendas.js já
+    // puxados em algum pacotinho lendário, ao longo de TODA a carreira (não
+    // reseta por temporada, diferente do prêmio em si — que dura só 1). Dá
+    // uma razão de longo prazo pra abrir pacotinho ("faltam N pra completar").
+    lendasObtidas: [],
   };
 }
 

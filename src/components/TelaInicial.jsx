@@ -166,6 +166,7 @@ export default function TelaInicial({
         verHistoricoCarreira={() => setTela("historiaCarreira")}
         verHistoriaLiga={() => setTela("historiaLiga")}
         verRanking={() => setTela("ranking")}
+        verAlbumLendas={() => setTela("albumLendas")}
         onNovoJogo={novoJogo}
         loginSlot={loginSlot}
         hintSlot={hintSlot}

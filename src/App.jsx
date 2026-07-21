@@ -58,6 +58,7 @@ import QuizModal from "./components/QuizModal";
 import TelaCopa from "./components/TelaCopa";
 import TelaUniforme from "./components/TelaUniforme";
 import TelaVs from "./components/TelaVs";
+import AlbumLendas from "./components/AlbumLendas";
 import Ranking from "./components/Ranking";
 import BottomNav from "./components/BottomNav";
 import { cores } from "./components/entry-hub/estilos";
@@ -322,6 +323,13 @@ export default function App() {
     if (mundo.pacotinhoPendente) return mundo.pacotinhoPendente; // já escolhido, idempotente
     const resultado = abrirPacotinho();
     mundo.pacotinhoPendente = resultado;
+    // Álbum de Lendas (C2.3): registra a lenda puxada na coleção da carreira
+    // inteira, independente do prêmio em si (que dura só 1 temporada) — o
+    // álbum é permanente, "faltam N pra completar" não pode regredir.
+    if (resultado.lendaId) {
+      mundo.lendasObtidas = mundo.lendasObtidas || [];
+      if (!mundo.lendasObtidas.includes(resultado.lendaId)) mundo.lendasObtidas.push(resultado.lendaId);
+    }
     salvarMundo(mundo);
     setMundo({ ...mundo });
     return resultado;
@@ -875,7 +883,7 @@ export default function App() {
   // "inicio" entra na lista (Task 05.1H): com S vivo, a capa vira a Central
   // da Carreira (Figma 05.1) e mantém o BottomNav com "Início" ativo. Sem S
   // (Entry/onboarding), mostrarNav já é falso por !!S — nada muda lá.
-  const TELAS_COM_NAV = ["inicio", "escalacao", "mercado", "tabela", "artilharia", "copa", "ranking", "historiaCarreira", "historiaLiga", "uniforme"];
+  const TELAS_COM_NAV = ["inicio", "escalacao", "mercado", "tabela", "artilharia", "copa", "ranking", "historiaCarreira", "historiaLiga", "uniforme", "albumLendas"];
   const mostrarNav = !!S && TELAS_COM_NAV.includes(tela);
 
   return (
@@ -910,6 +918,7 @@ export default function App() {
         )}
         {tela === "ranking" && <Ranking setTela={setTela} sessao={sessao} />}
         {tela === "historiaCarreira" && mundo && <HistoriaCarreira mundo={mundo} setTela={setTela} />}
+        {tela === "albumLendas" && mundo && <AlbumLendas mundo={mundo} setTela={setTela} />}
         {/* Task 05.1H.1: "Ver história da liga" volta a ser alcançável a
             partir da Entry sem carreira (mundo=null) — HistoriaLiga.jsx
             trata mundo ausente com um estado vazio honesto, sem fabricar

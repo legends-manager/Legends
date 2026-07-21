@@ -78,6 +78,16 @@ export default function HistoriaCarreira({ mundo, setTela }) {
                   <div className="text-xs mt-1" style={{ color: cores.textSecondary }}>{c.desc}</div>
                   <div className="text-[10px] mt-1 font-bold uppercase tracking-wide" style={{ color: tem ? cor : cores.textMuted }}>
                     {c.tier}
+                    {/* Contexto de desbloqueio (C2.3, PLANO_GAMEFEEL_AAA §5 —
+                        Pokémon GO grava onde/quando): clube+temporada já são
+                        salvos desde sempre (storage/conquistas.js desbloquear())
+                        — só faltava exibir. */}
+                    {tem && desbloqueadas[c.id]?.clube && (
+                      <span className="normal-case font-normal" style={{ color: cores.textMuted }}>
+                        {" · "}{desbloqueadas[c.id].clube}
+                        {desbloqueadas[c.id].temporada ? `, T${desbloqueadas[c.id].temporada}` : ""}
+                      </span>
+                    )}
                   </div>
                 </div>
               );
