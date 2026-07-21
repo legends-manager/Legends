@@ -9,8 +9,8 @@ import { useState } from "react";
 import { RARIDADE_LABEL } from "../../engine/pacotinhos";
 import { tocarSomTier } from "../../storage/audio";
 import { cores, superficie, superficie2, botaoPrimario, corTier, glowTier, eyebrowLime } from "./estilos";
+import { IconCaixa } from "../icons";
 
-const EMOJI_RARIDADE = { comum: "📦", raro: "📦", epico: "📦", lendario: "📦" };
 // Mascote GPT Image (Fase 3): só nos tiers altos — comum/raro ficam sem,
 // pra não banalizar a arte num sorteio que sai 90% das vezes. Ouro
 // reservado ao lendário (mesma regra do resto do app).
@@ -39,10 +39,10 @@ export default function Pacotinho({ pacotinhoPendente, escolherPacotinho, mudo }
             <button
               key={i}
               onClick={escolher}
-              className="rounded-xl py-4 flex items-center justify-center text-3xl active:opacity-70"
+              className="rounded-xl py-4 flex items-center justify-center active:opacity-70"
               style={{ ...superficie, border: `1px solid ${cores.steel}` }}
             >
-              📦
+              <IconCaixa size={30} strokeWidth={1.6} />
             </button>
           ))}
         </div>
@@ -59,7 +59,9 @@ export default function Pacotinho({ pacotinhoPendente, escolherPacotinho, mudo }
           className="w-full rounded-2xl py-8 mt-2 flex flex-col items-center gap-2 active:opacity-80"
           style={{ ...superficie, border: `1px solid ${corTier[resultado.raridade]}`, ...glowTier(resultado.raridade) }}
         >
-          <span className="text-5xl">{EMOJI_RARIDADE[resultado.raridade]}</span>
+          <span style={{ color: corTier[resultado.raridade] }}>
+            <IconCaixa size={56} strokeWidth={1.4} />
+          </span>
           <span className="font-black italic" style={{ color: corTier[resultado.raridade] }}>TOQUE PRA ABRIR</span>
         </button>
       </div>
@@ -116,7 +118,9 @@ export default function Pacotinho({ pacotinhoPendente, escolherPacotinho, mudo }
         className="rounded-xl px-3 py-2.5 mt-2 flex items-center gap-2"
         style={{ ...superficie2, border: `1px solid ${corTier[raridade]}` }}
       >
-        <span className="text-xl">📦</span>
+        <span style={{ color: corTier[raridade] }}>
+          <IconCaixa size={22} strokeWidth={1.8} />
+        </span>
         <div className="min-w-0">
           <div className="text-sm font-bold truncate">{jogador.nome}</div>
           <div className="text-xs" style={{ color: cores.textMuted }}>
