@@ -19,6 +19,7 @@ import {
 } from "./entry-hub/estilos";
 import { PolishDecor } from "./entry-hub/decor";
 import Pacotinho from "./entry-hub/Pacotinho";
+import { IconTrofeu, IconEstavel } from "./icons";
 
 const RESULTADO_LABEL = { subiu: "Subiu", desceu: "Desceu", manteve: "Permaneceu" };
 const RESULTADO_COR = { subiu: cores.success, desceu: cores.danger, manteve: cores.textSecondary };
@@ -29,7 +30,9 @@ function BlocoSerie({ serieId, dados, meuTime }) {
     <div className="rounded-xl p-3 mt-3" style={superficie}>
       <div className="flex items-center justify-between">
         <span style={eyebrowLime}>{SERIES[serieId].label}</span>
-        <span className="text-xs" style={{ color: cores.gold }}>🏆 {dados.campeao}</span>
+        <span className="text-xs inline-flex items-center gap-1" style={{ color: cores.gold }}>
+          <IconTrofeu size={13} strokeWidth={2} />{dados.campeao}
+        </span>
       </div>
       {dados.sobem.length > 0 && (
         <div className="text-xs mt-2">
@@ -110,7 +113,9 @@ export default function FimDeTemporada({
               <img src={heroSrc} alt="" className="w-full h-full block" style={{ objectFit: "cover" }} />
             </div>
           ) : (
-            <div className="text-5xl">📋</div>
+            <span style={{ color: cores.textMuted, display: "inline-block" }}>
+              <IconEstavel size={64} strokeWidth={1.3} />
+            </span>
           )}
           <div className="text-2xl font-black italic mt-3">{meuTime}</div>
           <div className="flex items-center justify-center gap-2 mt-2">
