@@ -25,7 +25,8 @@ import { desbloquear, carregarConquistas } from "./storage/conquistas";
 import ConquistaCelebracao from "./components/entry-hub/ConquistaCelebracao";
 import {
   iniciarCopa, avancarFaseCopa, confrontoPendenteDoJogador, eliminadoDaCopa,
-  historicoDoJogador, simularJogoCopa, nomeFase, PREMIO_VITORIA_COPA, PREMIO_CAMPEAO_COPA,
+  historicoDoJogador, simularTempoNormalCopa, resolverPenaltisComHabilidade,
+  nomeFase, PREMIO_VITORIA_COPA, PREMIO_CAMPEAO_COPA,
 } from "./engine/copa";
 import { abrirPacotinho } from "./engine/pacotinhos";
 import { SIGLA } from "./data/times";
@@ -93,6 +94,10 @@ export default function App() {
   // Decisão tática de intervalo (C2.2): escolha de um toque, reseta a cada
   // partida nova (jogarAoVivo) — nunca herda da rodada anterior.
   const [tatica, setTatica] = useState(TATICA_PADRAO);
+  // Pênaltis interativos da Copa (C3.1): estado do confronto do jogador
+  // ENQUANTO a UI de cobrança está rodando — só existe entre o tempo normal
+  // empatar e o jogador terminar as 5 cobranças (finalizarPenaltisCopa).
+  const [penaltisCopa, setPenaltisCopa] = useState(null);
   const [modalNomes, setModalNomes] = useState(false);
   const [textoNomes, setTextoNomes] = useState("");
   const [saveData, setSaveData] = useState(null); // save encontrado na abertura
@@ -802,25 +807,16 @@ export default function App() {
   };
 
   // ---------- Copa cruzando as 3 séries ----------
-  // Joga o confronto pendente do jogador na fase atual, com a escalação
-  // ATUAL dele (a mesma da liga — a copa não tem tela de escalação própria,
-  // simplificação consciente de v1). Resolve o resto da fase em seguida
-  // (avancarFaseCopa) e credita prêmio de vitória/título. Retorna o
-  // resultado pra TelaCopa mostrar o placar sem precisar reler o estado.
-  const jogarPartidaCopa = () => {
-    const c = confrontoPendenteDoJogador(S.copa, meuTime);
-    if (!c) return null;
-    const souA = c.a === meuTime;
-    const timeAdv = souA ? c.b : c.a;
-    const minhaEsc = escSelecionada();
-    const r = souA
-      ? simularJogoCopa(S, meuTime, timeAdv, minhaEsc, null)
-      : simularJogoCopa(S, timeAdv, meuTime, null, minhaEsc);
-    c.vencedor = r.vencedor; c.placarA = r.placarA; c.placarB = r.placarB; c.penaltis = r.penaltis;
-
-    const venceu = r.vencedor === meuTime;
+  // Fecha o confronto (vencedor já decidido, por tempo normal ou pênaltis):
+  // credita prêmio, resolve o resto da fase (avancarFaseCopa — não envolve
+  // o jogador) e prêmio de título. Extraído em função própria pra ser
+  // chamado tanto do caminho sem pênaltis (jogarPartidaCopa) quanto do
+  // caminho com pênaltis interativos (finalizarPenaltisCopa, C3.1).
+  const finalizarConfrontoCopa = (c, vencedor, penaltis) => {
+    c.vencedor = vencedor; c.penaltis = penaltis;
+    const venceu = vencedor === meuTime;
     if (venceu) S.orcamento[meuTime] += PREMIO_VITORIA_COPA;
-    avancarFaseCopa(S.copa, S); // resolve o resto da fase (não envolve o jogador) e avança
+    avancarFaseCopa(S.copa, S);
     const campeao = S.copa.campeao === meuTime;
     if (campeao) {
       S.orcamento[meuTime] += PREMIO_CAMPEAO_COPA;
@@ -828,12 +824,56 @@ export default function App() {
     }
     salvarJogo({ nomeTecnico: nomeTec, timeEscolhido: meuTime, avatarId, S });
     rerender();
+    const souA = c.a === meuTime;
     return {
-      adversario: timeAdv,
-      placarMeu: souA ? r.placarA : r.placarB,
-      placarAdv: souA ? r.placarB : r.placarA,
-      venceu, campeao, penaltis: r.penaltis,
+      adversario: souA ? c.b : c.a,
+      placarMeu: souA ? c.placarA : c.placarB,
+      placarAdv: souA ? c.placarB : c.placarA,
+      venceu, campeao, penaltis,
     };
+  };
+
+  // Joga o confronto pendente do jogador na fase atual, com a escalação
+  // ATUAL dele (a mesma da liga — a copa não tem tela de escalação própria,
+  // simplificação consciente de v1). Simula só o TEMPO NORMAL: se não
+  // empatar, fecha na hora (comportamento de sempre). Se empatar, NÃO
+  // decide o vencedor ainda — guarda o estado em `penaltisCopa` e devolve
+  // `pendentePenaltis: true`, pra TelaCopa abrir a cobrança interativa
+  // (C3.1) antes de qualquer coisa ser resolvida.
+  const jogarPartidaCopa = () => {
+    const c = confrontoPendenteDoJogador(S.copa, meuTime);
+    if (!c) return null;
+    const souA = c.a === meuTime;
+    const timeAdv = souA ? c.b : c.a;
+    const minhaEsc = escSelecionada();
+    const r = souA
+      ? simularTempoNormalCopa(S, meuTime, timeAdv, minhaEsc, null)
+      : simularTempoNormalCopa(S, timeAdv, meuTime, null, minhaEsc);
+    c.placarA = r.placarA; c.placarB = r.placarB;
+
+    if (r.empatou) {
+      setPenaltisCopa({ c, souA, timeAdv, forcaA: r.forcaA, forcaB: r.forcaB });
+      return {
+        pendentePenaltis: true,
+        adversario: timeAdv,
+        placarMeu: souA ? r.placarA : r.placarB,
+        placarAdv: souA ? r.placarB : r.placarA,
+      };
+    }
+    const vencedor = (r.placarA > r.placarB) === souA ? meuTime : timeAdv;
+    return finalizarConfrontoCopa(c, vencedor, false);
+  };
+
+  // Chamado pela UI de pênaltis (PenaltisCopa.jsx) quando o jogador termina
+  // as 5 cobranças — skillScore (0 a 1) já veio calculado da precisão real
+  // dos toques. resolverPenaltisComHabilidade faz a única coisa que decide
+  // o vencedor (calibrada por regressão, ver engine/__tests__/copa.test.js).
+  const finalizarPenaltisCopa = (skillScore) => {
+    const { c, souA, timeAdv, forcaA, forcaB } = penaltisCopa;
+    const souVencedor = resolverPenaltisComHabilidade(forcaA, forcaB, souA, skillScore);
+    const vencedor = souVencedor ? meuTime : timeAdv;
+    setPenaltisCopa(null);
+    return finalizarConfrontoCopa(c, vencedor, true);
   };
 
   // ---------- relógio da partida ----------
@@ -967,7 +1007,14 @@ export default function App() {
           <TelaVs S={S} meuTime={meuTime} confronto={confronto} iniciarPartida={jogarAoVivo} setTela={setTela} />
         )}
         {tela === "copa" && S && S.copa && (
-          <TelaCopa S={S} meuTime={meuTime} jogarPartidaCopa={jogarPartidaCopa} setTela={setTela} />
+          <TelaCopa
+            S={S}
+            meuTime={meuTime}
+            jogarPartidaCopa={jogarPartidaCopa}
+            penaltisCopa={penaltisCopa}
+            finalizarPenaltisCopa={finalizarPenaltisCopa}
+            setTela={setTela}
+          />
         )}
         {tela === "uniforme" && S && <TelaUniforme meuTime={meuTime} setTela={setTela} />}
         {tela === "aoVivo" && S && (

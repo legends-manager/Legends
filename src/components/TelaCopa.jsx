@@ -15,8 +15,9 @@ import {
 } from "./entry-hub/estilos";
 import Crest from "./Crest";
 import Cenario from "./Cenario";
+import PenaltisCopa from "./PenaltisCopa";
 
-export default function TelaCopa({ S, meuTime, jogarPartidaCopa, setTela }) {
+export default function TelaCopa({ S, meuTime, jogarPartidaCopa, penaltisCopa, finalizarPenaltisCopa, setTela }) {
   const [resultado, setResultado] = useState(null);
   const copa = S.copa;
   const pendente = confrontoPendenteDoJogador(copa, meuTime);
@@ -25,7 +26,16 @@ export default function TelaCopa({ S, meuTime, jogarPartidaCopa, setTela }) {
   const souCampeao = copa.campeao === meuTime;
   const adversarioPendente = pendente ? (pendente.a === meuTime ? pendente.b : pendente.a) : null;
 
-  const jogar = () => setResultado(jogarPartidaCopa());
+  // Pênaltis interativos (C3.1): se o tempo normal empatou, jogarPartidaCopa
+  // NÃO devolve um resultado fechado — devolve `pendentePenaltis` e guarda o
+  // estado em App.jsx (penaltisCopa), que abre a cobrança (abaixo). Só
+  // quando o jogador terminar as 5 cobranças (finalizarPenaltisCopa) é que
+  // um resultado de verdade existe pra mostrar.
+  const jogar = () => {
+    const r = jogarPartidaCopa();
+    if (!r?.pendentePenaltis) setResultado(r);
+  };
+  const concluirPenaltis = (skillScore) => setResultado(finalizarPenaltisCopa(skillScore));
 
   return (
     <div className="pt-10" style={{ ...paginaGrafite, background: "transparent" }}>
@@ -72,7 +82,7 @@ export default function TelaCopa({ S, meuTime, jogarPartidaCopa, setTela }) {
           </div>
         )}
 
-        {!resultado && pendente && (
+        {!resultado && !penaltisCopa && pendente && (
           <div className="rounded-xl p-4 mt-3" style={{ ...superficie, border: `1px solid ${cores.lime}` }}>
             <span style={eyebrowLime}>Seu confronto</span>
             <div className="flex items-center gap-2 mt-2">
@@ -87,6 +97,19 @@ export default function TelaCopa({ S, meuTime, jogarPartidaCopa, setTela }) {
               Jogar
             </button>
           </div>
+        )}
+
+        {/* Pênaltis interativos (C3.1): tempo normal empatou, o resultado
+            depende da cobrança agora — nunca mostrar o card de "Seu
+            confronto" nem o de resultado junto com isso. */}
+        {!resultado && penaltisCopa && (
+          <PenaltisCopa
+            meuTime={meuTime}
+            adversario={penaltisCopa.timeAdv}
+            placarMeu={penaltisCopa.souA ? penaltisCopa.c.placarA : penaltisCopa.c.placarB}
+            placarAdv={penaltisCopa.souA ? penaltisCopa.c.placarB : penaltisCopa.c.placarA}
+            onConcluir={concluirPenaltis}
+          />
         )}
 
         {!resultado && !pendente && !souCampeao && !eliminado && (

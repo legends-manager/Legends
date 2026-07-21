@@ -37,12 +37,15 @@ export function poolDoTime(S, time) {
   return null;
 }
 
-// Simula 1 confronto (times de QUALQUER série, via poolDoTime). Escalações
-// podem ser sobrescritas (usado só pro time do JOGADOR, que joga com a
-// escalação escolhida por ele, não a IA aleatória). Empate = pênaltis,
-// decidido por um viés de força interna + sorte — sem UI extra de cobrança,
-// mesma filosofia de "zebra viva" do resto do motor.
-export function simularJogoCopa(S, timeA, timeB, escOverrideA = null, escOverrideB = null) {
+// Simula só o TEMPO NORMAL de 1 confronto (times de QUALQUER série, via
+// poolDoTime) — não resolve pênaltis. Extraído de simularJogoCopa (abaixo)
+// pra permitir a UI interativa de pênaltis (C3.1, Camada 3) rodar ENTRE a
+// simulação do jogo e a decisão do vencedor, quando o confronto é do
+// jogador: o tempo normal já é conhecido no momento em que a tela de
+// pênaltis abre, só o desempate fica pendente. `forcaA`/`forcaB` vêm
+// expostos porque são a base de calibração da cobrança interativa
+// (ver resolverPenaltisComHabilidade).
+export function simularTempoNormalCopa(S, timeA, timeB, escOverrideA = null, escOverrideB = null) {
   const poolA = poolDoTime(S, timeA), poolB = poolDoTime(S, timeB);
   const escA = escOverrideA || escalacaoIA(poolA.elencos[timeA]);
   const escB = escOverrideB || escalacaoIA(poolB.elencos[timeB]);
@@ -55,16 +58,46 @@ export function simularJogoCopa(S, timeA, timeB, escOverrideA = null, escOverrid
     ...simMetade(Slocal, timeA, timeB, escA, escB, 2),
   ];
   const placarA = golsDe(ev, timeA), placarB = golsDe(ev, timeB);
+  const forcaA = poolA.mult[timeA] * poolA.fase[timeA];
+  const forcaB = poolB.mult[timeB] * poolB.fase[timeB];
+  return { placarA, placarB, ev, empatou: placarA === placarB, forcaA, forcaB };
+}
+
+// Simula 1 confronto inteiro, INCLUSIVE pênaltis (usado por IA×IA via
+// avancarFaseCopa — comportamento 100% preservado, nunca mudou: viés de
+// força interna + sorte, sem UI). O jogo do JOGADOR não passa mais por
+// aqui quando empata — App.jsx usa simularTempoNormalCopa +
+// resolverPenaltisComHabilidade pra abrir a cobrança interativa antes de
+// decidir (C3.1).
+export function simularJogoCopa(S, timeA, timeB, escOverrideA = null, escOverrideB = null) {
+  const { placarA, placarB, ev, empatou, forcaA, forcaB } = simularTempoNormalCopa(S, timeA, timeB, escOverrideA, escOverrideB);
   let vencedor, penaltis = false;
-  if (placarA > placarB) vencedor = timeA;
-  else if (placarB > placarA) vencedor = timeB;
-  else {
+  if (!empatou) {
+    vencedor = placarA > placarB ? timeA : timeB;
+  } else {
     penaltis = true;
-    const forcaA = poolA.mult[timeA] * poolA.fase[timeA];
-    const forcaB = poolB.mult[timeB] * poolB.fase[timeB];
     vencedor = Math.random() < forcaA / (forcaA + forcaB) ? timeA : timeB;
   }
   return { vencedor, placarA, placarB, penaltis, ev };
+}
+
+// Pênaltis interativos (C3.1, PLANO_GAMEFEEL_AAA §4-A — Camada 3, liberada
+// por decisão explícita do Felyp: "habilidade do jogador pode influenciar
+// o resultado da partida"). A probabilidade de vitória do time do JOGADOR
+// continua ancorada no MESMO viés de força que decidia tudo sozinho antes
+// (forcaA/(forcaA+forcaB)) — habilidade (skillScore, 0 a 1, vindo da
+// precisão das cobranças interativas) desloca essa probabilidade em até
+// ±LIMITE_HABILIDADE, nunca mais. skillScore=0.5 ("toque médio") reproduz
+// EXATAMENTE a taxa de vitória antiga — é o que o teste de regressão
+// confirma (1000 pênaltis com toque médio ≈ taxa de vitória do viés puro).
+export const LIMITE_HABILIDADE_PENALTI = 0.12;
+
+export function resolverPenaltisComHabilidade(forcaA, forcaB, souTimeA, skillScore, rng = Math.random) {
+  const baseProb = forcaA / (forcaA + forcaB); // prob. de A vencer, sem habilidade nenhuma
+  const probBase = souTimeA ? baseProb : 1 - baseProb;
+  const ajuste = (Math.min(1, Math.max(0, skillScore)) - 0.5) * (LIMITE_HABILIDADE_PENALTI * 2);
+  const probFinal = Math.min(0.97, Math.max(0.03, probBase + ajuste));
+  return rng() < probFinal; // true = o time do JOGADOR venceu os pênaltis
 }
 
 // Resolve TODOS os confrontos pendentes da fase atual (menos os que já têm
